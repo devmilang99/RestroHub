@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "195694526144",
+    "project_id": "restrohub-c1d17",
+    "storage_bucket": "restrohub-c1d17.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:195694526144:android:b6f9d490156f91257ef725",
+        "android_client_info": {
+          "package_name": "com.example.restro_hub"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "195694526144-c1qvhl45fttaqi2dk48jn4j56borstlp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.restro_hub",
+            "certificate_hash": "ae06d9146f9cb4cf5fd2b30cd15a5feaa9f56356"
+          }
+        },
+        {
+          "client_id": "195694526144-kiileab031b4fgpb45oro4m5lm8i905s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyANoLhvsGGP64we48SLOwY97aWk3gVHWxM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "195694526144-kiileab031b4fgpb45oro4m5lm8i905s.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "195694526144-f0mebgr7jf3ljt8ku89e77q815a37jak.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.restroHub"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
