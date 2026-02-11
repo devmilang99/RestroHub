@@ -8,25 +8,42 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:restro_hub/core/providers/cart_provider.dart';
 import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
 
-class MainDashBoard extends ConsumerWidget {
+import 'package:restro_hub/login/screens/Orders/orders_screen.dart';
+
+class MainDashBoard extends ConsumerStatefulWidget {
   final User? user;
   const MainDashBoard({super.key, this.user});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainDashBoard> createState() => _MainDashBoardState();
+}
+
+class _MainDashBoardState extends ConsumerState<MainDashBoard> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
     final isDarkMode = themeMode == ThemeMode.dark;
     final colorScheme = context.colorScheme;
     final cart = ref.watch(cartProvider);
     final totalItems = cart.fold(0, (sum, item) => sum + item.quantity);
 
+    final List<Widget> pages = [
+      _buildHomeView(context, colorScheme),
+      const SizedBox.shrink(), // Placeholder for Cart (handled via bottom sheet)
+      const OrdersScreen(),
+    ];
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) {
-          return;
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        } else {
+          context.goNamed('mainLoginScreen');
         }
-        context.goNamed('mainLoginScreen');
       },
       child: Scaffold(
         backgroundColor: colorScheme.surface,
@@ -35,7 +52,7 @@ class MainDashBoard extends ConsumerWidget {
             children: [
               UserAccountsDrawerHeader(
                 accountName: const Text('Restro Hub User'),
-                accountEmail: Text(user?.email ?? 'user@example.com'),
+                accountEmail: Text(widget.user?.email ?? 'user@example.com'),
                 currentAccountPicture: const CircleAvatar(
                   backgroundColor: Colors.white,
                   child: Icon(Icons.person, size: 40, color: Colors.blue),
@@ -104,162 +121,7 @@ class MainDashBoard extends ConsumerWidget {
             ],
           ),
         ),
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              floating: true,
-              pinned: true,
-              backgroundColor: colorScheme.surface,
-              expandedHeight: 140,
-              elevation: 0,
-              leading: Builder(
-                builder: (context) {
-                  return IconButton(
-                    icon: Icon(Icons.menu, color: colorScheme.onSurface),
-                    onPressed: () {
-                      Scaffold.of(context).openDrawer();
-                    },
-                  );
-                },
-              ),
-              title: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "Delivering to",
-                    style: TextStyle(
-                      color: colorScheme.onSurface.withValues(alpha: 0.6),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        "Narayan Chowk",
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      Icon(
-                        Icons.keyboard_arrow_down,
-                        color: colorScheme.onSurface,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              centerTitle: true,
-              actions: [
-                IconButton(
-                  icon: Badge(
-                    label: const Text("3"),
-                    child: Icon(
-                      Icons.notifications_outlined,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  onPressed: () {},
-                ),
-                IconButton(
-                  icon: Badge(
-                    label: const Text("1"),
-                    child: Icon(Icons.favorite, color: colorScheme.onSurface),
-                  ),
-                  onPressed: () {},
-                ),
-              ],
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(60),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: "Search for food or restaurants",
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(15),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(30),
-                      bottomRight: Radius.circular(30),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            // Cuisine Horizontal List
-            SliverVerticalCards(
-              headingTitle: 'Explore by Cuisine',
-              isHorizontal: true,
-              isCircular: true,
-              items: cuisines,
-              seeAll: true,
-            ),
-
-            SliverVerticalCards(
-              headingTitle: 'Latest Offers',
-              hasOffer: true,
-              isHorizontal: true,
-              isCircular: false,
-              offerPercent: "20%",
-              rating: "4.5",
-              items: latestOffers,
-              seeAll: true,
-            ),
-
-            SliverVerticalCards(
-              headingTitle: 'Explore by Restaurant',
-              isHorizontal: true,
-              isCircular: true,
-              items: restaurants,
-              seeAll: true,
-            ),
-
-            SliverVerticalCards(
-              headingTitle: 'Favourites',
-              isHorizontal: true,
-              isCircular: false,
-              items: restaurants,
-              seeAll: true,
-              hasOffer: true,
-              offerPercent: "20%",
-              rating: "4.5",
-            ),
-
-            SliverVerticalCards(
-              headingTitle: 'Top Rated',
-              hasOffer: true,
-              isHorizontal: false,
-              isCircular: false,
-              offerPercent: "80%",
-              rating: "4.5",
-              items: latestOffers,
-              seeAll: true,
-            ),
-          ],
-        ),
+        body: pages[_currentIndex],
         bottomNavigationBar: BottomNavigationBar(
           items: <BottomNavigationBarItem>[
             const BottomNavigationBarItem(
@@ -279,7 +141,7 @@ class MainDashBoard extends ConsumerWidget {
               label: 'Orders',
             ),
           ],
-          currentIndex: 0,
+          currentIndex: _currentIndex,
           onTap: (index) {
             if (index == 1) {
               showModalBottomSheet(
@@ -288,12 +150,166 @@ class MainDashBoard extends ConsumerWidget {
                 backgroundColor: Colors.transparent,
                 builder: (context) => const CartBottomSheet(),
               );
+            } else {
+              setState(() => _currentIndex = index);
             }
           },
           selectedItemColor: Theme.of(context).colorScheme.primary,
           unselectedItemColor: Theme.of(context).colorScheme.onSurface,
         ),
       ),
+    );
+  }
+
+  Widget _buildHomeView(BuildContext context, ColorScheme colorScheme) {
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar(
+          floating: true,
+          pinned: true,
+          backgroundColor: colorScheme.surface,
+          expandedHeight: 140,
+          elevation: 0,
+          leading: Builder(
+            builder: (context) {
+              return IconButton(
+                icon: Icon(Icons.menu, color: colorScheme.onSurface),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              );
+            },
+          ),
+          title: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Delivering to",
+                style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.location_on, color: Colors.red, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    "Narayan Chowk",
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurface),
+                ],
+              ),
+            ],
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: Badge(
+                label: const Text("3"),
+                child: Icon(
+                  Icons.notifications_outlined,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              onPressed: () {},
+            ),
+            IconButton(
+              icon: Badge(
+                label: const Text("1"),
+                child: Icon(Icons.favorite, color: colorScheme.onSurface),
+              ),
+              onPressed: () {},
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "Search for food or restaurants",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          flexibleSpace: FlexibleSpaceBar(
+            background: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Cuisine Horizontal List
+        SliverVerticalCards(
+          headingTitle: 'Explore by Cuisine',
+          isHorizontal: true,
+          isCircular: true,
+          items: cuisines,
+          seeAll: true,
+        ),
+
+        SliverVerticalCards(
+          headingTitle: 'Latest Offers',
+          hasOffer: true,
+          isHorizontal: true,
+          isCircular: false,
+          offerPercent: "20%",
+          rating: "4.5",
+          items: latestOffers,
+          seeAll: true,
+        ),
+
+        SliverVerticalCards(
+          headingTitle: 'Explore by Restaurant',
+          isHorizontal: true,
+          isCircular: true,
+          items: restaurants,
+          seeAll: true,
+        ),
+
+        SliverVerticalCards(
+          headingTitle: 'Favourites',
+          isHorizontal: true,
+          isCircular: false,
+          items: restaurants,
+          seeAll: true,
+          hasOffer: true,
+          offerPercent: "20%",
+          rating: "4.5",
+        ),
+
+        SliverVerticalCards(
+          headingTitle: 'Top Rated',
+          hasOffer: true,
+          isHorizontal: false,
+          isCircular: false,
+          offerPercent: "80%",
+          rating: "4.5",
+          items: latestOffers,
+          seeAll: true,
+        ),
+      ],
     );
   }
 }
