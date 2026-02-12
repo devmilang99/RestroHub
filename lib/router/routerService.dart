@@ -3,6 +3,7 @@ import 'package:restro_hub/login/googleLogin.dart';
 import 'package:restro_hub/login/screens/CheckOut/processCheckOut.dart';
 import 'package:restro_hub/login/screens/Cuisine/all_Cuisine_List.dart';
 import 'package:restro_hub/login/screens/Cuisine/cuisine_Single_item.dart';
+import 'package:restro_hub/login/screens/favourites/favourites.dart';
 import 'package:restro_hub/login/screens/forgotPassword.dart';
 import 'package:restro_hub/login/screens/mainLoginScreen.dart';
 import 'package:restro_hub/login/model/User.dart';
@@ -68,6 +69,12 @@ class RouterService {
         path: '/processCheckout',
         name: "processCheckout",
         builder: (context, state) => const ProcessCheckOut(),
+      ),
+
+      GoRoute(
+        path: '/showFavourites',
+        name: "showFavourites",
+        builder: (context, state) => const ShowFavourites(),
       ),
     ],
   );

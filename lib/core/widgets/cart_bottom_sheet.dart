@@ -20,9 +20,10 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
     super.dispose();
   }
 
-  void _showConfirmationDialog(BuildContext context, double totalAmount) {
+  void _showConfirmationDialog(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
-
+    final testNotifier = ref.read(cartProvider.notifier);
+    final totalAmount = ref.watch(cartTotalAmountProvider);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -66,7 +67,8 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context); // Close dialog
-              context.pop(); // Close bottom sheet
+              context.pop();
+              testNotifier.clearCart(); // Close bottom sheet
               context.push("/processCheckout");
             },
             style: ElevatedButton.styleFrom(
@@ -326,8 +328,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: () =>
-                    _showConfirmationDialog(context, cartNotifier.totalAmount),
+                onPressed: () => _showConfirmationDialog(context, ref),
                 child: const Text(
                   "Proceed to Checkout",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

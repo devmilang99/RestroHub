@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:restro_hub/core/models/cuisines_item.dart';
 import 'package:restro_hub/core/providers/cart_provider.dart';
+import 'package:restro_hub/core/providers/favourites_provider.dart';
 import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
 
 import 'package:restro_hub/core/extensions/context_extension.dart';
@@ -81,37 +83,37 @@ class AllCousineList extends ConsumerWidget {
   }
 }
 
-final List<Map<String, String>> cuisines = [
-  {
-    'name': 'Italian',
-    'image': 'assets/food1.webp',
-    'rating': '4.5',
-    'offerPercent': '10%',
-  },
-  {
-    'name': 'Chinese',
-    'image': 'assets/food2.webp',
-    'rating': '4.5',
-    'offerPercent': '20%',
-  },
-  {
-    'name': 'Mexican',
-    'image': 'assets/food3.webp',
-    'rating': '4.5',
-    'offerPercent': '30%',
-  },
-  {
-    'name': 'Indian',
-    'image': 'assets/food4.webp',
-    'rating': '4.5',
-    'offerPercent': '40%',
-  },
-  {
-    'name': 'Thai',
-    'image': 'assets/food5.webp',
-    'rating': '4.5',
-    'offerPercent': '50%',
-  },
+final List<CuisinesItem> cuisines = [
+  CuisinesItem(
+    name: 'Italian',
+    image: 'assets/food1.webp',
+    rating: '4.5',
+    offerPercent: '10%',
+  ),
+  CuisinesItem(
+    name: 'Chinese',
+    image: 'assets/food2.webp',
+    rating: '4.5',
+    offerPercent: '20%',
+  ),
+  CuisinesItem(
+    name: 'Mexican',
+    image: 'assets/food3.webp',
+    rating: '4.5',
+    offerPercent: '30%',
+  ),
+  CuisinesItem(
+    name: 'Indian',
+    image: 'assets/food4.webp',
+    rating: '4.5',
+    offerPercent: '40%',
+  ),
+  CuisinesItem(
+    name: 'Thai',
+    image: 'assets/food5.webp',
+    rating: '4.5',
+    offerPercent: '50%',
+  ),
 ];
 
 class ExploreItemsMainCard extends StatelessWidget {
@@ -120,7 +122,7 @@ class ExploreItemsMainCard extends StatelessWidget {
   final bool isHorizontal;
   final String offerPercent;
   final String rating;
-  final List<Map<String, String>> items;
+  final List<CuisinesItem> items;
   const ExploreItemsMainCard({
     super.key,
     required this.headingTitle,
@@ -141,15 +143,15 @@ class ExploreItemsMainCard extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: ExploreItemsList(
-              name: items[index]['name']!,
-              image: items[index]['image']!,
+              name: items[index].name,
+              image: items[index].image,
               rating: rating,
               offerPercent: offerPercent,
               onClick: () {
                 showDialog(
                   context: context,
                   builder: (context) {
-                    return CuisineSingleItem(id: items[index]['name']!);
+                    return CuisineSingleItem(id: items[index].name);
                   },
                 );
                 // context.push('/cuisineSingleItem/${items[index]['name']}');
@@ -162,7 +164,7 @@ class ExploreItemsMainCard extends StatelessWidget {
   }
 }
 
-class ExploreItemsList extends StatelessWidget {
+class ExploreItemsList extends ConsumerWidget {
   final String name;
   final String image;
   final String rating;
@@ -178,7 +180,8 @@ class ExploreItemsList extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final favouriteProvider = ref.read(favouritesProvider.notifier);
     bool isNetwork = image.startsWith('http');
     return GestureDetector(
       onTap: () {
@@ -255,7 +258,16 @@ class ExploreItemsList extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  favouriteProvider.addToFavourites(
+                    CuisinesItem(
+                      name: name,
+                      image: image,
+                      rating: rating,
+                      offerPercent: offerPercent,
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.favorite_border, color: Colors.red),
               ),
             ),

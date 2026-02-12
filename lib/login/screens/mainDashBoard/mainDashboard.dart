@@ -226,7 +226,9 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                 label: const Text("1"),
                 child: Icon(Icons.favorite, color: colorScheme.onSurface),
               ),
-              onPressed: () {},
+              onPressed: () {
+                context.pushNamed("showFavourites");
+              },
             ),
           ],
           bottom: PreferredSize(
