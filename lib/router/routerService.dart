@@ -17,7 +17,7 @@ class RouterService {
       GoRoute(
         path: '/',
         name: "splash",
-        builder: (context, state) => const MainDashBoard(),
+        builder: (context, state) => const MainLoginScreen(),
       ),
       GoRoute(
         path: '/mainLoginScreen',
