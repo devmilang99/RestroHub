@@ -5,29 +5,31 @@ import 'package:restro_hub/login/service/google_auth_service.dart';
 import 'package:restro_hub/login/service/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:restro_hub/core/theme/theme_provider.dart';
 
-class MainLoginScreen extends StatefulWidget {
+class MainLoginScreen extends ConsumerStatefulWidget {
   const MainLoginScreen({super.key});
 
   @override
-  State<MainLoginScreen> createState() => _MainLoginScreenState();
+  ConsumerState<MainLoginScreen> createState() => _MainLoginScreenState();
 }
 
-class _MainLoginScreenState extends State<MainLoginScreen> {
+class _MainLoginScreenState extends ConsumerState<MainLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return const LoginCard();
   }
 }
 
-class LoginCard extends StatefulWidget {
+class LoginCard extends ConsumerStatefulWidget {
   const LoginCard({super.key});
 
   @override
-  State<LoginCard> createState() => _LoginCardState();
+  ConsumerState<LoginCard> createState() => _LoginCardState();
 }
 
-class _LoginCardState extends State<LoginCard>
+class _LoginCardState extends ConsumerState<LoginCard>
     with SingleTickerProviderStateMixin {
   bool visibility = true;
   bool rememberMe = false;
@@ -68,12 +70,15 @@ class _LoginCardState extends State<LoginCard>
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
     return Scaffold(
       body: Stack(
         children: [
           // Background Image with Overlay
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               image: DecorationImage(
                 image: NetworkImage(
                   'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80',
@@ -106,6 +111,28 @@ class _LoginCardState extends State<LoginCard>
                     position: _slideAnimation,
                     child: Column(
                       children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                ref
+                                    .read(themeProvider.notifier)
+                                    .toggleTheme(!isDark);
+                              },
+                              icon: Icon(
+                                isDark ? Icons.light_mode : Icons.dark_mode,
+                                color: Colors.white,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.black.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
                         const SizedBox(height: 40),
 
                         // Logo and Title
@@ -139,8 +166,14 @@ class _LoginCardState extends State<LoginCard>
                         // Login Form Card
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.95),
+                            color: isDark
+                                ? Colors.black.withValues(alpha: 0.8)
+                                : Colors.white.withValues(alpha: 0.95),
                             borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: isDark ? Colors.white10 : Colors.white24,
+                              width: 1,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.3),
@@ -161,7 +194,9 @@ class _LoginCardState extends State<LoginCard>
                                     style: GoogleFonts.poppins(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade800,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.grey.shade800,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -170,7 +205,9 @@ class _LoginCardState extends State<LoginCard>
                                     'Sign in to continue',
                                     style: GoogleFonts.poppins(
                                       fontSize: 14,
-                                      color: Colors.grey.shade600,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : Colors.grey.shade600,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
@@ -181,7 +218,11 @@ class _LoginCardState extends State<LoginCard>
                                   TextFormField(
                                     controller: emailController,
                                     keyboardType: TextInputType.emailAddress,
-                                    style: GoogleFonts.poppins(),
+                                    style: GoogleFonts.poppins(
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Please enter your email';
@@ -192,7 +233,11 @@ class _LoginCardState extends State<LoginCard>
                                     },
                                     decoration: InputDecoration(
                                       labelText: 'Email',
-                                      labelStyle: GoogleFonts.poppins(),
+                                      labelStyle: GoogleFonts.poppins(
+                                        color: isDark
+                                            ? Colors.white60
+                                            : Colors.grey.shade600,
+                                      ),
                                       prefixIcon: Icon(
                                         Icons.email_outlined,
                                         color: Colors.orange.shade400,
@@ -203,7 +248,9 @@ class _LoginCardState extends State<LoginCard>
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
-                                          color: Colors.grey.shade300,
+                                          color: isDark
+                                              ? Colors.white10
+                                              : Colors.grey.shade300,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
@@ -214,7 +261,9 @@ class _LoginCardState extends State<LoginCard>
                                         ),
                                       ),
                                       filled: true,
-                                      fillColor: Colors.grey.shade50,
+                                      fillColor: isDark
+                                          ? Colors.white.withValues(alpha: 0.05)
+                                          : Colors.grey.shade50,
                                     ),
                                   ),
 
@@ -225,7 +274,11 @@ class _LoginCardState extends State<LoginCard>
                                     controller: passwordController,
                                     keyboardType: TextInputType.visiblePassword,
                                     obscureText: visibility,
-                                    style: GoogleFonts.poppins(),
+                                    style: GoogleFonts.poppins(
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87,
+                                    ),
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Please enter your password';
@@ -236,7 +289,11 @@ class _LoginCardState extends State<LoginCard>
                                     },
                                     decoration: InputDecoration(
                                       labelText: 'Password',
-                                      labelStyle: GoogleFonts.poppins(),
+                                      labelStyle: GoogleFonts.poppins(
+                                        color: isDark
+                                            ? Colors.white60
+                                            : Colors.grey.shade600,
+                                      ),
                                       prefixIcon: Icon(
                                         Icons.lock_outline,
                                         color: Colors.orange.shade400,
@@ -251,7 +308,9 @@ class _LoginCardState extends State<LoginCard>
                                           visibility
                                               ? Icons.visibility_off
                                               : Icons.visibility,
-                                          color: Colors.grey.shade600,
+                                          color: isDark
+                                              ? Colors.white60
+                                              : Colors.grey.shade600,
                                         ),
                                       ),
                                       border: OutlineInputBorder(
@@ -260,7 +319,9 @@ class _LoginCardState extends State<LoginCard>
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
-                                          color: Colors.grey.shade300,
+                                          color: isDark
+                                              ? Colors.white10
+                                              : Colors.grey.shade300,
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
@@ -271,7 +332,9 @@ class _LoginCardState extends State<LoginCard>
                                         ),
                                       ),
                                       filled: true,
-                                      fillColor: Colors.grey.shade50,
+                                      fillColor: isDark
+                                          ? Colors.white.withValues(alpha: 0.05)
+                                          : Colors.grey.shade50,
                                     ),
                                   ),
 
@@ -303,7 +366,9 @@ class _LoginCardState extends State<LoginCard>
                                             'Remember Me',
                                             style: GoogleFonts.poppins(
                                               fontSize: 13,
-                                              color: Colors.grey.shade700,
+                                              color: isDark
+                                                  ? Colors.white70
+                                                  : Colors.grey.shade700,
                                             ),
                                           ),
                                         ],
@@ -493,7 +558,9 @@ class _LoginCardState extends State<LoginCard>
                                     children: [
                                       Expanded(
                                         child: Divider(
-                                          color: Colors.grey.shade300,
+                                          color: isDark
+                                              ? Colors.white10
+                                              : Colors.grey.shade300,
                                         ),
                                       ),
                                       Padding(
@@ -503,14 +570,18 @@ class _LoginCardState extends State<LoginCard>
                                         child: Text(
                                           'OR',
                                           style: GoogleFonts.poppins(
-                                            color: Colors.grey.shade600,
+                                            color: isDark
+                                                ? Colors.white60
+                                                : Colors.grey.shade600,
                                             fontSize: 12,
                                           ),
                                         ),
                                       ),
                                       Expanded(
                                         child: Divider(
-                                          color: Colors.grey.shade300,
+                                          color: isDark
+                                              ? Colors.white10
+                                              : Colors.grey.shade300,
                                         ),
                                       ),
                                     ],
@@ -557,7 +628,9 @@ class _LoginCardState extends State<LoginCard>
                                           padding: const EdgeInsets.all(16),
                                           decoration: BoxDecoration(
                                             border: Border.all(
-                                              color: Colors.grey.shade300,
+                                              color: isDark
+                                                  ? Colors.white12
+                                                  : Colors.grey.shade300,
                                               width: 2,
                                             ),
                                             borderRadius: BorderRadius.circular(
@@ -577,7 +650,9 @@ class _LoginCardState extends State<LoginCard>
                                                 style: GoogleFonts.poppins(
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w500,
-                                                  color: Colors.grey.shade700,
+                                                  color: isDark
+                                                      ? Colors.white
+                                                      : Colors.grey.shade700,
                                                 ),
                                               ),
                                             ],

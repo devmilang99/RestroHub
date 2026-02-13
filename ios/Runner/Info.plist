@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to save receipts and images.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to your location to find nearby restaurants.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>This app requires contacts access to allow you to share restaurant details with your friends.</string>
 </dict>
 </plist>

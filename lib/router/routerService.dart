@@ -10,6 +10,7 @@ import 'package:restro_hub/login/model/User.dart';
 import 'package:restro_hub/login/screens/register.dart';
 import 'package:restro_hub/login/screens/mainDashBoard/mainDashboard.dart';
 import 'package:restro_hub/splashScreen.dart';
+import 'package:restro_hub/screens/permission_screen.dart';
 
 class RouterService {
   static final _goRouter = GoRouter(
@@ -17,7 +18,12 @@ class RouterService {
       GoRoute(
         path: '/',
         name: "splash",
-        builder: (context, state) => const MainLoginScreen(),
+        builder: (context, state) => const splashScreen(),
+      ),
+      GoRoute(
+        path: '/permissions',
+        name: "permissionsScreen",
+        builder: (context, state) => const PermissionScreen(),
       ),
       GoRoute(
         path: '/mainLoginScreen',
