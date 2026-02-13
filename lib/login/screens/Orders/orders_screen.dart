@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class OrdersScreen extends StatelessWidget {
   const OrdersScreen({super.key});
@@ -779,7 +780,7 @@ class _InProgressOrderCard extends StatefulWidget {
 
 class _InProgressOrderCardState extends State<_InProgressOrderCard> {
   final ValueNotifier<double> _progressNotifier = ValueNotifier(0.3);
-  final ValueNotifier<int> _timeNotifier = ValueNotifier(900);
+  final ValueNotifier<int> _timeNotifier = ValueNotifier(10);
   late Timer _timer;
 
   @override
@@ -788,7 +789,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_timeNotifier.value > 0) {
         _timeNotifier.value--;
-        _progressNotifier.value = 1.0 - (_timeNotifier.value / 900.0);
+        _progressNotifier.value = 1.0 - (_timeNotifier.value / 500.0);
       } else {
         _timer.cancel();
       }
@@ -830,40 +831,58 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.moped,
-                        color: colorScheme.onPrimaryContainer,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ValueListenableBuilder<double>(
+                  valueListenable: _progressNotifier,
+                  builder: (context, progress, child) {
+                    IconData statusIcon;
+                    String statusText;
+                    if (progress < 0.33) {
+                      statusIcon = Icons.soup_kitchen;
+                      statusText = "Cooking your meal...";
+                    } else if (progress < 0.66) {
+                      statusIcon = Icons.inventory_2;
+                      statusText = "Meal is being packed...";
+                    } else {
+                      statusIcon = Icons.delivery_dining;
+                      statusText = "Out for delivery...";
+                    }
+
+                    return Row(
                       children: [
-                        Text(
-                          "Order #RH-123${widget.index}",
-                          style: textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(
+                            statusIcon,
+                            color: colorScheme.onPrimaryContainer,
+                            size: 20,
                           ),
                         ),
-                        Text(
-                          "Preparing your meal...",
-                          style: textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Order #RH-123${widget.index}",
+                              style: textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              statusText,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
                 Text(
                   "Rs. 450",
@@ -953,69 +972,79 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
               ],
             ),
 
-            // Progress Bar & Timer
-            const SizedBox(height: 8),
-            ValueListenableBuilder<int>(
-              valueListenable: _timeNotifier,
-              builder: (context, secondsRemaining, child) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Progress Bar & Timer (Hidden when tracking starts)
+            ValueListenableBuilder<double>(
+              valueListenable: _progressNotifier,
+              builder: (context, progress, child) {
+                if (progress >= 1.0) return const SizedBox.shrink();
+                return Column(
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          color: colorScheme.primary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Estimated: ${_formatTime(secondsRemaining)}",
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ValueListenableBuilder<double>(
-                      valueListenable: _progressNotifier,
-                      builder: (context, progress, child) {
-                        return Text(
-                          "${(progress * 100).toInt()}%",
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _timeNotifier,
+                      builder: (context, secondsRemaining, child) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.access_time,
+                                  color: colorScheme.primary,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Estimated: ${_formatTime(secondsRemaining)}",
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              "${(progress * 100).toInt()}%",
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         );
                       },
                     ),
+                    const SizedBox(height: 8),
                   ],
                 );
               },
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
+
+            // Three-step Progress Tracker or Live Tracking bar
             ValueListenableBuilder<double>(
               valueListenable: _progressNotifier,
               builder: (context, progress, child) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: colorScheme.primaryContainer.withValues(
-                      alpha: 0.2,
-                    ),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      colorScheme.primary,
-                    ),
-                    minHeight: 8,
-                  ),
-                );
+                if (progress >= 1.0) {
+                  return GestureDetector(
+                    onTap: () => _openTrackingSheet(context),
+                    child: const _LiveTrackingBar(),
+                  );
+                }
+                return _OrderStepProgress(progress: progress);
               },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  void _openTrackingSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _DriverTrackingSheet(),
     );
   }
 
@@ -1051,6 +1080,498 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
           child: Text(price, style: style),
         ),
       ],
+    );
+  }
+}
+
+class _OrderStepProgress extends StatelessWidget {
+  final double progress;
+  const _OrderStepProgress({required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    // Stage 1: Cooking (0.0 - 0.33)
+    double cookingProgress = (progress / 0.33).clamp(0.0, 1.0);
+    // Stage 2: Packed (0.33 - 0.66)
+    double packedProgress = ((progress - 0.33) / 0.33).clamp(0.0, 1.0);
+    // Stage 3: In Route (0.66 - 1.0)
+    double inRouteProgress = ((progress - 0.66) / 0.34).clamp(0.0, 1.0);
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            _ProgressStep(
+              label: "Cooking",
+              icon: Icons.soup_kitchen,
+              progress: cookingProgress,
+              isCompleted: progress > 0.33,
+            ),
+            _ProgressStep(
+              label: "Packed",
+              icon: Icons.inventory_2,
+              progress: packedProgress,
+              isCompleted: progress > 0.66,
+            ),
+            _ProgressStep(
+              label: "In Route",
+              icon: Icons.delivery_dining,
+              progress: inRouteProgress,
+              isCompleted: progress >= 1.0,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ProgressStep extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final double progress;
+  final bool isCompleted;
+
+  const _ProgressStep({
+    required this.label,
+    required this.icon,
+    required this.progress,
+    required this.isCompleted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isActive = progress > 0;
+
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: isCompleted
+                ? Colors.green
+                : (isActive ? colorScheme.primary : Colors.grey.shade400),
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: colorScheme.primaryContainer.withValues(
+                  alpha: 0.1,
+                ),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isCompleted ? Colors.green : colorScheme.primary,
+                ),
+                minHeight: 6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              color: isCompleted
+                  ? Colors.green
+                  : (isActive ? colorScheme.primary : Colors.grey.shade600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveTrackingBar extends StatefulWidget {
+  const _LiveTrackingBar();
+
+  @override
+  State<_LiveTrackingBar> createState() => _LiveTrackingBarState();
+}
+
+class _LiveTrackingBarState extends State<_LiveTrackingBar>
+    with SingleTickerProviderStateMixin {
+  int _currentLocationIndex = 0;
+  final List<String> _locations = [
+    "Driver is at the Restaurant",
+    "Passing through New Road",
+    "Near Civil Mall",
+    "Approaching Narayan Chowk",
+    "Arriving at Your Location",
+    "Arrived! Driver is Waiting",
+  ];
+  late Timer _locTimer;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(
+      begin: 0.1,
+      end: 0.25,
+    ).animate(_pulseController);
+
+    _locTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_currentLocationIndex < _locations.length - 1) {
+        if (mounted) {
+          setState(() {
+            _currentLocationIndex++;
+          });
+        }
+      } else {
+        _locTimer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _locTimer.cancel();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isArrived = _currentLocationIndex == _locations.length - 1;
+
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorScheme.primary.withValues(
+                  alpha: isArrived ? 0.2 : _pulseAnimation.value,
+                ),
+                colorScheme.primary.withValues(alpha: isArrived ? 0.3 : 0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: isArrived
+                  ? Colors.green.withValues(alpha: 0.5)
+                  : colorScheme.primary.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              if (isArrived)
+                BoxShadow(
+                  color: Colors.green.withValues(alpha: 0.2),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+            ],
+          ),
+          child: Row(
+            children: [
+              if (isArrived)
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.7, end: 1.1),
+                  duration: const Duration(seconds: 1),
+                  curve: Curves.elasticOut,
+                  builder: (context, scale, child) {
+                    return Transform.scale(
+                      scale: scale,
+                      child: const Icon(
+                        Icons.shopping_bag,
+                        color: Colors.green,
+                        size: 28,
+                      ),
+                    );
+                  },
+                )
+              else
+                _MovingIcon(color: colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isArrived ? "PLEASE PICK UP!" : "Order Is Being Carried",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: isArrived ? Colors.green.shade700 : null,
+                      ),
+                    ),
+                    Text(
+                      isArrived
+                          ? "The driver is waiting for you"
+                          : _locations[_currentLocationIndex],
+                      style: TextStyle(
+                        color: isArrived
+                            ? Colors.green.shade600
+                            : colorScheme.primary,
+                        fontSize: 11,
+                        fontWeight: isArrived ? FontWeight.w500 : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isArrived)
+                const _BlinkingIcon(icon: Icons.hail, color: Colors.green)
+              else
+                const Icon(Icons.map_outlined, color: Colors.grey, size: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MovingIcon extends StatefulWidget {
+  final Color color;
+  const _MovingIcon({required this.color});
+
+  @override
+  State<_MovingIcon> createState() => _MovingIconState();
+}
+
+class _MovingIconState extends State<_MovingIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _move;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat();
+    _move = Tween<double>(begin: -2.0, end: 2.0).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _move,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_move.value, 0),
+          child: Icon(Icons.delivery_dining, color: widget.color, size: 24),
+        );
+      },
+    );
+  }
+}
+
+class _BlinkingIcon extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  const _BlinkingIcon({required this.icon, required this.color});
+
+  @override
+  State<_BlinkingIcon> createState() => _BlinkingIconState();
+}
+
+class _BlinkingIconState extends State<_BlinkingIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _ctrl,
+      child: Icon(widget.icon, color: widget.color),
+    );
+  }
+}
+
+class _DriverTrackingSheet extends StatefulWidget {
+  const _DriverTrackingSheet();
+
+  @override
+  State<_DriverTrackingSheet> createState() => _DriverTrackingSheetState();
+}
+
+class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
+  GoogleMapController? _controller;
+  late Timer _markerTimer;
+
+  // Mock coordinates for Nepal (Kathmandu area)
+  static const LatLng _restaurantLoc = LatLng(27.700769, 85.300140);
+  static const LatLng _deliveryLoc = LatLng(27.7172, 85.3240); // Destination
+
+  LatLng _driverLoc = _restaurantLoc;
+  int _step = 0;
+  final int _totalSteps = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _markerTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (_step < _totalSteps) {
+        if (mounted) {
+          setState(() {
+            _step++;
+            // Interpolate position
+            double lat =
+                _restaurantLoc.latitude +
+                (_deliveryLoc.latitude - _restaurantLoc.latitude) *
+                    (_step / _totalSteps);
+            double lng =
+                _restaurantLoc.longitude +
+                (_deliveryLoc.longitude - _restaurantLoc.longitude) *
+                    (_step / _totalSteps);
+            _driverLoc = LatLng(lat, lng);
+          });
+          _controller?.animateCamera(CameraUpdate.newLatLng(_driverLoc));
+        }
+      } else {
+        _markerTimer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _markerTimer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.8,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+        child: Stack(
+          children: [
+            GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: _driverLoc,
+                zoom: 15,
+              ),
+              onMapCreated: (controller) => _controller = controller,
+              markers: {
+                Marker(
+                  markerId: const MarkerId('restaurant'),
+                  position: _restaurantLoc,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueOrange,
+                  ),
+                  infoWindow: const InfoWindow(title: 'Restaurant'),
+                ),
+                Marker(
+                  markerId: const MarkerId('delivery'),
+                  position: _deliveryLoc,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueAzure,
+                  ),
+                  infoWindow: const InfoWindow(title: 'Delivery Location'),
+                ),
+                Marker(
+                  markerId: const MarkerId('driver'),
+                  position: _driverLoc,
+                  icon: BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueRed,
+                  ),
+                  infoWindow: const InfoWindow(title: 'Driver'),
+                ),
+              },
+              // TODO: Add Google Maps API key in AndroidManifest.xml and AppDelegate.swift
+            ),
+            Positioned(
+              top: 20,
+              right: 20,
+              child: FloatingActionButton.small(
+                onPressed: () => Navigator.pop(context),
+                child: const Icon(Icons.close),
+              ),
+            ),
+            Positioned(
+              bottom: 40,
+              left: 20,
+              right: 20,
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.delivery_dining,
+                        size: 40,
+                        color: Colors.orange,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Driver is on the way",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              _step == _totalSteps
+                                  ? "Arrived!"
+                                  : "Estimated time: ${(_totalSteps - _step) * 2} mins",
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
