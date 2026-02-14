@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
+import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 
 class splashScreen extends StatefulWidget {
@@ -164,136 +165,189 @@ class _splashScreenState extends State<splashScreen>
   }
 
   Widget _buildLoader() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [blackColor, darkGreyColor, blackColor],
+    return Stack(
+      children: [
+        // Aesthetic Background Image
+        Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(
+                'assets/splashScreen/splashScreenBeginning.avif',
+              ),
+              fit: BoxFit.cover,
+            ),
+          ),
         ),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Animated Icon with Gold Ring
-            AnimatedBuilder(
-              animation: Listenable.merge([_iconController, _pulseController]),
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: _scaleAnimation.value,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Pulsing outer ring
-                      Transform.scale(
-                        scale: _pulseAnimation.value,
-                        child: Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: goldColor.withValues(alpha: .3),
-                              width: 2,
+        // Darkened Overlay for Contrast
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.7),
+                Colors.black.withValues(alpha: 0.5),
+                Colors.black.withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+        ),
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated Icon with Premium Glassmorphism Effect
+              AnimatedBuilder(
+                animation: Listenable.merge([
+                  _iconController,
+                  _pulseController,
+                ]),
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Pulsing outer ring
+                        Transform.scale(
+                          scale: _pulseAnimation.value,
+                          child: Container(
+                            width: 180,
+                            height: 180,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: goldColor.withValues(alpha: 0.2),
+                                width: 1,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      // Main icon container
-                      Transform.rotate(
-                        angle: _rotationAnimation.value,
-                        child: Container(
-                          width: 130,
-                          height: 130,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [goldColor, darkGoldColor],
+                        // Glassmorphism background for the logo
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(100),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(
+                              width: 140,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withValues(alpha: 0.1),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  width: 1.5,
+                                ),
+                              ),
                             ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: goldColor.withValues(alpha: .5),
-                                blurRadius: 30,
-                                spreadRadius: 10,
-                              ),
-                              const BoxShadow(
-                                color: Colors.black54,
-                                blurRadius: 20,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.restaurant_menu,
-                            size: 65,
-                            color: blackColor,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 40),
-
-            // App Name
-            Text(
-              'Restro Hub',
-              style: GoogleFonts.playfairDisplay(
-                fontSize: 42,
-                fontWeight: FontWeight.bold,
-                color: goldColor,
-                letterSpacing: 3,
+                        // Main icon container
+                        Transform.rotate(
+                          angle: _rotationAnimation.value,
+                          child: Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [goldColor, darkGoldColor],
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: goldColor.withValues(alpha: 0.6),
+                                  blurRadius: 40,
+                                  spreadRadius: 5,
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 20,
+                                  offset: const Offset(10, 10),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.restaurant_menu,
+                              size: 55,
+                              color: blackColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 50),
 
-            Text(
-              'PREMIUM DINING EXPERIENCE',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: goldColor.withValues(alpha: .7),
-                letterSpacing: 4,
-                fontWeight: FontWeight.w300,
+              // App Name with richer styling
+              Text(
+                'Restro Hub',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  color: goldColor,
+                  letterSpacing: 4,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      offset: const Offset(2, 2),
+                      blurRadius: 10,
+                    ),
+                    Shadow(
+                      color: goldColor.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 60),
+              const SizedBox(height: 12),
 
-            // Loading indicator
-            if (!_imagesLoaded)
-              Column(
-                children: [
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        goldColor.withValues(alpha: .8),
+              Text(
+                'PREMIUM DINING EXPERIENCE',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.6),
+                  letterSpacing: 5,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+
+              const SizedBox(height: 80),
+
+              // Loading indicator
+              if (!_imagesLoaded)
+                Column(
+                  children: [
+                    SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          goldColor.withValues(alpha: 0.8),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Preparing your experience...',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: goldColor.withValues(alpha: .6),
-                      letterSpacing: 1,
+                    const SizedBox(height: 20),
+                    Text(
+                      'Preparing your experience...',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.4),
+                        letterSpacing: 1.5,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-          ],
+                  ],
+                ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

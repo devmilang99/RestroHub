@@ -22,12 +22,16 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
       title: 'Storage Access',
       description: 'Needed to save your receipts and download digital menus.',
       icon: Icons.folder_open_rounded,
+      imageUrl:
+          'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
     ),
     PermissionItem(
       permission: Permission.location,
       title: 'Smart Location',
       description: 'Helps us find the nearest culinary gems around you.',
       icon: Icons.location_on_rounded,
+      imageUrl:
+          'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
     ),
     PermissionItem(
       permission: Permission.contacts,
@@ -35,6 +39,8 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
       description:
           'Invite and share your favorite meals with friends effortlessly.',
       icon: Icons.people_alt_rounded,
+      imageUrl:
+          'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop',
     ),
   ];
 
@@ -72,6 +78,25 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     )..repeat();
 
     _animationController.forward();
+    _checkInitialPermissions();
+  }
+
+  Future<void> _checkInitialPermissions() async {
+    List<PermissionItem> grantedOnes = [];
+    for (var item in _permissions) {
+      if (await item.permission.isGranted) {
+        grantedOnes.add(item);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _permissions.removeWhere((p) => grantedOnes.contains(p));
+        if (_permissions.isEmpty) {
+          _showThemeSelection = true;
+        }
+      });
+    }
   }
 
   @override
@@ -250,36 +275,65 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
   }
 
   Widget _buildAestheticBackground() {
-    return AnimatedBuilder(
-      animation: _bgAnimationController,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                HSLColor.fromAHSL(
-                  1,
-                  (_bgAnimationController.value * 360),
-                  0.4,
-                  0.1,
-                ).toColor(),
-                HSLColor.fromAHSL(
-                  1,
-                  ((_bgAnimationController.value * 360) + 180) % 360,
-                  0.4,
-                  0.05,
-                ).toColor(),
-              ],
+    String? currentImageUrl;
+    if (!_showThemeSelection && _permissions.isNotEmpty) {
+      currentImageUrl = _permissions[_currentIndex].imageUrl;
+    }
+
+    return Stack(
+      children: [
+        // Base Dynamic Gradient
+        AnimatedBuilder(
+          animation: _bgAnimationController,
+          builder: (context, child) {
+            return Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    HSLColor.fromAHSL(
+                      1,
+                      (_bgAnimationController.value * 360),
+                      0.4,
+                      0.1,
+                    ).toColor(),
+                    HSLColor.fromAHSL(
+                      1,
+                      ((_bgAnimationController.value * 360) + 180) % 360,
+                      0.4,
+                      0.05,
+                    ).toColor(),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        // Aesthetic Image Background with Cross-fade logic (simplified with AnimatedSwitcher if needed, but here basic)
+        if (currentImageUrl != null)
+          AnimatedSwitcher(
+            duration: const Duration(seconds: 1),
+            child: Container(
+              key: ValueKey(currentImageUrl),
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(currentImageUrl),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withValues(alpha: 0.6),
+                    BlendMode.darken,
+                  ),
+                ),
+              ),
             ),
           ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
-            child: Container(color: Colors.black.withValues(alpha: 0.4)),
-          ),
-        );
-      },
+        // Blur Effect
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(color: Colors.black.withValues(alpha: 0.3)),
+        ),
+      ],
     );
   }
 
@@ -388,7 +442,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.indigo : Colors.amber).withValues(alpha: 0.2),
+                color: (isDark ? Colors.indigo : Colors.amber).withValues(
+                  alpha: 0.2,
+                ),
                 blurRadius: 30,
               ),
             ],
@@ -558,11 +614,13 @@ class PermissionItem {
   final String title;
   final String description;
   final IconData icon;
+  final String imageUrl;
 
   PermissionItem({
     required this.permission,
     required this.title,
     required this.description,
     required this.icon,
+    required this.imageUrl,
   });
 }
