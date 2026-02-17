@@ -7,8 +7,9 @@ import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:restro_hub/core/providers/cart_provider.dart';
 import 'package:restro_hub/core/providers/favourites_provider.dart';
+import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
-
 import 'package:restro_hub/login/screens/Orders/orders_screen.dart';
 import 'package:restro_hub/core/models/cuisines_item.dart';
 import 'package:restro_hub/core/data/mock_data.dart';
@@ -23,6 +24,26 @@ class MainDashBoard extends ConsumerStatefulWidget {
 
 class _MainDashBoardState extends ConsumerState<MainDashBoard> {
   int _currentIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+  bool _showBackToTop = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 400 && !_showBackToTop) {
+        setState(() => _showBackToTop = true);
+      } else if (_scrollController.offset <= 400 && _showBackToTop) {
+        setState(() => _showBackToTop = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +71,21 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
       },
       child: Scaffold(
         backgroundColor: colorScheme.surface,
+        floatingActionButton: _currentIndex == 0 && _showBackToTop
+            ? FloatingActionButton(
+                mini: true,
+                onPressed: () {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                  );
+                },
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                child: const Icon(Icons.keyboard_arrow_up),
+              )
+            : null,
         drawer: Drawer(
           child: Column(
             children: [
@@ -156,10 +192,11 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
 
   Widget _buildHomeView(BuildContext context, ColorScheme colorScheme) {
     return CustomScrollView(
+      controller: _scrollController,
       slivers: [
         SliverAppBar(
           floating: true,
-          pinned: true,
+          pinned: false, // The app bar hides when scrolling
           backgroundColor: colorScheme.surface,
           expandedHeight: 140,
           elevation: 0,
@@ -298,6 +335,37 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           displayCount: 5,
           seeAll: true,
         ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40.0),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.restaurant,
+                  color: colorScheme.primary.withValues(alpha: 0.2),
+                  size: 40,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "You've explored the best of Restro Hub!",
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Time to order something delicious!",
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.3),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 100)),
       ],
     );
   }
@@ -475,16 +543,31 @@ class RestaurantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: width,
       child: GestureDetector(
         onTap: () {
           onClick();
         },
-        child: Card(
-          margin: const EdgeInsets.only(right: 16, bottom: 16),
-          shape: RoundedRectangleBorder(
+        child: Container(
+          margin: const EdgeInsets.only(right: 16, bottom: 25),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
+                spreadRadius: -10,
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -496,6 +579,16 @@ class RestaurantCard extends StatelessWidget {
                 width: double.infinity,
                 fit: BoxFit.cover,
                 cacheWidth: 800, // Downscale for performance
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                  if (wasSynchronouslyLoaded) return child;
+                  return frame != null
+                      ? child
+                      : const ShimmerPlaceholder(
+                          width: double.infinity,
+                          height: 160,
+                          borderRadius: 0,
+                        );
+                },
               ),
               Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -579,10 +672,13 @@ class CircularRestaurantCard extends StatelessWidget {
               imageUrl: 'https://picsum.photos/seed/${index + 200}/100/100',
               imageBuilder: (context, imageProvider) =>
                   CircleAvatar(radius: radius, backgroundImage: imageProvider),
-              placeholder: (context, url) => CircleAvatar(
-                radius: radius,
-                backgroundColor: Colors.grey[200],
-                child: const Icon(Icons.restaurant, color: Colors.grey),
+              placeholder: (context, url) => Shimmer.fromColors(
+                baseColor: Colors.grey[300]!,
+                highlightColor: Colors.grey[100]!,
+                child: CircleAvatar(
+                  radius: radius,
+                  backgroundColor: Colors.white,
+                ),
               ),
               errorWidget: (context, url, error) => CircleAvatar(
                 radius: radius,

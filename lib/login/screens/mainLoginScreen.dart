@@ -560,28 +560,52 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                     children: [
                                       InkWell(
                                         onTap: () async {
-                                          final fb.User? firebaseUser =
-                                              await _googleAuthService.signIn();
+                                          LoadingDialog.show(
+                                            context,
+                                            message: 'Connecting to Google...',
+                                          );
+                                          try {
+                                            final fb.User? firebaseUser =
+                                                await _googleAuthService
+                                                    .signIn();
 
-                                          if (firebaseUser != null) {
-                                            if (mounted) {
-                                              context.goNamed(
-                                                'mainDashBoard',
-                                                extra: User(
-                                                  email:
-                                                      firebaseUser.email ?? '',
-                                                  password: 'GOOGLE_AUTH_USER',
-                                                ),
-                                              );
+                                            if (firebaseUser != null) {
+                                              if (mounted) {
+                                                LoadingDialog.hide(context);
+                                                context.goNamed(
+                                                  'mainDashBoard',
+                                                  extra: User(
+                                                    email:
+                                                        firebaseUser.email ??
+                                                        '',
+                                                    password:
+                                                        'GOOGLE_AUTH_USER',
+                                                  ),
+                                                );
+                                              }
+                                            } else {
+                                              if (mounted) {
+                                                LoadingDialog.hide(context);
+                                                ScaffoldMessenger.of(
+                                                  context,
+                                                ).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Google Sign-In failed or cancelled.',
+                                                    ),
+                                                  ),
+                                                );
+                                              }
                                             }
-                                          } else {
+                                          } catch (e) {
                                             if (mounted) {
+                                              LoadingDialog.hide(context);
                                               ScaffoldMessenger.of(
                                                 context,
                                               ).showSnackBar(
-                                                const SnackBar(
+                                                SnackBar(
                                                   content: Text(
-                                                    'Google Sign-In failed or cancelled.',
+                                                    'Error: ${e.toString()}',
                                                   ),
                                                 ),
                                               );

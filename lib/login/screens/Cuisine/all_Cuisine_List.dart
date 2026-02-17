@@ -6,6 +6,7 @@ import 'package:restro_hub/core/models/cuisines_item.dart';
 import 'package:restro_hub/core/providers/favourites_provider.dart';
 import 'package:restro_hub/core/providers/cart_provider.dart';
 import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
+import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 
 class AllCousineList extends ConsumerStatefulWidget {
   final String title;
@@ -23,6 +24,8 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
   double _maxPrice = 3000.0;
   double _minRating = 0.0;
   String _selectedLocation = "All";
+  final ScrollController _scrollController = ScrollController();
+  bool _showBackToTop = false;
 
   @override
   void initState() {
@@ -32,11 +35,19 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
         _query = _searchController.text;
       });
     });
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 400 && !_showBackToTop) {
+        setState(() => _showBackToTop = true);
+      } else if (_scrollController.offset <= 400 && _showBackToTop) {
+        setState(() => _showBackToTop = false);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -56,10 +67,7 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
 
   void _showFilterSheet() {
     final colorScheme = context.colorScheme;
-    final locations = [
-      "All",
-      ...widget.items.map((e) => e.location).toSet().toList(),
-    ];
+    final locations = ["All", ...widget.items.map((e) => e.location).toSet()];
 
     showModalBottomSheet(
       context: context,
@@ -103,9 +111,16 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  const Text(
-                    "Max Price",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Max Price",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+
+                      Text("Rs. ${_maxPrice.toInt()}"),
+                    ],
                   ),
                   Slider(
                     value: _maxPrice,
@@ -117,6 +132,7 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
                       setModalState(() => _maxPrice = value);
                     },
                   ),
+
                   const SizedBox(height: 16),
                   const Text(
                     "Minimum Rating",
@@ -191,51 +207,128 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (_showBackToTop)
+            FloatingActionButton(
+              mini: true,
+              onPressed: () {
+                _scrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                );
+              },
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              child: const Icon(Icons.keyboard_arrow_up),
+            ),
+          const SizedBox(height: 12),
+          if (totalItems > 0)
+            FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const CartBottomSheet(),
+                );
+              },
+              label: Text("$totalItems items"),
+              icon: const Icon(Icons.shopping_cart),
+            ),
+        ],
+      ),
       body: CustomScrollView(
+        controller: _scrollController,
         slivers: [
           SliverAppBar(
-            floating: true,
+            expandedHeight: 250.0,
+            floating: false,
             pinned: true,
-            expandedHeight: 120,
+            stretch: true,
             backgroundColor: colorScheme.surface,
-            title: Text(widget.title),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(70),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: "Search in ${widget.title}",
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: colorScheme.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(15),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.tune,
-                          color: colorScheme.onPrimaryContainer,
-                        ),
-                        onPressed: _showFilterSheet,
-                      ),
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.white.withValues(alpha: 0.8),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                widget.title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 10,
                     ),
                   ],
                 ),
+              ),
+              centerTitle: true,
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(widget.items.first.image, fit: BoxFit.cover),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.7),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: "Search in ${widget.title}",
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: colorScheme.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.tune,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                      onPressed: _showFilterSheet,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -264,22 +357,39 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
             )
           else
             ExploreItemsMainCard(items: filtered),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40.0),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.restaurant,
+                    color: colorScheme.primary.withValues(alpha: 0.2),
+                    size: 40,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "You've reached the end of the list",
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withValues(alpha: 0.4),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Time to order something delicious!",
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withValues(alpha: 0.3),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
-      floatingActionButton: totalItems > 0
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => const CartBottomSheet(),
-                );
-              },
-              label: Text("$totalItems items"),
-              icon: const Icon(Icons.shopping_cart),
-            )
-          : null,
     );
   }
 }
@@ -325,9 +435,16 @@ class ExploreItemsList extends ConsumerWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 35,
+              offset: const Offset(0, 15),
+              spreadRadius: -8,
+            ),
+            BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 5),
+              spreadRadius: 2,
             ),
           ],
         ),
@@ -347,6 +464,16 @@ class ExploreItemsList extends ConsumerWidget {
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
+                      frameBuilder:
+                          (context, child, frame, wasSynchronouslyLoaded) {
+                            if (wasSynchronouslyLoaded) return child;
+                            return frame != null
+                                ? child
+                                : const ShimmerPlaceholder(
+                                    width: double.infinity,
+                                    height: 180,
+                                  );
+                          },
                     ),
                   ),
                 ),

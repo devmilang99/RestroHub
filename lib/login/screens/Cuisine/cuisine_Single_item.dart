@@ -3,6 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/models/cuisines_item.dart';
 import 'package:restro_hub/core/providers/favourites_provider.dart';
+import 'package:restro_hub/core/providers/cart_provider.dart';
+import 'package:restro_hub/core/models/cart_item.dart';
+import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+
+import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 
 class CuisineSingleItem extends ConsumerWidget {
   final CuisinesItem item;
@@ -61,7 +68,20 @@ class CuisineSingleItem extends ConsumerWidget {
               ],
               background: Hero(
                 tag: item.name,
-                child: Image.asset(item.image, fit: BoxFit.cover),
+                child: Image.asset(
+                  item.image,
+                  fit: BoxFit.cover,
+                  frameBuilder:
+                      (context, child, frame, wasSynchronouslyLoaded) {
+                        if (wasSynchronouslyLoaded) return child;
+                        return frame != null
+                            ? child
+                            : const ShimmerPlaceholder(
+                                width: double.infinity,
+                                height: 350,
+                              );
+                      },
+                ),
               ),
             ),
           ),
@@ -138,20 +158,48 @@ class CuisineSingleItem extends ConsumerWidget {
                     spacing: 12,
                     runSpacing: 12,
                     children: item.ingredients.map((ingredient) {
+                      IconData getIcon(String name) {
+                        name = name.toLowerCase();
+                        if (name.contains('rice')) return Icons.rice_bowl;
+                        if (name.contains('spices')) return Icons.set_meal;
+                        if (name.contains('oil')) return Icons.opacity;
+                        if (name.contains('vegetable'))
+                          return Icons.bakery_dining;
+                        if (name.contains('chicken')) return Icons.restaurant;
+                        if (name.contains('onion')) return Icons.circle;
+                        if (name.contains('garlic')) return Icons.bubble_chart;
+                        return Icons.check_circle_outline;
+                      }
+
                       return Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                          horizontal: 14,
+                          vertical: 10,
                         ),
                         decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerHighest.withValues(
-                            alpha: 0.5,
+                          color: colorScheme.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.2),
                           ),
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          ingredient,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              getIcon(ingredient),
+                              size: 18,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              ingredient,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     }).toList(),
@@ -162,51 +210,141 @@ class CuisineSingleItem extends ConsumerWidget {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  ...item.comments.map((comment) {
+                  ...item.comments.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final comment = entry.value;
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.3,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                         border: Border.all(
                           color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
+                            alpha: 0.3,
                           ),
                         ),
                       ),
-                      child: Row(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const CircleAvatar(
-                            radius: 18,
-                            backgroundImage: NetworkImage(
-                              'https://i.pravatar.cc/100',
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  "Happy Foodie",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  comment,
-                                  style: TextStyle(
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.8,
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.2,
                                     ),
+                                    width: 2,
                                   ),
                                 ),
-                              ],
+                                child: CachedNetworkImage(
+                                  imageUrl:
+                                      'https://i.pravatar.cc/150?u=$index',
+                                  imageBuilder: (context, imageProvider) =>
+                                      CircleAvatar(
+                                        radius: 28,
+                                        backgroundImage: imageProvider,
+                                      ),
+                                  placeholder: (context, url) =>
+                                      Shimmer.fromColors(
+                                        baseColor: Colors.grey[300]!,
+                                        highlightColor: Colors.grey[100]!,
+                                        child: const CircleAvatar(
+                                          radius: 28,
+                                          backgroundColor: Colors.white,
+                                        ),
+                                      ),
+                                  errorWidget: (context, url, error) =>
+                                      const CircleAvatar(
+                                        radius: 28,
+                                        child: Icon(Icons.person),
+                                      ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "User ${index + 1}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 17,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "Feb 17, 2026 • 09:30 PM",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colorScheme.onSurface.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Row(
+                                children: List.generate(
+                                  5,
+                                  (i) => Icon(
+                                    Icons.star,
+                                    size: 16,
+                                    color: i < 4
+                                        ? Colors.amber
+                                        : Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            comment,
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.8,
+                              ),
+                              height: 1.5,
                             ),
                           ),
+                          const SizedBox(height: 12),
+                          if (index % 2 == 0) // Mock some reviews with images
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: CachedNetworkImage(
+                                imageUrl:
+                                    'https://picsum.photos/seed/food$index/400/200',
+                                height: 150,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) =>
+                                    const ShimmerPlaceholder(
+                                      width: double.infinity,
+                                      height: 150,
+                                      borderRadius: 15,
+                                    ),
+                                errorWidget: (context, url, error) => Container(
+                                  height: 150,
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.error),
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     );
@@ -253,7 +391,36 @@ class CuisineSingleItem extends ConsumerWidget {
             const SizedBox(width: 24),
             Expanded(
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  ref
+                      .read(cartProvider.notifier)
+                      .addItem(
+                        CartItem(
+                          name: item.name,
+                          image: item.image,
+                          price: item.price,
+                          quantity: 1,
+                        ),
+                      );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("${item.name} added to cart!"),
+                      duration: const Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                      action: SnackBarAction(
+                        label: "View Cart",
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => const CartBottomSheet(),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
