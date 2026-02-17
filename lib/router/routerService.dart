@@ -9,6 +9,7 @@ import 'package:restro_hub/login/screens/mainLoginScreen.dart';
 import 'package:restro_hub/login/model/User.dart';
 import 'package:restro_hub/login/screens/register.dart';
 import 'package:restro_hub/login/screens/mainDashBoard/mainDashboard.dart';
+import 'package:restro_hub/core/models/cuisines_item.dart';
 import 'package:restro_hub/splashScreen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
 
@@ -59,15 +60,21 @@ class RouterService {
       GoRoute(
         path: '/allCouisineList',
         name: "allCouisineList",
-        builder: (context, state) => const AllCousineList(),
+        builder: (context, state) {
+          final extras = state.extra as Map<String, dynamic>;
+          return AllCousineList(
+            title: extras['title'] as String,
+            items: extras['items'] as List<CuisinesItem>,
+          );
+        },
       ),
 
       GoRoute(
-        path: '/cuisineSingleItem/:id',
+        path: '/cuisineSingleItem',
         name: "cuisineSingleItem",
         builder: (context, state) {
-          final id = state.pathParameters['id'];
-          return CuisineSingleItem(id: id!);
+          final item = state.extra as CuisinesItem;
+          return CuisineSingleItem(item: item);
         },
       ),
 

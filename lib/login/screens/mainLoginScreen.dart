@@ -190,7 +190,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Text(
-                                    'Welcome Back',
+                                    'Welcome',
                                     style: GoogleFonts.poppins(
                                       fontSize: 24,
                                       fontWeight: FontWeight.bold,

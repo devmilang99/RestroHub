@@ -6,9 +6,12 @@ import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:restro_hub/core/providers/cart_provider.dart';
+import 'package:restro_hub/core/providers/favourites_provider.dart';
 import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
 
 import 'package:restro_hub/login/screens/Orders/orders_screen.dart';
+import 'package:restro_hub/core/models/cuisines_item.dart';
+import 'package:restro_hub/core/data/mock_data.dart';
 
 class MainDashBoard extends ConsumerStatefulWidget {
   final User? user;
@@ -213,7 +216,8 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
             ),
             IconButton(
               icon: Badge(
-                label: const Text("1"),
+                label: Text(ref.watch(favouritesProvider).length.toString()),
+                isLabelVisible: ref.watch(favouritesProvider).isNotEmpty,
                 child: Icon(Icons.favorite, color: colorScheme.onSurface),
               ),
               onPressed: () {
@@ -257,7 +261,8 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           headingTitle: 'Explore by Cuisine',
           isHorizontal: true,
           isCircular: true,
-          items: cuisines,
+          items: cuisines, // Pass full list
+          displayCount: 5, // Only show 5
           seeAll: true,
         ),
 
@@ -269,6 +274,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           offerPercent: "20%",
           rating: "4.5",
           items: latestOffers,
+          displayCount: 5,
           seeAll: true,
         ),
 
@@ -277,18 +283,8 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           isHorizontal: true,
           isCircular: true,
           items: restaurants,
+          displayCount: 5,
           seeAll: true,
-        ),
-
-        SliverVerticalCards(
-          headingTitle: 'Favourites',
-          isHorizontal: true,
-          isCircular: false,
-          items: restaurants,
-          seeAll: true,
-          hasOffer: true,
-          offerPercent: "20%",
-          rating: "4.5",
         ),
 
         SliverVerticalCards(
@@ -298,41 +294,14 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           isCircular: false,
           offerPercent: "80%",
           rating: "4.5",
-          items: latestOffers,
+          items: topRated,
+          displayCount: 5,
           seeAll: true,
         ),
       ],
     );
   }
 }
-
-// Mock Data for demonstration
-final List<Map<String, String>> cuisines = [
-  {'name': 'Italian', 'image': 'assets/food1.webp'},
-  {'name': 'Chinese', 'image': 'assets/food2.webp'},
-  {'name': 'Mexican', 'image': 'assets/food3.webp'},
-  {'name': 'Indian', 'image': 'assets/food4.webp'},
-  {'name': 'Thai', 'image': 'assets/food5.webp'},
-  {'name': 'Burger', 'image': 'assets/food6.webp'},
-];
-
-final List<Map<String, String>> latestOffers = [
-  {'name': 'Italian 1', 'image': 'assets/food1.webp'},
-  {'name': 'Chinese 2', 'image': 'assets/food2.webp'},
-  {'name': 'Mexican 3', 'image': 'assets/food3.webp'},
-  {'name': 'Indian 4', 'image': 'assets/food4.webp'},
-  {'name': 'Thai 5', 'image': 'assets/food5.webp'},
-  {'name': 'Burger 6', 'image': 'assets/food6.webp'},
-];
-
-final List<Map<String, String>> restaurants = [
-  {'name': 'RoadSide D. Cafe', 'image': 'assets/food1.webp'},
-  {'name': 'Airakan', 'image': 'assets/food2.webp'},
-  {'name': 'Tasty Heaven', 'image': 'assets/food3.webp'},
-  {'name': 'Thamel Restro', 'image': 'assets/food4.webp'},
-  {'name': 'Unique Hub', 'image': 'assets/food5.webp'},
-  {'name': 'A1 Cafe', 'image': 'assets/food6.webp'},
-];
 
 class SliverVerticalCards extends StatelessWidget {
   final String headingTitle;
@@ -342,7 +311,8 @@ class SliverVerticalCards extends StatelessWidget {
   final String offerPercent;
   final String rating;
   final bool seeAll;
-  final List<Map<String, String>> items;
+  final List<CuisinesItem> items;
+  final int? displayCount;
 
   const SliverVerticalCards({
     super.key,
@@ -354,10 +324,14 @@ class SliverVerticalCards extends StatelessWidget {
     this.rating = "",
     this.seeAll = false,
     required this.items,
+    this.displayCount,
   });
 
   @override
   Widget build(BuildContext context) {
+    final displayItems = displayCount != null
+        ? items.take(displayCount!).toList()
+        : items;
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverMainAxisGroup(
@@ -380,7 +354,10 @@ class SliverVerticalCards extends StatelessWidget {
                     child: TextButton(
                       key: Key(headingTitle),
                       onPressed: () {
-                        context.pushNamed("allCouisineList");
+                        context.pushNamed(
+                          "allCouisineList",
+                          extra: {'title': headingTitle, 'items': items},
+                        );
                       },
                       child: const Text("See All"),
                     ),
@@ -396,13 +373,16 @@ class SliverVerticalCards extends StatelessWidget {
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.all(8.0),
-                  itemCount: items.length,
+                  itemCount: displayItems.length,
                   itemBuilder: (context, index) {
                     return CircularRestaurantCard(
                       onClick: () {
-                        context.pushNamed("cuisineSingleItem");
+                        context.pushNamed(
+                          "cuisineSingleItem",
+                          extra: displayItems[index],
+                        );
                       },
-                      name: items[index]['name']!,
+                      name: displayItems[index].name,
                       index: index,
                       radius: 40,
                     );
@@ -416,19 +396,26 @@ class SliverVerticalCards extends StatelessWidget {
                 height: 250,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: items.length,
+                  itemCount: displayItems.length,
                   itemBuilder: (context, index) {
                     return RestaurantCard(
                       onClick: () {
-                        context.pushNamed("cuisineSingleItem");
+                        context.pushNamed(
+                          "cuisineSingleItem",
+                          extra: displayItems[index],
+                        );
                       },
-                      name: items[index]['name']!,
+                      name: displayItems[index].name,
                       index: index,
                       hasOffer: hasOffer,
-                      offerPercent: offerPercent,
-                      rating: rating,
+                      offerPercent: displayItems[index].offerPercent.isNotEmpty
+                          ? displayItems[index].offerPercent
+                          : offerPercent,
+                      rating: displayItems[index].rating.isNotEmpty
+                          ? displayItems[index].rating
+                          : rating,
                       width: 200,
-                      image: items[index]['image']!,
+                      image: displayItems[index].image,
                     );
                   },
                 ),
@@ -439,17 +426,24 @@ class SliverVerticalCards extends StatelessWidget {
               delegate: SliverChildBuilderDelegate((context, index) {
                 return RestaurantCard(
                   onClick: () {
-                    context.pushNamed("cuisineSingleItem");
+                    context.pushNamed(
+                      "cuisineSingleItem",
+                      extra: displayItems[index],
+                    );
                   },
-                  name: items[index]['name']!,
+                  name: displayItems[index].name,
                   index: index,
                   hasOffer: hasOffer,
-                  offerPercent: offerPercent,
-                  rating: rating,
+                  offerPercent: displayItems[index].offerPercent.isNotEmpty
+                      ? displayItems[index].offerPercent
+                      : offerPercent,
+                  rating: displayItems[index].rating.isNotEmpty
+                      ? displayItems[index].rating
+                      : rating,
                   width: double.infinity,
-                  image: items[index]['image']!,
+                  image: displayItems[index].image,
                 );
-              }, childCount: items.length),
+              }, childCount: displayItems.length),
             ),
         ],
       ),
