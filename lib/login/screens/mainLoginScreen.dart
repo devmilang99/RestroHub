@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
+import 'package:restro_hub/core/widgets/loading_dialog.dart';
 
 class MainLoginScreen extends ConsumerStatefulWidget {
   const MainLoginScreen({super.key});
@@ -38,7 +39,6 @@ class _LoginCardState extends ConsumerState<LoginCard>
   final passwordController = TextEditingController();
   final GoogleAuthService _googleAuthService = GoogleAuthService();
   final FirebaseAuthService _firebaseAuthService = FirebaseAuthService();
-  bool _isLoginLoading = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -397,61 +397,55 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                   SizedBox(
                                     height: 54,
                                     child: ElevatedButton(
-                                      onPressed: _isLoginLoading
-                                          ? null
-                                          : () async {
-                                              if (loginFormKey.currentState!
-                                                  .validate()) {
-                                                setState(
-                                                  () => _isLoginLoading = true,
-                                                );
-                                                try {
-                                                  final user =
-                                                      await _firebaseAuthService
-                                                          .signInWithEmailAndPassword(
-                                                            emailController.text
-                                                                .trim(),
-                                                            passwordController
-                                                                .text,
-                                                          );
+                                      onPressed: () async {
+                                        if (loginFormKey.currentState!
+                                            .validate()) {
+                                          LoadingDialog.show(
+                                            context,
+                                            message: 'Signing in...',
+                                          );
+                                          try {
+                                            final user =
+                                                await _firebaseAuthService
+                                                    .signInWithEmailAndPassword(
+                                                      emailController.text
+                                                          .trim(),
+                                                      passwordController.text,
+                                                    );
 
-                                                  if (user != null && mounted) {
-                                                    context.goNamed(
-                                                      'mainDashBoard',
-                                                      extra: User(
-                                                        email: user.email ?? '',
-                                                        password:
-                                                            'FIREBASE_AUTH',
-                                                      ),
-                                                    );
-                                                  }
-                                                } on fb.FirebaseAuthException catch (
-                                                  e
-                                                ) {
-                                                  if (mounted) {
-                                                    ScaffoldMessenger.of(
-                                                      context,
-                                                    ).showSnackBar(
-                                                      SnackBar(
-                                                        content: Text(
-                                                          e.message ??
-                                                              'Login failed',
-                                                        ),
-                                                        backgroundColor:
-                                                            Colors.red,
-                                                      ),
-                                                    );
-                                                  }
-                                                } finally {
-                                                  if (mounted) {
-                                                    setState(
-                                                      () => _isLoginLoading =
-                                                          false,
-                                                    );
-                                                  }
-                                                }
-                                              }
-                                            },
+                                            if (user != null && mounted) {
+                                              LoadingDialog.hide(context);
+                                              context.goNamed(
+                                                'mainDashBoard',
+                                                extra: User(
+                                                  email: user.email ?? '',
+                                                  password: 'FIREBASE_AUTH',
+                                                ),
+                                              );
+                                            }
+                                          } on fb.FirebaseAuthException catch (
+                                            e
+                                          ) {
+                                            if (mounted) {
+                                              LoadingDialog.hide(context);
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    e.message ?? 'Login failed',
+                                                  ),
+                                                  backgroundColor: Colors.red,
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            if (mounted) {
+                                              LoadingDialog.hide(context);
+                                            }
+                                          }
+                                        }
+                                      },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.orange.shade400,
                                         foregroundColor: Colors.white,
@@ -462,50 +456,21 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                           ),
                                         ),
                                       ),
-                                      child: _isLoginLoading
-                                          ? Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                const SizedBox(
-                                                  height: 20,
-                                                  width: 20,
-                                                  child: CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    valueColor:
-                                                        AlwaysStoppedAnimation<
-                                                          Color
-                                                        >(Colors.white),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 12),
-                                                Text(
-                                                  'Signing in...',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
-                                            )
-                                          : Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                const Icon(
-                                                  Icons.login,
-                                                  size: 20,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  'Login',
-                                                  style: GoogleFonts.poppins(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.login, size: 20),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Login',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
                                             ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
 

@@ -12,6 +12,7 @@ import 'package:restro_hub/login/screens/mainDashBoard/mainDashboard.dart';
 import 'package:restro_hub/core/models/cuisines_item.dart';
 import 'package:restro_hub/splashScreen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
+import 'package:restro_hub/login/screens/authenticated_password.dart';
 
 class RouterService {
   static final _goRouter = GoRouter(
@@ -88,6 +89,11 @@ class RouterService {
         path: '/showFavourites',
         name: "showFavourites",
         builder: (context, state) => const ShowFavourites(),
+      ),
+      GoRoute(
+        path: '/authenticatedPasswordScreen',
+        name: "authenticatedPasswordScreen",
+        builder: (context, state) => const AuthenticatedPasswordScreen(),
       ),
     ],
   );

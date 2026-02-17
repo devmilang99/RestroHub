@@ -69,7 +69,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                       leading: const Icon(Icons.lock_outline),
                       title: const Text('Change Password'),
                       onTap: () {
-                        context.pushNamed('forgotPasswordScreen');
+                        context.pushNamed('authenticatedPasswordScreen');
                       },
                     ),
                     SwitchListTile(

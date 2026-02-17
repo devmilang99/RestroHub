@@ -3,9 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
+import 'package:restro_hub/core/widgets/loading_dialog.dart';
 import 'dart:ui';
-
-enum Validation { empty, notMatch, success }
+import 'dart:async';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -17,11 +17,34 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     with TickerProviderStateMixin {
-  final TextEditingController emailController = TextEditingController();
+  int _currentStep = 1; // 1: Email/Phone, 2: OTP, 3: New Password
+
+  final TextEditingController identifierController = TextEditingController();
+  final List<TextEditingController> otpControllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
+  final List<FocusNode> otpFocusNodes = List.generate(
+    6,
+    (index) => FocusNode(),
+  );
+
+  final TextEditingController newPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
+
+  bool _isNewPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  bool _isOtpVisible = true;
+  String _otpErrorMessage = "";
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  Timer? _timer;
+  int _start = 180;
+  bool _canResend = false;
 
   @override
   void initState() {
@@ -47,17 +70,53 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     _animationController.forward();
   }
 
-  Validation validation() {
-    if (emailController.text.isEmpty) {
-      return Validation.empty;
-    }
-    return Validation.success;
+  void _startTimer() {
+    setState(() {
+      _canResend = false;
+      _start = 180;
+      _otpErrorMessage = "";
+    });
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_start == 0) {
+        setState(() {
+          _canResend = true;
+          _timer?.cancel();
+        });
+      } else {
+        setState(() {
+          _start--;
+        });
+      }
+    });
+
+    // Simulate automatic OTP reception (e.g. from SMS/Firebase) after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted && _currentStep == 2) {
+        final mockOtp = "123456";
+        for (int i = 0; i < 6; i++) {
+          otpControllers[i].text = mockOtp[i];
+        }
+        setState(() {
+          _otpErrorMessage = "OTP detected automatically!";
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    emailController.dispose();
+    identifierController.dispose();
+    for (var controller in otpControllers) {
+      controller.dispose();
+    }
+    for (var node in otpFocusNodes) {
+      node.dispose();
+    }
+    newPasswordController.dispose();
+    confirmPasswordController.dispose();
     _animationController.dispose();
+    _timer?.cancel();
     super.dispose();
   }
 
@@ -65,6 +124,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     required bool isSuccess,
     required String title,
     required String message,
+    VoidCallback? onConfirmCustom,
   }) {
     showDialog(
       context: context,
@@ -75,7 +135,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         message: message,
         onConfirm: () {
           Navigator.pop(context);
-          if (isSuccess) {
+          if (onConfirmCustom != null) {
+            onConfirmCustom();
+          } else if (isSuccess && _currentStep == 3) {
             context.goNamed('mainLoginScreen');
           }
         },
@@ -102,7 +164,13 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => context.goNamed('mainLoginScreen'),
+          onPressed: () {
+            if (_currentStep > 1) {
+              setState(() => _currentStep--);
+            } else {
+              context.goNamed('mainLoginScreen');
+            }
+          },
           icon: Icon(
             Icons.arrow_back_ios_new,
             color: isDark ? Colors.white : Colors.black,
@@ -111,7 +179,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
       ),
       body: Stack(
         children: [
-          // Dynamic Background Image
           Opacity(
             opacity: isDark ? 0.6 : 0.4,
             child: Container(
@@ -127,7 +194,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               ),
             ),
           ),
-          // Gradient Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -153,7 +219,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                     children: [
                       const SizedBox(height: 20),
                       Text(
-                        'Reset Password',
+                        _currentStep == 1
+                            ? 'Forgot Password'
+                            : _currentStep == 2
+                            ? 'Verification'
+                            : 'New Password',
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 42,
                           fontWeight: FontWeight.bold,
@@ -162,7 +232,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Secure your account with a new memorable password.',
+                        _currentStep == 1
+                            ? 'Enter your email or phone number to receive an OTP.'
+                            : _currentStep == 2
+                            ? 'Enter the 6-digit code sent to your registered contact.'
+                            : 'Create a new secure password for your account.',
                         style: GoogleFonts.poppins(
                           fontSize: 15,
                           color: textColor.withValues(alpha: .7),
@@ -170,7 +244,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                         ),
                       ),
                       const SizedBox(height: 40),
-                      // Glassmorphic Form
                       ClipRRect(
                         borderRadius: BorderRadius.circular(24),
                         child: BackdropFilter(
@@ -187,68 +260,279 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                             ),
                             child: Column(
                               children: [
-                                _buildTextField(
-                                  controller: emailController,
-                                  label: 'Email',
-                                  icon: Icons.email_outlined,
-                                  isDark: isDark,
-                                  isPassword: false,
-                                ),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 60,
-                                  child: ElevatedButton(
-                                    onPressed: () {
-                                      switch (validation()) {
-                                        case Validation.success:
+                                if (_currentStep == 1) ...[
+                                  _buildTextField(
+                                    controller: identifierController,
+                                    label: 'Email / Phone',
+                                    icon: Icons.person_outline,
+                                    isDark: isDark,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildNextButton(
+                                    onPressed: () async {
+                                      if (identifierController
+                                          .text
+                                          .isNotEmpty) {
+                                        LoadingDialog.show(
+                                          context,
+                                          message: 'Sending OTP...',
+                                        );
+                                        await Future.delayed(
+                                          const Duration(seconds: 2),
+                                        );
+                                        if (mounted) {
+                                          LoadingDialog.hide(context);
+                                          setState(() => _currentStep = 2);
+                                          _startTimer();
+                                        }
+                                      } else {
+                                        _showAestheticDialog(
+                                          isSuccess: false,
+                                          title: 'Empty',
+                                          message:
+                                              'Please enter email or phone.',
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ] else if (_currentStep == 2) ...[
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "6-Digit OTP",
+                                        style: GoogleFonts.poppins(
+                                          color: textColor,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          _isOtpVisible
+                                              ? Icons.visibility
+                                              : Icons.visibility_off,
+                                          color: goldColor,
+                                        ),
+                                        onPressed: () {
+                                          setState(
+                                            () =>
+                                                _isOtpVisible = !_isOtpVisible,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: List.generate(6, (index) {
+                                      return SizedBox(
+                                        width: 45,
+                                        child: TextFormField(
+                                          controller: otpControllers[index],
+                                          focusNode: otpFocusNodes[index],
+                                          obscureText: !_isOtpVisible,
+                                          textAlign: TextAlign.center,
+                                          keyboardType: TextInputType.number,
+                                          maxLength: 1,
+                                          style: GoogleFonts.poppins(
+                                            color: textColor,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          decoration: InputDecoration(
+                                            counterText: "",
+                                            enabledBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              borderSide: BorderSide(
+                                                color: textColor.withValues(
+                                                  alpha: 0.2,
+                                                ),
+                                              ),
+                                            ),
+                                            focusedBorder: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              borderSide: const BorderSide(
+                                                color: goldColor,
+                                                width: 2,
+                                              ),
+                                            ),
+                                            filled: true,
+                                            fillColor: textColor.withValues(
+                                              alpha: 0.05,
+                                            ),
+                                          ),
+                                          onChanged: (value) {
+                                            if (value.length == 1 &&
+                                                index < 5) {
+                                              otpFocusNodes[index + 1]
+                                                  .requestFocus();
+                                            }
+                                            if (value.isEmpty && index > 0) {
+                                              otpFocusNodes[index - 1]
+                                                  .requestFocus();
+                                            }
+                                          },
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Resend code in ',
+                                        style: GoogleFonts.poppins(
+                                          color: textColor.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${(_start ~/ 60).toString().padLeft(2, '0')}:${(_start % 60).toString().padLeft(2, '0')}',
+                                        style: GoogleFonts.poppins(
+                                          color: goldColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (_otpErrorMessage.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _otpErrorMessage,
+                                      style: GoogleFonts.poppins(
+                                        color:
+                                            _otpErrorMessage.contains(
+                                              "automatic",
+                                            )
+                                            ? Colors.green
+                                            : Colors.redAccent,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                  if (_canResend)
+                                    TextButton(
+                                      onPressed: () {
+                                        _startTimer();
+                                      },
+                                      child: Text(
+                                        'RESEND CODE',
+                                        style: GoogleFonts.poppins(
+                                          color: goldColor,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 24),
+                                  _buildNextButton(
+                                    label: 'VERIFY OTP',
+                                    onPressed: () async {
+                                      String otp = otpControllers
+                                          .map((e) => e.text)
+                                          .join();
+                                      if (otp.length == 6) {
+                                        LoadingDialog.show(
+                                          context,
+                                          message: 'Verifying OTP...',
+                                        );
+                                        await Future.delayed(
+                                          const Duration(seconds: 1),
+                                        );
+                                        if (mounted) {
+                                          LoadingDialog.hide(context);
+                                          if (otp == "123456") {
+                                            setState(() => _currentStep = 3);
+                                          } else {
+                                            setState(
+                                              () => _otpErrorMessage =
+                                                  "Invalid OTP pin. Please try again.",
+                                            );
+                                          }
+                                        }
+                                      } else {
+                                        setState(
+                                          () => _otpErrorMessage =
+                                              "Please enter all 6 digits.",
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ] else if (_currentStep == 3) ...[
+                                  _buildTextField(
+                                    controller: newPasswordController,
+                                    label: 'New Password',
+                                    icon: Icons.lock_outline,
+                                    isDark: isDark,
+                                    isPassword: true,
+                                    isVisible: _isNewPasswordVisible,
+                                    onVisibilityToggle: () {
+                                      setState(
+                                        () => _isNewPasswordVisible =
+                                            !_isNewPasswordVisible,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildTextField(
+                                    controller: confirmPasswordController,
+                                    label: 'Confirm Password',
+                                    icon: Icons.check_circle_outline,
+                                    isDark: isDark,
+                                    isPassword: true,
+                                    isVisible: _isConfirmPasswordVisible,
+                                    onVisibilityToggle: () {
+                                      setState(
+                                        () => _isConfirmPasswordVisible =
+                                            !_isConfirmPasswordVisible,
+                                      );
+                                    },
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildNextButton(
+                                    label: 'RESET PASSWORD',
+                                    onPressed: () async {
+                                      if (newPasswordController
+                                              .text
+                                              .isNotEmpty &&
+                                          newPasswordController.text ==
+                                              confirmPasswordController.text) {
+                                        LoadingDialog.show(
+                                          context,
+                                          message: 'Resetting password...',
+                                        );
+                                        await Future.delayed(
+                                          const Duration(seconds: 2),
+                                        );
+                                        if (mounted) {
+                                          LoadingDialog.hide(context);
                                           _showAestheticDialog(
                                             isSuccess: true,
                                             title: 'Success!',
                                             message:
-                                                'Your password has been updated. Please log in with your new credentials.',
+                                                'Your password has been updated successfully. Log in with your new password.',
                                           );
-                                          break;
-                                        case Validation.empty:
-                                          _showAestheticDialog(
-                                            isSuccess: false,
-                                            title: 'Incomplete',
-                                            message:
-                                                'Please fill in all the password fields to proceed.',
-                                          );
-                                          break;
-                                        case Validation.notMatch:
-                                          _showAestheticDialog(
-                                            isSuccess: false,
-                                            title: 'No Match',
-                                            message:
-                                                'The new passwords you entered do not match. Please check again.',
-                                          );
-                                          break;
+                                        }
+                                      } else {
+                                        _showAestheticDialog(
+                                          isSuccess: false,
+                                          title: 'Error',
+                                          message:
+                                              'Passwords do not match or are empty.',
+                                        );
                                       }
                                     },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: goldColor,
-                                      foregroundColor: isDark
-                                          ? Colors.black
-                                          : Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      elevation: 12,
-                                      shadowColor: goldColor.withValues(
-                                        alpha: .5,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'UPDATE PASSWORD',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 2,
-                                        fontSize: 16,
-                                      ),
-                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),
@@ -266,23 +550,64 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     );
   }
 
+  Widget _buildNextButton({
+    required VoidCallback onPressed,
+    String label = 'CONTINUE',
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 60,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orange,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          elevation: 12,
+          shadowColor: Colors.orange.withValues(alpha: .5),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
     required bool isDark,
     bool isPassword = false,
+    bool isVisible = false,
+    VoidCallback? onVisibilityToggle,
   }) {
     final Color textColor = isDark ? Colors.white : Colors.black;
 
     return TextFormField(
       controller: controller,
-      obscureText: isPassword,
+      obscureText: isPassword && !isVisible,
       style: GoogleFonts.poppins(color: textColor),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: textColor.withValues(alpha: .6)),
         prefixIcon: Icon(icon, color: Colors.orange.withValues(alpha: .8)),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  isVisible ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.orange.withValues(alpha: .8),
+                ),
+                onPressed: onVisibilityToggle,
+              )
+            : null,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: textColor.withValues(alpha: .1)),

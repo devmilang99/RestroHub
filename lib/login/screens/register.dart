@@ -9,6 +9,7 @@ import 'dart:ui';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
+import 'package:restro_hub/core/widgets/loading_dialog.dart';
 
 class Register extends ConsumerStatefulWidget {
   const Register({super.key});
@@ -25,7 +26,6 @@ class _RegisterState extends ConsumerState<Register>
   final TextEditingController phoneNumberController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final FirebaseAuthService _authService = FirebaseAuthService();
-  bool _isLoading = false;
 
   late AnimationController _formAnimationController;
   late Animation<double> _formFadeAnimation;
@@ -246,101 +246,80 @@ class _RegisterState extends ConsumerState<Register>
                                   ),
                                   const SizedBox(height: 40),
                                   // Register Button Logic
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 300),
-                                    child: _isLoading
-                                        ? Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const CircularProgressIndicator(
-                                                color: goldColor,
-                                                strokeWidth: 3,
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Text(
-                                                'Creating your account...',
-                                                style: GoogleFonts.poppins(
-                                                  color: goldColor,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ],
-                                          )
-                                        : SizedBox(
-                                            width: double.infinity,
-                                            height: 60,
-                                            child: ElevatedButton(
-                                              onPressed: () async {
-                                                if (formKey.currentState!
-                                                    .validate()) {
-                                                  setState(
-                                                    () => _isLoading = true,
-                                                  );
-                                                  try {
-                                                    final fb.User?
-                                                    user = await _authService
-                                                        .signUpWithEmailAndPassword(
-                                                          emailController.text
-                                                              .trim(),
-                                                          passwordController
-                                                              .text,
-                                                        );
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 60,
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        if (formKey.currentState!.validate()) {
+                                          LoadingDialog.show(
+                                            context,
+                                            message: 'Creating your account...',
+                                          );
+                                          try {
+                                            final fb.User? user =
+                                                await _authService
+                                                    .signUpWithEmailAndPassword(
+                                                      emailController.text
+                                                          .trim(),
+                                                      passwordController.text,
+                                                    );
 
-                                                    if (user != null) {
-                                                      if (mounted) {
-                                                        _showAestheticDialog(
-                                                          isSuccess: true,
-                                                          title: 'Welcome!',
-                                                          message:
-                                                              'Your culinary journey begins now. We\'re so happy to have you!',
-                                                        );
-                                                      }
-                                                    }
-                                                  } on fb.FirebaseAuthException catch (
-                                                    e
-                                                  ) {
-                                                    if (mounted) {
-                                                      _showAestheticDialog(
-                                                        isSuccess: false,
-                                                        title: 'Oops!',
-                                                        message:
-                                                            e.message ??
-                                                            'Something went wrong with your registration. Please try again.',
-                                                      );
-                                                    }
-                                                  } finally {
-                                                    if (mounted) {
-                                                      setState(
-                                                        () =>
-                                                            _isLoading = false,
-                                                      );
-                                                    }
-                                                  }
-                                                }
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: goldColor,
-                                                foregroundColor: isDark
-                                                    ? Colors.black
-                                                    : Colors.white,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(18),
-                                                ),
-                                                elevation: 12,
-                                                shadowColor: goldColor
-                                                    .withValues(alpha: .5),
-                                              ),
-                                              child: Text(
-                                                'CREATE ACCOUNT',
-                                                style: GoogleFonts.poppins(
-                                                  fontWeight: FontWeight.bold,
-                                                  letterSpacing: 2,
-                                                  fontSize: 16,
-                                                ),
-                                              ),
-                                            ),
+                                            if (user != null) {
+                                              if (mounted) {
+                                                LoadingDialog.hide(context);
+                                                _showAestheticDialog(
+                                                  isSuccess: true,
+                                                  title: 'Welcome!',
+                                                  message:
+                                                      'Your culinary journey begins now. We\'re so happy to have you!',
+                                                );
+                                              }
+                                            }
+                                          } on fb.FirebaseAuthException catch (
+                                            e
+                                          ) {
+                                            if (mounted) {
+                                              LoadingDialog.hide(context);
+                                              _showAestheticDialog(
+                                                isSuccess: false,
+                                                title: 'Oops!',
+                                                message:
+                                                    e.message ??
+                                                    'Something went wrong with your registration. Please try again.',
+                                              );
+                                            }
+                                          } catch (e) {
+                                            if (mounted) {
+                                              LoadingDialog.hide(context);
+                                            }
+                                          }
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: goldColor,
+                                        foregroundColor: isDark
+                                            ? Colors.black
+                                            : Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            18,
                                           ),
+                                        ),
+                                        elevation: 12,
+                                        shadowColor: goldColor.withValues(
+                                          alpha: .5,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'CREATE ACCOUNT',
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
