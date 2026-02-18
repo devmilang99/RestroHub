@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import 'package:restro_hub/login/model/User.dart';
 import 'package:restro_hub/login/service/google_auth_service.dart';
@@ -42,6 +43,15 @@ class _LoginCardState extends ConsumerState<LoginCard>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  String _getBackgroundImageUrl() {
+    if (kIsWeb) {
+      // Web-optimized image for desktop/tablet viewing
+      return 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=1600&q=80';
+    } else {
+      // Mobile-optimized image
+      return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80';
+    }
+  }
 
   @override
   void initState() {
@@ -78,11 +88,9 @@ class _LoginCardState extends ConsumerState<LoginCard>
         children: [
           // Background Image with Overlay
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               image: DecorationImage(
-                image: NetworkImage(
-                  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80',
-                ),
+                image: NetworkImage(_getBackgroundImageUrl()),
                 fit: BoxFit.cover,
               ),
             ),
@@ -560,8 +568,9 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                     children: [
                                       InkWell(
                                         onTap: () async {
+                                          final scaffoldContext = context;
                                           LoadingDialog.show(
-                                            context,
+                                            scaffoldContext,
                                             message: 'Connecting to Google...',
                                           );
                                           try {
@@ -569,10 +578,14 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                                 await _googleAuthService
                                                     .signIn();
 
+                                            if (!mounted) return;
+
                                             if (firebaseUser != null) {
+                                              LoadingDialog.hide(
+                                                scaffoldContext,
+                                              );
                                               if (mounted) {
-                                                LoadingDialog.hide(context);
-                                                context.goNamed(
+                                                scaffoldContext.goNamed(
                                                   'mainDashBoard',
                                                   extra: User(
                                                     email:
@@ -584,10 +597,12 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                                 );
                                               }
                                             } else {
+                                              LoadingDialog.hide(
+                                                scaffoldContext,
+                                              );
                                               if (mounted) {
-                                                LoadingDialog.hide(context);
                                                 ScaffoldMessenger.of(
-                                                  context,
+                                                  scaffoldContext,
                                                 ).showSnackBar(
                                                   const SnackBar(
                                                     content: Text(
@@ -598,18 +613,17 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                               }
                                             }
                                           } catch (e) {
-                                            if (mounted) {
-                                              LoadingDialog.hide(context);
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    'Error: ${e.toString()}',
-                                                  ),
+                                            if (!mounted) return;
+                                            LoadingDialog.hide(scaffoldContext);
+                                            ScaffoldMessenger.of(
+                                              scaffoldContext,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Error: ${e.toString()}',
                                                 ),
-                                              );
-                                            }
+                                              ),
+                                            );
                                           }
                                         },
                                         borderRadius: BorderRadius.circular(12),

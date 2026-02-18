@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:ui';
 
 class PermissionScreen extends ConsumerStatefulWidget {
@@ -16,34 +18,7 @@ class PermissionScreen extends ConsumerStatefulWidget {
 
 class _PermissionScreenState extends ConsumerState<PermissionScreen>
     with TickerProviderStateMixin {
-  final List<PermissionItem> _permissions = [
-    PermissionItem(
-      permission: Permission.storage,
-      title: 'Storage Access',
-      description: 'Needed to save your receipts and download digital menus.',
-      icon: Icons.folder_open_rounded,
-      imageUrl:
-          'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
-    ),
-    PermissionItem(
-      permission: Permission.location,
-      title: 'Smart Location',
-      description: 'Helps us find the nearest culinary gems around you.',
-      icon: Icons.location_on_rounded,
-      imageUrl:
-          'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
-    ),
-    PermissionItem(
-      permission: Permission.contacts,
-      title: 'Social Connect',
-      description:
-          'Invite and share your favorite meals with friends effortlessly.',
-      icon: Icons.people_alt_rounded,
-      imageUrl:
-          'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop',
-    ),
-  ];
-
+  late List<PermissionItem> _permissions;
   int _currentIndex = 0;
   bool _isProcessing = false;
   bool _showThemeSelection = false;
@@ -53,9 +28,106 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
   late Animation<Offset> _slideAnimation;
   late AnimationController _bgAnimationController;
 
+  List<PermissionItem> _getPlatformSpecificPermissions() {
+    final permissions = <PermissionItem>[];
+
+    if (kIsWeb) {
+      // Web: Location only
+      permissions.add(
+        PermissionItem(
+          permission: Permission.location,
+          title: 'Smart Location',
+          description: 'Helps us find the nearest culinary gems around you.',
+          icon: Icons.location_on_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
+        ),
+      );
+    } else if (Platform.isAndroid) {
+      // Android: Storage, Location, Contacts, Camera
+      permissions.addAll([
+        PermissionItem(
+          permission: Permission.storage,
+          title: 'Storage Access',
+          description:
+              'Needed to save your receipts and download digital menus.',
+          icon: Icons.folder_open_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
+        ),
+        PermissionItem(
+          permission: Permission.location,
+          title: 'Smart Location',
+          description: 'Helps us find the nearest culinary gems around you.',
+          icon: Icons.location_on_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
+        ),
+        PermissionItem(
+          permission: Permission.contacts,
+          title: 'Social Connect',
+          description:
+              'Invite and share your favorite meals with friends effortlessly.',
+          icon: Icons.people_alt_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop',
+        ),
+        PermissionItem(
+          permission: Permission.camera,
+          title: 'Camera Access',
+          description: 'Capture photos of dishes and create food memories.',
+          icon: Icons.camera_alt_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?q=80&w=2070&auto=format&fit=crop',
+        ),
+      ]);
+    } else if (Platform.isIOS) {
+      // iOS: Storage, Location, Contacts, Camera
+      permissions.addAll([
+        PermissionItem(
+          permission: Permission.storage,
+          title: 'Storage Access',
+          description:
+              'Needed to save your receipts and download digital menus.',
+          icon: Icons.folder_open_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
+        ),
+        PermissionItem(
+          permission: Permission.location,
+          title: 'Smart Location',
+          description: 'Helps us find the nearest culinary gems around you.',
+          icon: Icons.location_on_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
+        ),
+        PermissionItem(
+          permission: Permission.contacts,
+          title: 'Social Connect',
+          description:
+              'Invite and share your favorite meals with friends effortlessly.',
+          icon: Icons.people_alt_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop',
+        ),
+        PermissionItem(
+          permission: Permission.camera,
+          title: 'Camera Access',
+          description: 'Capture photos of dishes and create food memories.',
+          icon: Icons.camera_alt_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?q=80&w=2070&auto=format&fit=crop',
+        ),
+      ]);
+    }
+
+    return permissions;
+  }
+
   @override
   void initState() {
     super.initState();
+    _permissions = _getPlatformSpecificPermissions();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),

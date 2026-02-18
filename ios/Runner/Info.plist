@@ -51,5 +51,7 @@
 	<string>This app needs access to your location to find nearby restaurants.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>This app requires contacts access to allow you to share restaurant details with your friends.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires camera access to capture photos of dishes and create food memories.</string>
 </dict>
 </plist>

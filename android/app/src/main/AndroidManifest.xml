@@ -1,9 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Storage Permissions -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <!-- Location Permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Contacts Permission -->
     <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <!-- Camera Permission -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="restro_hub"
         android:name="${applicationName}"
