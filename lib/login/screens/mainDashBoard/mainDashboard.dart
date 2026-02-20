@@ -31,6 +31,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
   int _currentIndex = 0;
   final ScrollController _scrollController = ScrollController();
   bool _showBackToTop = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -40,6 +41,13 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
         setState(() => _showBackToTop = true);
       } else if (_scrollController.offset <= 400 && _showBackToTop) {
         setState(() => _showBackToTop = false);
+      }
+    });
+
+    // Simulate loading for 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     });
   }
@@ -106,14 +114,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                         context.pop();
                       },
                     ),
-                    ListTile(
-                      leading: const Icon(Icons.explore_outlined),
-                      title: const Text('Explore'),
-                      onTap: () {
-                        context.pop();
-                        context.pushNamed('exploreScreen');
-                      },
-                    ),
+
                     ListTile(
                       leading: const Icon(Icons.lock_outline),
                       title: const Text('Change Password'),
@@ -306,65 +307,46 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
             ),
           ),
         ),
+
         // Countries Horizontal List
-        SliverCountryCards(
-          headingTitle: 'Explore by Cuisine',
-          items: countries,
-          displayCount: 6,
-          seeAll: true,
-        ),
+        _isLoading
+            ? _SliverCountryCardsSkeleton()
+            : SliverCountryCards(
+                headingTitle: 'Explore by Cuisine',
+                items: countries,
+                displayCount: 6,
+                seeAll: true,
+              ),
 
-        SliverOfferCards(
-          headingTitle: 'Latest Offers',
-          items: latestOffers,
-          displayCount: 5,
-          seeAll: true,
-        ),
+        // Latest Offers
+        _isLoading
+            ? _SliverOfferCardsSkeleton()
+            : SliverOfferCards(
+                headingTitle: 'Latest Offers',
+                items: latestOffers,
+                displayCount: 5,
+                seeAll: true,
+              ),
 
-        SliverRestaurantCards(
-          headingTitle: 'Explore by Restaurant',
-          items: exploreRestaurants,
-          displayCount: 5,
-          seeAll: true,
-        ),
+        // Explore by Restaurant
+        _isLoading
+            ? _SliverRestaurantCardsSkeleton()
+            : SliverRestaurantCards(
+                headingTitle: 'Explore by Restaurant',
+                items: exploreRestaurants,
+                displayCount: 5,
+                seeAll: true,
+              ),
 
-        SliverTopRatedCards(
-          headingTitle: 'Top Rated Dishes',
-          items: topRated,
-          displayCount: 5,
-          seeAll: true,
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40.0),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.restaurant,
-                  color: colorScheme.primary.withValues(alpha: 0.2),
-                  size: 40,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "You've explored the best of Restro Hub!",
-                  style: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.4),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Time to order something delicious!",
-                  style: TextStyle(
-                    color: colorScheme.onSurface.withValues(alpha: 0.3),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SliverToBoxAdapter(child: SizedBox(height: 100)),
+        // Top Rated
+        _isLoading
+            ? _SliverTopRatedCardsSkeleton()
+            : SliverTopRatedCards(
+                headingTitle: 'Top Rated',
+                items: topRated,
+                displayCount: 5,
+                seeAll: false,
+              ),
       ],
     );
   }
@@ -666,13 +648,16 @@ class SliverCountryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
     final displayItems = displayCount != null
         ? items.take(displayCount!).toList()
         : items;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverMainAxisGroup(
         slivers: [
+          // ── Header ──
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
@@ -681,77 +666,138 @@ class SliverCountryCards extends StatelessWidget {
                 children: [
                   Text(
                     headingTitle,
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Visibility(
-                    visible: seeAll,
-                    child: TextButton(
-                      onPressed: () {
-                        context.pushNamed('countryListScreen');
-                      },
-                      child: const Text("See All"),
+                  if (seeAll)
+                    TextButton(
+                      onPressed: () => context.pushNamed('countryListScreen'),
+                      child: Text(
+                        "See All",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: colorScheme.primary,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
           ),
+
+          // ── Horizontal image cards ──
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 130,
+              height: 148,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
                 itemCount: displayItems.length,
                 itemBuilder: (context, index) {
                   final country = displayItems[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            context.pushNamed(
-                              'exploreScreen',
-                              extra: country.name,
-                            );
-                          },
-                          child: Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: context.colorScheme.surface,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
+                  final cuisineCount = cuisines
+                      .where((c) => c.country == country.name)
+                      .length;
+
+                  return GestureDetector(
+                    onTap: () =>
+                        context.pushNamed('exploreScreen', extra: country.name),
+                    child: Container(
+                      width: 180,
+                      margin: const EdgeInsets.only(right: 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.14),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Background image
+                          Image.network(
+                            country.historicalImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: colorScheme.primaryContainer,
+                              child: Center(
+                                child: Text(
+                                  country.flag,
+                                  style: const TextStyle(fontSize: 48),
                                 ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                country.flag,
-                                style: const TextStyle(fontSize: 32),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          country.name,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                          // Gradient overlay
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withValues(alpha: 0.78),
+                                ],
+                                stops: const [0.35, 1.0],
+                              ),
+                            ),
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                          // Flag bubble top-left
+                          Positioned(
+                            top: 10,
+                            left: 10,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                country.flag,
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ),
+                          ),
+                          // Text bottom
+                          Positioned(
+                            left: 12,
+                            right: 12,
+                            bottom: 12,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  country.name,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  '$cuisineCount+ dishes',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -950,7 +996,7 @@ class SliverOfferCards extends StatelessWidget {
   }
 }
 
-class SliverTopRatedCards extends StatelessWidget {
+class SliverTopRatedCards extends StatefulWidget {
   final String headingTitle;
   final List<CuisinesItem> items;
   final int? displayCount;
@@ -965,151 +1011,543 @@ class SliverTopRatedCards extends StatelessWidget {
   });
 
   @override
+  State<SliverTopRatedCards> createState() => _SliverTopRatedCardsState();
+}
+
+class _SliverTopRatedCardsState extends State<SliverTopRatedCards>
+    with SingleTickerProviderStateMixin {
+  int _tab = 0; // 0 = Cuisine, 1 = Restaurants
+
+  // "Why top-rated" labels for cuisine
+  static const _cuisineReasons = [
+    "#1 Bestseller",
+    "Chef's Pick",
+    "Fan Favourite",
+    "Highly Rated",
+    "Most Ordered",
+  ];
+
+  // "Why top-rated" labels for restaurants
+  static const _restaurantReasons = [
+    "Top Rated",
+    "Fast & Fresh",
+    "Guest Favourite",
+    "Award Winning",
+    "Crowd Pleaser",
+  ];
+
+  static const _reasonColors = [
+    Color(0xFFFF6B6B), // coral
+    Color(0xFF845EF7), // purple
+    Color(0xFF339AF0), // blue
+    Color(0xFF51CF66), // green
+    Color(0xFFFF922B), // orange
+  ];
+
+  @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final displayItems = displayCount != null
-        ? items.take(displayCount!).toList()
-        : items;
+    final displayItems = widget.displayCount != null
+        ? widget.items.take(widget.displayCount!).toList()
+        : widget.items;
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverMainAxisGroup(
         slivers: [
+          // ── Header row ──
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    headingTitle,
+                    widget.headingTitle,
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Visibility(
-                    visible: seeAll,
-                    child: TextButton(
+                  if (widget.seeAll)
+                    TextButton(
                       onPressed: () => context.pushNamed(
                         "allCouisineList",
-                        extra: {'title': headingTitle, 'items': items},
+                        extra: {
+                          'title': widget.headingTitle,
+                          'items': widget.items,
+                        },
                       ),
-                      child: const Text("See All"),
+                      child: Text(
+                        "See All",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: colorScheme.primary,
+                        ),
+                      ),
                     ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Pill tab switcher ──
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _TopRatedTab(
+                    label: "Best Cuisine",
+                    icon: Icons.restaurant_menu_rounded,
+                    isActive: _tab == 0,
+                    color: colorScheme.primary,
+                    onTap: () => setState(() => _tab = 0),
+                  ),
+                  const SizedBox(width: 10),
+                  _TopRatedTab(
+                    label: "Top Restaurants",
+                    icon: Icons.store_mall_directory_rounded,
+                    isActive: _tab == 1,
+                    color: colorScheme.primary,
+                    onTap: () => setState(() => _tab = 1),
                   ),
                 ],
               ),
             ),
           ),
+
+          // ── Cards (animated tab switch) ──
           SliverToBoxAdapter(
-            child: SizedBox(
-              height: 240,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                itemCount: displayItems.length,
-                itemBuilder: (context, index) {
-                  final item = displayItems[index];
-                  return GestureDetector(
-                    onTap: () =>
-                        context.pushNamed("cuisineSingleItem", extra: item),
-                    child: Container(
-                      width: 180,
-                      margin: const EdgeInsets.only(right: 16),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Stack(
-                              children: [
-                                Image.asset(
-                                  item.image,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                                Positioned(
-                                  top: 10,
-                                  right: 10,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.star,
-                                          color: Colors.white,
-                                          size: 12,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          item.rating,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: GoogleFonts.poppins(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "Rs. ${item.price}",
-                                  style: GoogleFonts.poppins(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0.06, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
               ),
+              child: _tab == 0
+                  ? _CuisineCardList(
+                      key: const ValueKey('cuisine'),
+                      items: displayItems,
+                      reasons: _cuisineReasons,
+                      reasonColors: _reasonColors,
+                      colorScheme: colorScheme,
+                    )
+                  : _RestaurantTabCardList(
+                      key: const ValueKey('restaurant'),
+                      items: exploreRestaurants.take(5).toList(),
+                      reasons: _restaurantReasons,
+                      reasonColors: _reasonColors,
+                      colorScheme: colorScheme,
+                    ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Tab pill button ────────────────────────────────────────────────────────────
+class _TopRatedTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _TopRatedTab({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive
+              ? color
+              : cs.surfaceContainerHighest.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isActive
+                  ? Colors.white
+                  : cs.onSurface.withValues(alpha: 0.55),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isActive
+                    ? Colors.white
+                    : cs.onSurface.withValues(alpha: 0.55),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Cuisine cards horizontal list ─────────────────────────────────────────────
+class _CuisineCardList extends StatelessWidget {
+  final List<CuisinesItem> items;
+  final List<String> reasons;
+  final List<Color> reasonColors;
+  final ColorScheme colorScheme;
+
+  const _CuisineCardList({
+    super.key,
+    required this.items,
+    required this.reasons,
+    required this.reasonColors,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      height: 250,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final item = items[index];
+          final reason = reasons[index % reasons.length];
+          final reasonColor = reasonColors[index % reasonColors.length];
+          return GestureDetector(
+            onTap: () => context.pushNamed("cuisineSingleItem", extra: item),
+            child: Container(
+              width: 170,
+              margin: const EdgeInsets.only(right: 14),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.25,
+                      )
+                    : Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: isDark
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.07),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      Image.asset(
+                        item.image,
+                        width: double.infinity,
+                        height: 140,
+                        fit: BoxFit.cover,
+                      ),
+                      // WHY badge
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: reasonColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            reason,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // star rating
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.star_rounded,
+                                color: Colors.amber,
+                                size: 11,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                item.rating,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Rs. ${item.price}",
+                              style: GoogleFonts.poppins(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                borderRadius: BorderRadius.circular(7),
+                              ),
+                              child: Icon(
+                                Icons.add_rounded,
+                                color: colorScheme.primary,
+                                size: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Restaurant cards for Top Rated tab ────────────────────────────────────────
+class _RestaurantTabCardList extends StatelessWidget {
+  final List<Restaurant> items;
+  final List<String> reasons;
+  final List<Color> reasonColors;
+  final ColorScheme colorScheme;
+
+  const _RestaurantTabCardList({
+    super.key,
+    required this.items,
+    required this.reasons,
+    required this.reasonColors,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+        itemCount: items.length,
+        itemBuilder: (context, index) {
+          final r = items[index];
+          final reason = reasons[index % reasons.length];
+          final reasonColor = reasonColors[index % reasonColors.length];
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RestaurantMenuScreen(restaurant: r),
+              ),
+            ),
+            child: Container(
+              width: 220,
+              margin: const EdgeInsets.only(right: 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.asset(r.image, fit: BoxFit.cover),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black12, Colors.black87],
+                        stops: [0.3, 1.0],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: reasonColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        reason,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    right: 12,
+                    bottom: 12,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r.name,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Colors.amber,
+                              size: 13,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              r.rating,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Icon(
+                              Icons.access_time_rounded,
+                              color: Colors.white70,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              r.deliveryTime,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white70,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -1131,9 +1569,12 @@ class SliverRestaurantCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final displayItems = displayCount != null
         ? items.take(displayCount!).toList()
         : items;
+
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverMainAxisGroup(
@@ -1146,20 +1587,24 @@ class SliverRestaurantCards extends StatelessWidget {
                 children: [
                   Text(
                     headingTitle,
-                    style: const TextStyle(
+                    style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Visibility(
-                    visible: seeAll,
-                    child: TextButton(
-                      onPressed: () {
-                        context.pushNamed('exploreRestaurantsScreen');
-                      },
-                      child: const Text("See All"),
+                  if (seeAll)
+                    TextButton(
+                      onPressed: () =>
+                          context.pushNamed('exploreRestaurantsScreen'),
+                      child: Text(
+                        "See All",
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: colorScheme.primary,
+                        ),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -1169,85 +1614,96 @@ class SliverRestaurantCards extends StatelessWidget {
               height: 200,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
                 itemCount: displayItems.length,
                 itemBuilder: (context, index) {
-                  final restaurant = displayItems[index];
+                  final r = displayItems[index];
                   return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              RestaurantMenuScreen(restaurant: restaurant),
-                        ),
-                      );
-                    },
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RestaurantMenuScreen(restaurant: r),
+                      ),
+                    ),
                     child: Container(
-                      width: 250,
-                      margin: const EdgeInsets.only(right: 16),
+                      width: 220,
+                      margin: const EdgeInsets.only(right: 14),
                       decoration: BoxDecoration(
-                        color: context.colorScheme.surface,
+                        color: isDark
+                            ? colorScheme.surfaceContainerHighest.withValues(
+                                alpha: 0.3,
+                              )
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.07),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: Stack(
+                        fit: StackFit.expand,
                         children: [
-                          Image.asset(
-                            restaurant.image,
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                          Container(
-                            decoration: const BoxDecoration(
+                          Image.asset(r.image, fit: BoxFit.cover),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
                                 colors: [Colors.transparent, Colors.black87],
+                                stops: [0.4, 1.0],
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.all(12.0),
+                          Positioned(
+                            left: 12,
+                            right: 12,
+                            bottom: 12,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 Text(
-                                  restaurant.name,
-                                  style: const TextStyle(
+                                  r.name,
+                                  style: GoogleFonts.poppins(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                                const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.star,
+                                      Icons.star_rounded,
                                       color: Colors.amber,
-                                      size: 14,
+                                      size: 13,
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      restaurant.rating,
-                                      style: const TextStyle(
+                                      r.rating,
+                                      style: GoogleFonts.poppins(
                                         color: Colors.white,
-                                        fontSize: 12,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                     const Spacer(),
+                                    const Icon(
+                                      Icons.access_time_rounded,
+                                      color: Colors.white70,
+                                      size: 12,
+                                    ),
+                                    const SizedBox(width: 3),
                                     Text(
-                                      restaurant.deliveryTime,
-                                      style: const TextStyle(
+                                      r.deliveryTime,
+                                      style: GoogleFonts.poppins(
                                         color: Colors.white70,
                                         fontSize: 10,
                                       ),
@@ -1540,6 +1996,221 @@ class _PointsGraphState extends State<_PointsGraph>
           ),
         );
       },
+    );
+  }
+}
+
+// ── Loading/Skeleton Widgets ──────────────────────────────────────────────────
+
+class _SliverCountryCardsSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          // Header skeleton
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ShimmerPlaceholder(width: 150, height: 20, borderRadius: 8),
+                  ShimmerPlaceholder(width: 60, height: 20, borderRadius: 8),
+                ],
+              ),
+            ),
+          ),
+          // Cards skeleton
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 148,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
+                itemCount: 6,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      children: [
+                        ShimmerPlaceholder(
+                          width: 100,
+                          height: 100,
+                          borderRadius: 12,
+                        ),
+                        const SizedBox(height: 8),
+                        ShimmerPlaceholder(
+                          width: 80,
+                          height: 12,
+                          borderRadius: 6,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SliverOfferCardsSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          // Header skeleton
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ShimmerPlaceholder(width: 120, height: 20, borderRadius: 8),
+                  ShimmerPlaceholder(width: 50, height: 20, borderRadius: 8),
+                ],
+              ),
+            ),
+          ),
+          // Cards skeleton
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 180,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: 5,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: ShimmerPlaceholder(
+                      width: 160,
+                      height: 180,
+                      borderRadius: 16,
+                      showText: false,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SliverRestaurantCardsSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          // Header skeleton
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ShimmerPlaceholder(width: 180, height: 20, borderRadius: 8),
+                  ShimmerPlaceholder(width: 50, height: 20, borderRadius: 8),
+                ],
+              ),
+            ),
+          ),
+          // Cards skeleton
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 200,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+                itemCount: 5,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: ShimmerPlaceholder(
+                      width: 200,
+                      height: 200,
+                      borderRadius: 15,
+                      showText: false,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SliverTopRatedCardsSkeleton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          // Header skeleton
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ShimmerPlaceholder(width: 100, height: 20, borderRadius: 8),
+                ],
+              ),
+            ),
+          ),
+          // Tab skeleton
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 8, bottom: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ShimmerPlaceholder(width: 100, height: 35, borderRadius: 20),
+                  ShimmerPlaceholder(width: 120, height: 35, borderRadius: 20),
+                ],
+              ),
+            ),
+          ),
+          // Cards skeleton
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 250,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+                itemCount: 5,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 14),
+                    child: ShimmerPlaceholder(
+                      width: 170,
+                      height: 250,
+                      borderRadius: 22,
+                      showText: false,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

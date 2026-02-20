@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'firebase_options.dart';
-import 'package:restro_hub/router/routerService.dart';
+import 'firebase_options.dart' show DefaultFirebaseOptions;
+import 'package:restro_hub/router/routerService.dart' show RouterService;
 import 'package:restro_hub/core/theme/theme_provider.dart';
 
 void main() async {
