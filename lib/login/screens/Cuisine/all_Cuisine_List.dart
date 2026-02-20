@@ -244,7 +244,7 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
         controller: _scrollController,
         slivers: [
           SliverAppBar(
-            expandedHeight: 250.0,
+            expandedHeight: 40.0,
             floating: false,
             pinned: true,
             stretch: true,
@@ -274,24 +274,6 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
                 ),
               ),
               centerTitle: true,
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(widget.items.first.image, fit: BoxFit.cover),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: 0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
           SliverToBoxAdapter(

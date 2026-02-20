@@ -10,6 +10,7 @@ class CuisinesItem extends Equatable {
   final List<String> comments;
   final double price;
   final String location;
+  final String country;
 
   const CuisinesItem({
     required this.name,
@@ -25,6 +26,7 @@ class CuisinesItem extends Equatable {
       "Best I've ever had!",
       "Highly recommend.",
     ],
+    this.country = "Nepal",
   });
 
   @override
@@ -38,5 +40,6 @@ class CuisinesItem extends Equatable {
     comments,
     price,
     location,
+    country,
   ];
 }

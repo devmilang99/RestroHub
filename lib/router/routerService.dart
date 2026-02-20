@@ -13,6 +13,9 @@ import 'package:restro_hub/core/models/cuisines_item.dart';
 import 'package:restro_hub/splashScreen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
 import 'package:restro_hub/login/screens/authenticated_password.dart';
+import 'package:restro_hub/login/screens/explore_screen.dart';
+import 'package:restro_hub/login/screens/country_list_screen.dart';
+import 'package:restro_hub/login/screens/explore_restaurants_screen.dart';
 
 class RouterService {
   static final _goRouter = GoRouter(
@@ -94,6 +97,24 @@ class RouterService {
         path: '/authenticatedPasswordScreen',
         name: "authenticatedPasswordScreen",
         builder: (context, state) => const AuthenticatedPasswordScreen(),
+      ),
+      GoRoute(
+        path: '/exploreScreen',
+        name: "exploreScreen",
+        builder: (context, state) {
+          final initialCountry = state.extra as String?;
+          return ExploreScreen(initialCountry: initialCountry);
+        },
+      ),
+      GoRoute(
+        path: '/countryListScreen',
+        name: "countryListScreen",
+        builder: (context, state) => const CountryListScreen(),
+      ),
+      GoRoute(
+        path: '/exploreRestaurantsScreen',
+        name: "exploreRestaurantsScreen",
+        builder: (context, state) => const ExploreRestaurantsScreen(),
       ),
     ],
   );

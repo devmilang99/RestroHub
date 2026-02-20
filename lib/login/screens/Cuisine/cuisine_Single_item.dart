@@ -139,7 +139,36 @@ class CuisineSingleItem extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        color: colorScheme.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.location,
+                        style: TextStyle(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Icon(Icons.flag, color: Colors.orange, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.country,
+                        style: const TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 16),
+
                   Text(
                     item.description,
                     style: TextStyle(
@@ -379,7 +408,7 @@ class CuisineSingleItem extends ConsumerWidget {
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
                 Text(
-                  "Rs. 500",
+                  "Rs. ${item.price}",
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

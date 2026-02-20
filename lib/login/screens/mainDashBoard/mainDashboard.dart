@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:restro_hub/login/model/User.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -12,6 +14,9 @@ import 'package:shimmer/shimmer.dart';
 import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
 import 'package:restro_hub/login/screens/Orders/orders_screen.dart';
 import 'package:restro_hub/core/models/cuisines_item.dart';
+import 'package:restro_hub/core/models/country_model.dart';
+import 'package:restro_hub/core/models/restaurant_model.dart';
+import 'package:restro_hub/login/screens/restaurant_menu_screen.dart';
 import 'package:restro_hub/core/data/mock_data.dart';
 
 class MainDashBoard extends ConsumerStatefulWidget {
@@ -99,6 +104,14 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                       title: const Text('Home'),
                       onTap: () {
                         context.pop();
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.explore_outlined),
+                      title: const Text('Explore'),
+                      onTap: () {
+                        context.pop();
+                        context.pushNamed('exploreScreen');
                       },
                     ),
                     ListTile(
@@ -293,44 +306,30 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
             ),
           ),
         ),
-        // Cuisine Horizontal List
-        SliverVerticalCards(
+        // Countries Horizontal List
+        SliverCountryCards(
           headingTitle: 'Explore by Cuisine',
-          isHorizontal: true,
-          isCircular: true,
-          items: cuisines, // Pass full list
-          displayCount: 5, // Only show 5
+          items: countries,
+          displayCount: 6,
           seeAll: true,
         ),
 
-        SliverVerticalCards(
+        SliverOfferCards(
           headingTitle: 'Latest Offers',
-          hasOffer: true,
-          isHorizontal: true,
-          isCircular: false,
-          offerPercent: "20%",
-          rating: "4.5",
           items: latestOffers,
           displayCount: 5,
           seeAll: true,
         ),
 
-        SliverVerticalCards(
+        SliverRestaurantCards(
           headingTitle: 'Explore by Restaurant',
-          isHorizontal: true,
-          isCircular: true,
-          items: restaurants,
+          items: exploreRestaurants,
           displayCount: 5,
           seeAll: true,
         ),
 
-        SliverVerticalCards(
-          headingTitle: 'Top Rated',
-          hasOffer: true,
-          isHorizontal: false,
-          isCircular: false,
-          offerPercent: "80%",
-          rating: "4.5",
+        SliverTopRatedCards(
+          headingTitle: 'Top Rated Dishes',
           items: topRated,
           displayCount: 5,
           seeAll: true,
@@ -422,11 +421,18 @@ class SliverVerticalCards extends StatelessWidget {
                     child: TextButton(
                       key: Key(headingTitle),
                       onPressed: () {
-                        context.pushNamed(
-                          "allCouisineList",
-                          extra: {'title': headingTitle, 'items': items},
-                        );
+                        if (headingTitle.contains('Cuisine')) {
+                          context.pushNamed('exploreScreen');
+                        } else if (headingTitle.contains('Restaurant')) {
+                          context.pushNamed('exploreRestaurantsScreen');
+                        } else {
+                          context.pushNamed(
+                            "allCouisineList",
+                            extra: {'title': headingTitle, 'items': items},
+                          );
+                        }
                       },
+
                       child: const Text("See All"),
                     ),
                   ),
@@ -639,6 +645,627 @@ class RestaurantCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class SliverCountryCards extends StatelessWidget {
+  final String headingTitle;
+  final List<Country> items;
+  final int? displayCount;
+  final bool seeAll;
+
+  const SliverCountryCards({
+    super.key,
+    required this.headingTitle,
+    required this.items,
+    this.displayCount,
+    this.seeAll = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayItems = displayCount != null
+        ? items.take(displayCount!).toList()
+        : items;
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    headingTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Visibility(
+                    visible: seeAll,
+                    child: TextButton(
+                      onPressed: () {
+                        context.pushNamed('countryListScreen');
+                      },
+                      child: const Text("See All"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 130,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.all(8.0),
+                itemCount: displayItems.length,
+                itemBuilder: (context, index) {
+                  final country = displayItems[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            context.pushNamed(
+                              'exploreScreen',
+                              extra: country.name,
+                            );
+                          },
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: context.colorScheme.surface,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                country.flag,
+                                style: const TextStyle(fontSize: 32),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          country.name,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SliverOfferCards extends StatelessWidget {
+  final String headingTitle;
+  final List<CuisinesItem> items;
+  final int? displayCount;
+  final bool seeAll;
+
+  const SliverOfferCards({
+    super.key,
+    required this.headingTitle,
+    required this.items,
+    this.displayCount,
+    this.seeAll = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final displayItems = displayCount != null
+        ? items.take(displayCount!).toList()
+        : items;
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    headingTitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  Visibility(
+                    visible: seeAll,
+                    child: TextButton(
+                      onPressed: () => context.pushNamed(
+                        "allCouisineList",
+                        extra: {'title': headingTitle, 'items': items},
+                      ),
+                      child: Text(
+                        "View Deals",
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 180,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: displayItems.length,
+                itemBuilder: (context, index) {
+                  final item = displayItems[index];
+                  return GestureDetector(
+                    onTap: () =>
+                        context.pushNamed("cuisineSingleItem", extra: item),
+                    child: Container(
+                      width: 320,
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(25),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            colorScheme.primary,
+                            colorScheme.primary.withValues(alpha: 0.8),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: -20,
+                            bottom: -20,
+                            child: Opacity(
+                              opacity: 0.2,
+                              child: Icon(
+                                Icons.local_offer_rounded,
+                                size: 150,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          "${item.offerPercent} OFF",
+                                          style: GoogleFonts.poppins(
+                                            color: colorScheme.primary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        item.name,
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text(
+                                        "Limited time feast!",
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.8,
+                                          ),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 2,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Image.asset(
+                                      item.image,
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SliverTopRatedCards extends StatelessWidget {
+  final String headingTitle;
+  final List<CuisinesItem> items;
+  final int? displayCount;
+  final bool seeAll;
+
+  const SliverTopRatedCards({
+    super.key,
+    required this.headingTitle,
+    required this.items,
+    this.displayCount,
+    this.seeAll = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final displayItems = displayCount != null
+        ? items.take(displayCount!).toList()
+        : items;
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    headingTitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Visibility(
+                    visible: seeAll,
+                    child: TextButton(
+                      onPressed: () => context.pushNamed(
+                        "allCouisineList",
+                        extra: {'title': headingTitle, 'items': items},
+                      ),
+                      child: const Text("See All"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 240,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: displayItems.length,
+                itemBuilder: (context, index) {
+                  final item = displayItems[index];
+                  return GestureDetector(
+                    onTap: () =>
+                        context.pushNamed("cuisineSingleItem", extra: item),
+                    child: Container(
+                      width: 180,
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                Image.asset(
+                                  item.image,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                                Positioned(
+                                  top: 10,
+                                  right: 10,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          color: Colors.white,
+                                          size: 12,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          item.rating,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: GoogleFonts.poppins(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Rs. ${item.price}",
+                                  style: GoogleFonts.poppins(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SliverRestaurantCards extends StatelessWidget {
+  final String headingTitle;
+  final List<Restaurant> items;
+  final int? displayCount;
+  final bool seeAll;
+
+  const SliverRestaurantCards({
+    super.key,
+    required this.headingTitle,
+    required this.items,
+    this.displayCount,
+    this.seeAll = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayItems = displayCount != null
+        ? items.take(displayCount!).toList()
+        : items;
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    headingTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Visibility(
+                    visible: seeAll,
+                    child: TextButton(
+                      onPressed: () {
+                        context.pushNamed('exploreRestaurantsScreen');
+                      },
+                      child: const Text("See All"),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 200,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.all(8.0),
+                itemCount: displayItems.length,
+                itemBuilder: (context, index) {
+                  final restaurant = displayItems[index];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              RestaurantMenuScreen(restaurant: restaurant),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 250,
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        color: context.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Stack(
+                        children: [
+                          Image.asset(
+                            restaurant.image,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                          Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.transparent, Colors.black87],
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  restaurant.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
+                                      size: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      restaurant.rating,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      restaurant.deliveryTime,
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
