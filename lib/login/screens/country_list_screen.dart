@@ -39,37 +39,50 @@ class CountryListScreen extends StatelessWidget {
             items: countries,
             title: "Global Cuisines",
             hintText: "Search countries or regions…",
+            expandedHeight: 260,
+            showBackButton: true,
+            onBackPressed: () => Navigator.pop(context),
+            enableFilters: true,
+            filterItems: const ['All', 'Asia', 'Europe', 'Americas', 'Africa'],
+            onFilterChanged: (selected) {
+              // Handle filter changes - can expand to filter countries by region
+              debugPrint('Selected filters: $selected');
+            },
+            background: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.12),
+                    colorScheme.secondary.withValues(alpha: 0.08),
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.public,
+                      size: 64,
+                      color: colorScheme.primary.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Explore Cuisines',
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             filterPredicate: (country, query) =>
                 country.name.toLowerCase().contains(query.toLowerCase()),
-            background: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        colorScheme.primaryContainer.withValues(alpha: 0.4),
-                        colorScheme.surface,
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: -30,
-                  top: -20,
-                  child: Opacity(
-                    opacity: 0.08,
-                    child: Icon(
-                      Icons.public_rounded,
-                      size: 280,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
             itemBuilder: (context, country, index) {
               final cuisineCount = cuisines
                   .where((c) => c.country == country.name)

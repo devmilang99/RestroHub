@@ -93,19 +93,45 @@ class _ExploreRestaurantsScreenState
             items: filtered,
             title: "Restaurants",
             hintText: "Search restaurants or cuisines…",
-            expandedHeight: 180,
+            expandedHeight: 240,
+            showBackButton: true,
+            onBackPressed: () => context.pop(),
             filterPredicate: (r, query) =>
                 r.name.toLowerCase().contains(query.toLowerCase()) ||
                 r.description.toLowerCase().contains(query.toLowerCase()),
-            leading: Padding(
-              padding: const EdgeInsets.all(8),
-              child: _GlassButton(
-                icon: Icons.arrow_back_ios_new_rounded,
-                isDark: isDark,
-                onTap: () => context.pop(),
+            background: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.08),
+                    colorScheme.secondary.withValues(alpha: 0.05),
+                  ],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.restaurant,
+                      size: 56,
+                      color: colorScheme.primary.withValues(alpha: 0.25),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Find Your Favorite',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            background: Container(color: Colors.transparent),
             filterBar: _buildFilterChips(colorScheme, isDark),
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
             itemBuilder: (context, restaurant, index) =>
