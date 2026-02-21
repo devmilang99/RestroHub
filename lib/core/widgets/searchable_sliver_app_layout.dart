@@ -41,7 +41,7 @@ class SearchableSliverAppLayout<T> extends StatefulWidget {
     this.background,
     this.filterBar,
     this.hintText = 'Search...',
-    this.expandedHeight = 220,
+    this.expandedHeight = 120,
     this.onBackPressed,
     this.showBackButton = true,
     this.actions,
@@ -69,11 +69,14 @@ class _SearchableSliverAppLayoutState<T>
 
   double get _collapseTarget => widget.expandedHeight;
 
-  double get _headerHeight =>
-      (widget.filterBar != null ||
-          (widget.enableFilters && (widget.filterItems?.isNotEmpty ?? false)))
-      ? 120.0
-      : 70.0;
+  double get _headerHeight {
+    if (!widget.enableFilters) return 70.0;
+    final hasFilterContent =
+        widget.filterBar != null ||
+        widget.customFilterBuilder != null ||
+        (widget.filterItems?.isNotEmpty ?? false);
+    return hasFilterContent ? 120.0 : 70.0;
+  }
 
   void _safeAnimateTo(
     double to, {
@@ -83,8 +86,13 @@ class _SearchableSliverAppLayoutState<T>
     if (!mounted) return;
     if (_scrollController.hasClients) {
       final max = _scrollController.position.maxScrollExtent;
+      final target = to.clamp(0.0, max);
+
+      // Prevent redundant animations if we are already close to the target
+      if ((_scrollController.offset - target).abs() < 1.0) return;
+
       _scrollController.animateTo(
-        to.clamp(0.0, max),
+        target,
         duration: Duration(milliseconds: duration),
         curve: curve,
       );
@@ -128,12 +136,6 @@ class _SearchableSliverAppLayoutState<T>
       // show back-to-top button when scrolled well past the collapsed header
       final showTop = _scrollController.offset > (_collapseTarget + 100);
       if (showTop != _showBackToTop) setState(() => _showBackToTop = showTop);
-
-      if (!_searchFocus.hasFocus && _scrollController.offset < 30) {
-        if (_scrollController.position.pixels > 0) {
-          _safeAnimateTo(0, duration: 200, curve: Curves.easeOut);
-        }
-      }
     });
   }
 
@@ -217,15 +219,6 @@ class _SearchableSliverAppLayoutState<T>
                 backgroundColor: colorScheme.surface,
                 actions: widget.actions,
                 flexibleSpace: FlexibleSpaceBar(
-                  title: Text(
-                    widget.title,
-                    style: GoogleFonts.poppins(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  centerTitle: true,
                   collapseMode: CollapseMode.parallax,
                   background:
                       widget.background ??
@@ -252,7 +245,8 @@ class _SearchableSliverAppLayoutState<T>
                                 ),
                               ),
                             ),
-                            if (widget.enableFilters)
+                            if (widget.enableFilters &&
+                                (widget.filterItems?.isNotEmpty ?? false))
                               Positioned(
                                 right: 12,
                                 bottom: 12,
@@ -369,41 +363,43 @@ class _SearchableSliverAppLayoutState<T>
                               ),
                           ],
                         ),
-                        // Filter Chips or Custom Filter Builder
-                        if (widget.filterBar != null)
-                          Expanded(
-                            child: Padding(
+                        // Filter Chips or Custom Filter Builder (Gated by enableFilters)
+                        if (widget.enableFilters) ...[
+                          if (widget.filterBar != null)
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: widget.filterBar!,
+                              ),
+                            )
+                          else if (widget.customFilterBuilder != null)
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: widget.customFilterBuilder!(
+                                  context,
+                                  _selectedFilters,
+                                  (selected) {
+                                    setState(() {
+                                      _selectedFilters.clear();
+                                      _selectedFilters.addAll(selected);
+                                    });
+                                    widget.onFilterChanged?.call(
+                                      _selectedFilters,
+                                    );
+                                  },
+                                ),
+                              ),
+                            )
+                          else if (hasFilterItems)
+                            Padding(
                               padding: const EdgeInsets.only(top: 8.0),
-                              child: widget.filterBar!,
-                            ),
-                          )
-                        else if (widget.customFilterBuilder != null)
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: widget.customFilterBuilder!(
-                                context,
-                                _selectedFilters,
-                                (selected) {
-                                  setState(() {
-                                    _selectedFilters.clear();
-                                    _selectedFilters.addAll(selected);
-                                  });
-                                  widget.onFilterChanged?.call(
-                                    _selectedFilters,
-                                  );
-                                },
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(children: _filterChipWidgets),
                               ),
                             ),
-                          )
-                        else if (hasFilterItems)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(children: _filterChipWidgets),
-                            ),
-                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -467,7 +463,8 @@ class _SearchableSliverAppLayoutState<T>
   }
 
   void _showFilterSheet() {
-    if (!(widget.filterItems?.isNotEmpty ?? false)) return;
+    if (!widget.enableFilters || !(widget.filterItems?.isNotEmpty ?? false))
+      return;
     final colorScheme = context.colorScheme;
     showModalBottomSheet(
       context: context,

@@ -1,72 +1,72 @@
-import 'package:restro_hub/core/models/cuisines_item.dart';
-import 'package:restro_hub/core/models/restaurant_model.dart';
-import 'package:restro_hub/core/models/country_model.dart';
+import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
+import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
+import 'package:restro_hub/features/country/data/models/country_model.dart';
 
-final List<Country> countries = [
-  const Country(
+final List<CountryModel> countries = [
+  const CountryModel(
     name: "Italy",
     flag: "🇮🇹",
     image: "assets/italy.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "China",
     flag: "🇨🇳",
     image: "assets/china.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "Mexico",
     flag: "🇲🇽",
     image: "assets/mexico.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1512813195391-4ac9a732d593?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "India",
     flag: "🇮🇳",
     image: "assets/india.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1524492707943-593c447c948c?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "Thailand",
     flag: "🇹🇭",
     image: "assets/thailand.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1504214208698-ea191fd83e16?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "USA",
     flag: "🇺🇸",
     image: "assets/usa.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1501446529957-6226bd447c46?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "Japan",
     flag: "🇯🇵",
     image: "assets/japan.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "South Korea",
     flag: "🇰🇷",
     image: "assets/korea.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1538669715516-b2a59c2db7bd?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "France",
     flag: "🇫🇷",
     image: "assets/france.webp",
     historicalImage:
         "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?q=80&w=1000&auto=format&fit=crop",
   ),
-  const Country(
+  const CountryModel(
     name: "Spain",
     flag: "🇪🇸",
     image: "assets/spain.webp",
@@ -75,8 +75,8 @@ final List<Country> countries = [
   ),
 ];
 
-final List<CuisinesItem> cuisines = [
-  const CuisinesItem(
+final List<CuisineModel> cuisines = [
+  CuisineModel(
     name: 'Spaghetti Carbonara',
     image: 'assets/food1.webp',
     rating: "4.5",
@@ -92,7 +92,7 @@ final List<CuisinesItem> cuisines = [
       "Best pasta in town.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Margherita Pizza',
     image: 'assets/food1.webp',
     rating: "4.7",
@@ -103,7 +103,7 @@ final List<CuisinesItem> cuisines = [
     description:
         "Traditional thin-crust pizza with fresh basil and mozzarella.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Lasagna Bolognese',
     image: 'assets/food2.webp',
     rating: "4.8",
@@ -113,7 +113,7 @@ final List<CuisinesItem> cuisines = [
     country: "Italy",
     description: "Layered pasta with rich meat sauce and creamy bechamel.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Risotto ai Funghi',
     image: 'assets/food3.webp',
     rating: "4.6",
@@ -123,7 +123,7 @@ final List<CuisinesItem> cuisines = [
     country: "Italy",
     description: "Creamy arborio rice with earthy wild mushrooms.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Kung Pao Chicken',
     image: 'assets/food2.webp',
     rating: "4.5",
@@ -133,7 +133,7 @@ final List<CuisinesItem> cuisines = [
     country: "China",
     description: "Spicy stir-fried chicken with peanuts and vegetables.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Peking Duck',
     image: 'assets/food1.webp',
     rating: "4.9",
@@ -143,7 +143,7 @@ final List<CuisinesItem> cuisines = [
     country: "China",
     description: "Crispy skin duck served with thin pancakes and hoisin sauce.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Mapo Tofu',
     image: 'assets/food3.webp',
     rating: "4.4",
@@ -153,7 +153,7 @@ final List<CuisinesItem> cuisines = [
     country: "China",
     description: "Silken tofu set in a spicy chili and bean-based sauce.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Enchiladas Verdes',
     image: 'assets/food3.webp',
     rating: "4.7",
@@ -163,7 +163,7 @@ final List<CuisinesItem> cuisines = [
     country: "Mexico",
     description: "Corn tortillas filled with shredded chicken and green salsa.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Chiles en Nogada',
     image: 'assets/food1.webp',
     rating: "4.9",
@@ -174,7 +174,7 @@ final List<CuisinesItem> cuisines = [
     description:
         "Poblano chilies stuffed with picadillo topped with a walnut-based cream sauce.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Guacamole & Chips',
     image: 'assets/food2.webp',
     rating: "4.6",
@@ -184,7 +184,7 @@ final List<CuisinesItem> cuisines = [
     country: "Mexico",
     description: "Freshly mashed avocados with lime, onions, and cilantro.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Chicken Tikka Masala',
     image: 'assets/food4.webp',
     rating: "4.8",
@@ -194,7 +194,7 @@ final List<CuisinesItem> cuisines = [
     country: "India",
     description: "Roasted marinated chicken chunks in a spiced creamy sauce.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Palak Paneer',
     image: 'assets/food1.webp',
     rating: "4.6",
@@ -205,7 +205,7 @@ final List<CuisinesItem> cuisines = [
     description:
         "Cottage cheese cubes in a thick paste made from puréed spinach.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Masala Dosa',
     image: 'assets/food2.webp',
     rating: "4.7",
@@ -215,7 +215,7 @@ final List<CuisinesItem> cuisines = [
     country: "India",
     description: "Crispy rice pancake filled with spicy potato mash.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Tom Yum Goong',
     image: 'assets/food5.webp',
     rating: "4.8",
@@ -225,7 +225,7 @@ final List<CuisinesItem> cuisines = [
     country: "Thailand",
     description: "Hot and sour Thai soup with shrimp and fragrant herbs.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Som Tum',
     image: 'assets/food1.webp',
     rating: "4.5",
@@ -235,7 +235,7 @@ final List<CuisinesItem> cuisines = [
     country: "Thailand",
     description: "Green papaya salad with a spicy, sour, and sweet dressing.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'BBQ Ribs',
     image: 'assets/food6.webp',
     rating: "4.9",
@@ -245,7 +245,7 @@ final List<CuisinesItem> cuisines = [
     country: "USA",
     description: "Slow-cooked pork ribs glazed with smoky barbecue sauce.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Macaroni and Cheese',
     image: 'assets/food2.webp',
     rating: "4.4",
@@ -255,7 +255,7 @@ final List<CuisinesItem> cuisines = [
     country: "USA",
     description: "Rich and creamy pasta with a blend of four cheeses.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'California Roll',
     image: 'assets/food1.webp',
     rating: "4.6",
@@ -265,7 +265,7 @@ final List<CuisinesItem> cuisines = [
     country: "Japan",
     description: "Sushi roll with crab, avocado, and cucumber.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Ramen Tonkotsu',
     image: 'assets/food2.webp',
     rating: "4.9",
@@ -275,7 +275,7 @@ final List<CuisinesItem> cuisines = [
     country: "Japan",
     description: "Rich pork bone broth with noodles, pork belly, and egg.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Beef Bulgogi',
     image: 'assets/food3.webp',
     rating: "4.8",
@@ -285,7 +285,7 @@ final List<CuisinesItem> cuisines = [
     country: "South Korea",
     description: "Thinly sliced marinated beef grilled to perfection.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Kimchi Jjigae',
     image: 'assets/food4.webp',
     rating: "4.7",
@@ -295,7 +295,7 @@ final List<CuisinesItem> cuisines = [
     country: "South Korea",
     description: "Spicy stew made with fermented kimchi, tofu, and pork.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Ratatouille',
     image: 'assets/food1.webp',
     rating: "4.6",
@@ -305,7 +305,7 @@ final List<CuisinesItem> cuisines = [
     country: "France",
     description: "Stewed vegetable dish originating in Nice.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Coq au Vin',
     image: 'assets/food2.webp',
     rating: "4.8",
@@ -315,7 +315,7 @@ final List<CuisinesItem> cuisines = [
     country: "France",
     description: "Chicken braised with wine, lardons, and mushrooms.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Paella Valenciana',
     image: 'assets/food3.webp',
     rating: "4.9",
@@ -325,7 +325,7 @@ final List<CuisinesItem> cuisines = [
     country: "Spain",
     description: "Saffron-flavored rice with seafood and chicken.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Tiramisu',
     image: 'assets/food1.webp',
     rating: "4.9",
@@ -336,7 +336,7 @@ final List<CuisinesItem> cuisines = [
     description:
         "Coffee-flavored Italian dessert with ladyfingers and mascarpone.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Gnocchi di Patate',
     image: 'assets/food2.webp',
     rating: "4.5",
@@ -346,7 +346,7 @@ final List<CuisinesItem> cuisines = [
     country: "Italy",
     description: "Soft potato dumplings served with fresh tomato basil sauce.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Minestrone Soup',
     image: 'assets/food3.webp',
     rating: "4.4",
@@ -356,7 +356,7 @@ final List<CuisinesItem> cuisines = [
     country: "Italy",
     description: "Hearty vegetable soup with pasta and beans.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Chow Mein',
     image: 'assets/food1.webp',
     rating: "4.3",
@@ -366,7 +366,7 @@ final List<CuisinesItem> cuisines = [
     country: "China",
     description: "Stir-fried noodles with crisp vegetables and savory sauce.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Spring Rolls',
     image: 'assets/food2.webp',
     rating: "4.6",
@@ -376,7 +376,7 @@ final List<CuisinesItem> cuisines = [
     country: "China",
     description: "Crispy fried rolls filled with mixed vegetables.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Wonton Soup',
     image: 'assets/food3.webp',
     rating: "4.5",
@@ -386,7 +386,7 @@ final List<CuisinesItem> cuisines = [
     country: "China",
     description: "Delicate dumplings in a clear savory broth.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Quesadillas',
     image: 'assets/food1.webp',
     rating: "4.4",
@@ -396,7 +396,7 @@ final List<CuisinesItem> cuisines = [
     country: "Mexico",
     description: "Toasted tortillas oozing with melted cheese and peppers.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Pozole Rojo',
     image: 'assets/food2.webp',
     rating: "4.8",
@@ -406,7 +406,7 @@ final List<CuisinesItem> cuisines = [
     country: "Mexico",
     description: "Traditional soup made with hominy and seasoned meat.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Paneer Butter Masala',
     image: 'assets/food1.webp',
     rating: "4.7",
@@ -416,7 +416,7 @@ final List<CuisinesItem> cuisines = [
     country: "India",
     description: "Creamy tomato-based curry with soft paneer cubes.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Chicken Biryani',
     image: 'assets/food2.webp',
     rating: "4.9",
@@ -426,7 +426,7 @@ final List<CuisinesItem> cuisines = [
     country: "India",
     description: "Fragrant rice layered with spiced chicken and herbs.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Samosa Chat',
     image: 'assets/food3.webp',
     rating: "4.6",
@@ -436,7 +436,7 @@ final List<CuisinesItem> cuisines = [
     country: "India",
     description: "Crushed samosas topped with yogurt and tangy chutneys.",
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Green Curry',
     image: 'assets/food2.webp',
     rating: "4.2",
@@ -460,7 +460,7 @@ final List<CuisinesItem> cuisines = [
       "Love the crunch of the veggies.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Beef Tacos',
     image: 'assets/food3.webp',
     rating: "4.8",
@@ -476,7 +476,7 @@ final List<CuisinesItem> cuisines = [
       "A real Mexican treat.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Butter Chicken',
     image: 'assets/food4.webp',
     rating: "4.6",
@@ -495,7 +495,7 @@ final List<CuisinesItem> cuisines = [
     ],
     comments: ["Full of flavor!", "Perfect spice level.", "Amazing with naan."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Pad Thai',
     image: 'assets/food5.webp',
     rating: "4.4",
@@ -517,7 +517,7 @@ final List<CuisinesItem> cuisines = [
       "Very fragrant.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Classic Burger',
     image: 'assets/food6.webp',
     rating: "4.3",
@@ -540,7 +540,7 @@ final List<CuisinesItem> cuisines = [
       "Love the cheese.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Sushi Roll',
     image: 'assets/food1.webp',
     rating: "4.7",
@@ -562,7 +562,7 @@ final List<CuisinesItem> cuisines = [
       "High quality ingredients.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Bibimbap',
     image: 'assets/food2.webp',
     rating: "4.5",
@@ -584,7 +584,7 @@ final List<CuisinesItem> cuisines = [
       "Best Korean chicken.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Croissant',
     image: 'assets/food3.webp',
     rating: "4.9",
@@ -600,7 +600,7 @@ final List<CuisinesItem> cuisines = [
       "True French quality.",
     ],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Paella',
     image: 'assets/food4.webp',
     rating: "4.4",
@@ -626,8 +626,8 @@ final List<CuisinesItem> cuisines = [
   ),
 ];
 
-final List<CuisinesItem> latestOffers = [
-  const CuisinesItem(
+final List<CuisineModel> latestOffers = [
+  CuisineModel(
     name: 'Pizza Set',
     image: 'assets/food1.webp',
     rating: "4.5",
@@ -638,7 +638,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Pizza", "Cola", "Garlic", "Butter", "Flour"],
     comments: ["Great deal!", "Feeds the whole family.", "Pizza was hot."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Noodle Combo',
     image: 'assets/food2.webp',
     rating: "4.2",
@@ -649,7 +649,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Noodles", "Spring Rolls", "Green Tea", "Chili Sauce"],
     comments: ["Good value.", "The rolls were crunchy.", "Nice combo."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Taco Box',
     image: 'assets/food3.webp',
     rating: "4.3",
@@ -660,7 +660,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Tacos", "Corn Chips", "Avocado", "Onion", "Tomato"],
     comments: ["Love the box!", "Perfect lunch.", "Guacamole is fresh."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Biryani Pack',
     image: 'assets/food4.webp',
     rating: "4.7",
@@ -671,7 +671,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Basmati Rice", "Chicken", "Yogurt", "Spices", "Rose Water"],
     comments: ["Aromatic and rich.", "The raita is cool.", "Large portion."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Sushi Tray',
     image: 'assets/food5.webp',
     rating: "4.8",
@@ -682,7 +682,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Salmon", "Tuna", "Rice", "Soy Sauce", "Ginger"],
     comments: ["Very fresh.", "Perfect date night food.", "Great variety."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Burger Deal',
     image: 'assets/food6.webp',
     rating: "4.1",
@@ -693,7 +693,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Beef", "Bun", "Potatoes", "Milk", "Ice Cream"],
     comments: ["Huge meal!", "Shake was thick.", "Fries were salty."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Pasta Night',
     image: 'assets/food1.webp',
     rating: "4.4",
@@ -704,7 +704,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Pasta", "Water", "Lemon", "Garlic", "Oil"],
     comments: ["Decent deal.", "Pasta selection is good.", "Fresh water."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Salad Special',
     image: 'assets/food2.webp',
     rating: "4.6",
@@ -715,7 +715,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Lettuce", "Chicken", "Cucumber", "Ranch Dressing"],
     comments: ["Healthy choice.", "Chicken was grilled well.", "Light meal."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Steak Offer',
     image: 'assets/food3.webp',
     rating: "4.9",
@@ -726,7 +726,7 @@ final List<CuisinesItem> latestOffers = [
     ingredients: ["Ribeye", "Potatoes", "Wine", "Butter", "Herbs"],
     comments: ["Best steak deal.", "Mashed potatoes are creamy.", "High end."],
   ),
-  const CuisinesItem(
+  CuisineModel(
     name: 'Dessert Mix',
     image: 'assets/food4.webp',
     rating: "4.5",
@@ -739,326 +739,38 @@ final List<CuisinesItem> latestOffers = [
   ),
 ];
 
-final List<CuisinesItem> restaurants = [
-  const CuisinesItem(
+final List<RestaurantModel> restaurantsList = [
+  RestaurantModel(
     name: 'RoadSide Cafe',
     image: 'assets/food1.webp',
     rating: "4.5",
-    offerPercent: "10%",
-    price: 300.0,
+    priceRange: "Rs. 200 - 500",
+    deliveryTime: "20-30 min",
     location: "Roadside",
     description: "Friendly neighborhood cafe with great coffee and snacks.",
-    ingredients: ["Coffee Beans", "Milk", "Pastries", "Sandwiches"],
-    comments: ["Relaxing spot.", "Best coffee in the area.", "Great muffins."],
+    menu: cuisines.sublist(0, 3),
   ),
-  const CuisinesItem(
+  RestaurantModel(
     name: 'Airakan Restro',
     image: 'assets/food2.webp',
     rating: "4.2",
-    offerPercent: "10%",
-    price: 1200.0,
+    priceRange: "Rs. 800 - 2000",
+    deliveryTime: "35-45 min",
     location: "Skyline",
     description: "Upmarket restaurant specializing in Asian fusion cuisine.",
-    ingredients: ["Asia Spices", "Seafood", "Exotic Fruits", "Rice"],
-    comments: [
-      "Unique flavors.",
-      "Bit pricey but worth it.",
-      "Fusion done right.",
-    ],
+    menu: cuisines.sublist(3, 6),
   ),
-  const CuisinesItem(
+  RestaurantModel(
     name: 'Tasty Heaven',
     image: 'assets/food3.webp',
     rating: "4.3",
-    offerPercent: "10%",
-    price: 600.0,
+    priceRange: "Rs. 400 - 900",
+    deliveryTime: "25-35 min",
     location: "Central",
     description: "Classic diner with comfort food favorites.",
-    ingredients: ["Eggs", "Bacon", "Pancakes", "Syrup", "Toast"],
-    comments: ["Great breakfast!", "Feels like home.", "Quick service."],
-  ),
-  const CuisinesItem(
-    name: 'Thamel Hub',
-    image: 'assets/food4.webp',
-    rating: "4.6",
-    offerPercent: "10%",
-    price: 800.0,
-    location: "Thamel",
-    description: "Bustling food court with a variety of international options.",
-    ingredients: ["Global Flavors", "Local Produce", "Street Food"],
-    comments: ["Vibrant atmosphere.", "So many choices!", "Great for groups."],
-  ),
-  const CuisinesItem(
-    name: 'Unique Resto',
-    image: 'assets/food5.webp',
-    rating: "4.4",
-    offerPercent: "10%",
-    price: 1500.0,
-    location: "North Gate",
-    description: "Experimental kitchen serving innovative dishes.",
-    ingredients: ["Molecular Gastronomy", "Secret Spices", "Gourmet Oils"],
-    comments: ["Surprising dishes.", "Art on a plate.", "Must try."],
-  ),
-  const CuisinesItem(
-    name: 'A1 Food Court',
-    image: 'assets/food6.webp',
-    rating: "4.1",
-    offerPercent: "10%",
-    price: 400.0,
-    location: "Bus Park",
-    description: "Fast and reliable food options for people on the go.",
-    ingredients: ["Quick Eats", "Frozen Delights", "Convenience Foods"],
-    comments: ["Fast and easy.", "Predictable quality.", "Good for lunch."],
-  ),
-  const CuisinesItem(
-    name: 'Green Villa',
-    image: 'assets/food1.webp',
-    rating: "4.7",
-    offerPercent: "10%",
-    price: 1800.0,
-    location: "Eco Park",
-    description:
-        "Eco-friendly restaurant focusing on organic and farm-to-table food.",
-    ingredients: ["Organic Vegetables", "Grass-fed Beef", "Local Honey"],
-    comments: ["Earth friendly.", "True organic taste.", "Beautiful garden."],
-  ),
-  const CuisinesItem(
-    name: 'Royal Diner',
-    image: 'assets/food2.webp',
-    rating: "4.8",
-    offerPercent: "10%",
-    price: 2500.0,
-    location: "Palace Way",
-    description: "Elegant dining room serving traditional multi-course meals.",
-    ingredients: ["Fine Wines", "Aged Beef", "Handmade Pasta"],
-    comments: ["Very royal experience.", "Impeccable service.", "Fine dining."],
-  ),
-  const CuisinesItem(
-    name: 'Urban Eats',
-    image: 'assets/food3.webp',
-    rating: "4.5",
-    offerPercent: "10%",
-    price: 1000.0,
-    location: "City Center",
-    description:
-        "Modern street food with a twist, located in the heart of the city.",
-    ingredients: ["Street Style", "Gourmet Sauces", "Craft Bun"],
-    comments: ["Hip spot.", "Great music.", "The wings are fire."],
-  ),
-  const CuisinesItem(
-    name: 'The Lounge',
-    image: 'assets/food4.webp',
-    rating: "4.3",
-    offerPercent: "10%",
-    price: 900.0,
-    location: "Plaza Hotel",
-    description: "Cozy lounge perfect for drinks and small plates.",
-    ingredients: ["Cocktails", "Appetizers", "Small Bites", "Platters"],
-    comments: ["Great for chill out.", "Dim lighting and cozy.", "Nice vibe."],
+    menu: cuisines.sublist(6, 9),
   ),
 ];
 
-final List<CuisinesItem> topRated = [
-  const CuisinesItem(
-    name: 'King Burger',
-    image: 'assets/food6.webp',
-    rating: "5.0",
-    offerPercent: "10%",
-    price: 650.0,
-    location: "King Street",
-    description: "The ultimate burger experience with triple cheese and bacon.",
-    ingredients: ["Beef", "Bacon", "Triple Cheese", "Pickles", "Special Sauce"],
-    comments: [
-      "The king of burgers!",
-      "Nothing beats this.",
-      "5 stars for sure.",
-    ],
-  ),
-  const CuisinesItem(
-    name: 'Supreme Pizza',
-    image: 'assets/food1.webp',
-    rating: "4.9",
-    offerPercent: "5%",
-    price: 1200.0,
-    location: "Main Avenue",
-    description: "Loaded with every topping you can imagine.",
-    ingredients: ["Pepperoni", "Mushrooms", "Olive", "Peppers", "Extra Cheese"],
-    comments: [
-      "Pizza perfection.",
-      "Huge amount of toppings.",
-      "Simply supreme.",
-    ],
-  ),
-  const CuisinesItem(
-    name: 'Spicy Ramen',
-    image: 'assets/food2.webp',
-    rating: "4.9",
-    offerPercent: "0%",
-    price: 850.0,
-    location: "Little Tokyo",
-    description:
-        "Hearty bowl of ramen with a rich, spicy broth and soft-boiled egg.",
-    ingredients: [
-      "Ramen Noodles",
-      "Pork Belly",
-      "Soft Boiled Egg",
-      "Chili Oil",
-      "Nori",
-    ],
-    comments: ["So warming.", "The broth is deep.", "Love the spice level."],
-  ),
-  const CuisinesItem(
-    name: 'Gourmet Pasta',
-    image: 'assets/food3.webp',
-    rating: "4.8",
-    offerPercent: "10%",
-    price: 950.0,
-    location: "Bistro Alley",
-    description: "Handmade tagliatelle with truffle oil and wild mushrooms.",
-    ingredients: [
-      "Tagliatelle",
-      "Truffle Oil",
-      "Wild Mushrooms",
-      "Garlic",
-      "Parsley",
-    ],
-    comments: [
-      "Incredibly rich.",
-      "Truffle flavor is strong.",
-      "Pure gourmet.",
-    ],
-  ),
-  const CuisinesItem(
-    name: 'Dragon Roll',
-    image: 'assets/food5.webp',
-    rating: "4.8",
-    offerPercent: "15%",
-    price: 1300.0,
-    location: "Zen Garden",
-    description:
-        "Visually stunning sushi roll with tempura shrimp and avocado topper.",
-    ingredients: ["Tempura Shrimp", "Avocado", "Unagi Sauce", "Eel", "Sesame"],
-    comments: ["Looks like a dragon!", "Delicious and crispy.", "Best roll."],
-  ),
-  const CuisinesItem(
-    name: 'Classic Steak',
-    image: 'assets/food4.webp',
-    rating: "4.7",
-    offerPercent: "20%",
-    price: 1800.0,
-    location: "Old Grill",
-    description:
-        "Perfectly seared sirloin steak with garlic butter and asparagus.",
-    ingredients: ["Sirloin", "Garlic Butter", "Asparagus", "Salt", "Pepper"],
-    comments: [
-      "Cooked perfectly.",
-      "Butter is so good.",
-      "Traditional and great.",
-    ],
-  ),
-  const CuisinesItem(
-    name: 'Vegan Bowl',
-    image: 'assets/food2.webp',
-    rating: "4.7",
-    offerPercent: "10%",
-    price: 700.0,
-    location: "Green Lane",
-    description:
-        "Power-packed bowl with quinoa, roasted veggies, and tahini dressing.",
-    ingredients: ["Quinoa", "Roasted Chickpeas", "Kale", "Tahini", "Lemon"],
-    comments: [
-      "Healthy and filling.",
-      "Amazing dressing.",
-      "Love the texture.",
-    ],
-  ),
-  const CuisinesItem(
-    name: 'Truffle Fries',
-    image: 'assets/food6.webp',
-    rating: "4.7",
-    offerPercent: "5%",
-    price: 450.0,
-    location: "Market Square",
-    description: "Crispy fries tossed in pure truffle oil and parmesan cheese.",
-    ingredients: ["Potatoes", "Truffle Oil", "Parmesan", "Salt", "Parsley"],
-    comments: ["Addictive!", "So fancy.", "Smells incredible."],
-  ),
-  const CuisinesItem(
-    name: 'Lobster Tail',
-    image: 'assets/food1.webp',
-    rating: "4.6",
-    offerPercent: "0%",
-    price: 2500.0,
-    location: "Harbor View",
-    description: "Sweet and succulent lobster tail served with melted butter.",
-    ingredients: ["Lobster", "Clarified Butter", "Lemon", "Garlic"],
-    comments: [
-      "Total luxury.",
-      "Melted in my mouth.",
-      "Special occasion meal.",
-    ],
-  ),
-  const CuisinesItem(
-    name: 'Mixed Grill',
-    image: 'assets/food3.webp',
-    rating: "4.6",
-    offerPercent: "10%",
-    price: 1600.0,
-    location: "Grill House",
-    description: "Platter of assorted grilled meats and sausages with sides.",
-    ingredients: ["Lamb", "Chicken", "Beef Sausage", "Corn", "Salad"],
-    comments: [
-      "Meat lover's dream.",
-      "Everything was smoky.",
-      "Satisfying platter.",
-    ],
-  ),
-];
-
-final List<Restaurant> exploreRestaurants = [
-  Restaurant(
-    name: 'Gusto Italiano',
-    image: 'assets/food1.webp',
-    rating: "4.8",
-    description: "The most authentic Italian experience in town.",
-    location: "Main Street, NY",
-    deliveryTime: "25-30 min",
-    priceRange: "\$\$\$",
-    menu: [
-      cuisines[0], // Spaghetti Carbonara
-      const CuisinesItem(
-        name: 'Margherita Pizza',
-        image: 'assets/food1.webp',
-        rating: "4.7",
-        offerPercent: "5%",
-        price: 550.0,
-        location: "Main Street, NY",
-        country: "Italy",
-      ),
-    ],
-  ),
-  Restaurant(
-    name: 'Dragon Palace',
-    image: 'assets/food2.webp',
-    rating: "4.5",
-    description: "Premium Chinese cuisines and dim sums.",
-    location: "Chinatown, SF",
-    deliveryTime: "30-40 min",
-    priceRange: "\$\$",
-    menu: [
-      cuisines[1], // Dim Sum
-    ],
-  ),
-  Restaurant(
-    name: 'The Taco Stand',
-    image: 'assets/food3.webp',
-    rating: "4.9",
-    description: "Real street tacos made with love.",
-    location: "Beach Road, LA",
-    deliveryTime: "20-25 min",
-    priceRange: "\$",
-    menu: [
-      cuisines[2], // Beef Tacos
-    ],
-  ),
-];
+final List<RestaurantModel> exploreRestaurants = restaurantsList;
+final List<CuisineModel> topRated = cuisines;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:restro_hub/core/providers/cart_provider.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 
 class CartBottomSheet extends ConsumerStatefulWidget {
@@ -217,11 +217,11 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                               ),
                               onPressed: () => cartNotifier.updateQuantity(
                                 item.name,
-                                item.quantity - 1,
+                                (item.quantity ?? 0) - 1,
                               ),
                             ),
                             Text(
-                              item.quantity.toString(),
+                              (item.quantity ?? 0).toString(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -235,7 +235,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                               ),
                               onPressed: () => cartNotifier.updateQuantity(
                                 item.name,
-                                item.quantity + 1,
+                                (item.quantity ?? 0) + 1,
                               ),
                             ),
                           ],

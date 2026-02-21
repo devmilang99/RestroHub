@@ -1,21 +1,21 @@
 import 'package:go_router/go_router.dart';
-import 'package:restro_hub/login/googleLogin.dart';
-import 'package:restro_hub/login/screens/CheckOut/processCheckOut.dart';
-import 'package:restro_hub/login/screens/Cuisine/all_Cuisine_List.dart';
-import 'package:restro_hub/login/screens/Cuisine/cuisine_Single_item.dart';
-import 'package:restro_hub/login/screens/favourites/favourites.dart';
-import 'package:restro_hub/login/screens/forgotPassword.dart';
-import 'package:restro_hub/login/screens/mainLoginScreen.dart';
-import 'package:restro_hub/login/model/User.dart';
-import 'package:restro_hub/login/screens/register.dart';
-import 'package:restro_hub/login/screens/mainDashBoard/mainDashboard.dart';
-import 'package:restro_hub/core/models/cuisines_item.dart';
-import 'package:restro_hub/splashScreen.dart';
+import 'package:restro_hub/features/auth/presentation/views/google_login_button.dart';
+import 'package:restro_hub/features/checkout/presentation/views/checkout_screen.dart';
+import 'package:restro_hub/features/cuisines/presentation/views/all_cuisine_list_screen.dart';
+import 'package:restro_hub/features/cuisines/presentation/views/cuisine_detail_screen.dart';
+import 'package:restro_hub/features/favourites/presentation/views/favourites_screen.dart';
+import 'package:restro_hub/features/auth/presentation/views/forgot_password_screen.dart';
+import 'package:restro_hub/features/auth/presentation/views/login_screen.dart';
+import 'package:restro_hub/features/auth/data/models/user_model.dart';
+import 'package:restro_hub/features/auth/presentation/views/register_screen.dart';
+import 'package:restro_hub/features/dashboard/presentation/views/main_dashboard_screen.dart';
+import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
+import 'package:restro_hub/features/splash/presentation/views/splash_screen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
-import 'package:restro_hub/login/screens/authenticated_password.dart';
-import 'package:restro_hub/login/screens/explore_screen.dart';
-import 'package:restro_hub/login/screens/country_list_screen.dart';
-import 'package:restro_hub/login/screens/explore_restaurants_screen.dart';
+import 'package:restro_hub/features/auth/presentation/views/authenticated_password_screen.dart';
+import 'package:restro_hub/features/restaurants/presentation/views/restaurant_explore_screen.dart';
+import 'package:restro_hub/features/country/presentation/views/country_list_screen.dart';
+import 'package:restro_hub/features/restaurants/presentation/views/explore_restaurants_screen.dart';
 
 class RouterService {
   static final _goRouter = GoRouter(
@@ -39,7 +39,7 @@ class RouterService {
         path: '/mainDashBoard',
         name: "mainDashBoard",
         builder: (context, state) {
-          final user = state.extra as User?;
+          final user = state.extra as UserModel?;
           return MainDashBoard(user: user);
         },
       ),
@@ -68,7 +68,7 @@ class RouterService {
           final extras = state.extra as Map<String, dynamic>;
           return AllCousineList(
             title: extras['title'] as String,
-            items: extras['items'] as List<CuisinesItem>,
+            items: extras['items'] as List<CuisineModel>,
           );
         },
       ),
@@ -77,7 +77,7 @@ class RouterService {
         path: '/cuisineSingleItem',
         name: "cuisineSingleItem",
         builder: (context, state) {
-          final item = state.extra as CuisinesItem;
+          final item = state.extra as CuisineModel;
           return CuisineSingleItem(item: item);
         },
       ),
