@@ -9,6 +9,7 @@ import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
+import 'package:restro_hub/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
@@ -64,7 +65,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
     final isDarkMode = themeMode == ThemeMode.dark;
     final colorScheme = context.colorScheme;
     final cart = ref.watch(cartProvider);
-    final totalItems = cart.fold(0, (sum, item) => sum + (item.quantity ?? 0));
+    final totalItems = cart.fold(0, (sum, item) => sum + (item.quantity));
 
     final List<Widget> pages = [
       _buildHomeView(context, colorScheme),
@@ -179,8 +180,12 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
               ),
               label: 'Cart',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.food_bank_rounded),
+            BottomNavigationBarItem(
+              icon: Badge(
+                label: const Text("3"),
+                isLabelVisible: true,
+                child: const Icon(Icons.food_bank_rounded),
+              ),
               label: 'Orders',
             ),
           ],
@@ -257,13 +262,20 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           actions: [
             IconButton(
               icon: Badge(
-                label: const Text("3"),
+                label: Text(
+                  ref
+                      .watch(notificationsProvider)
+                      .where((n) => !n.isRead)
+                      .length
+                      .toString(),
+                ),
+                isLabelVisible: ref.watch(notificationsProvider).isNotEmpty,
                 child: Icon(
                   Icons.notifications_outlined,
                   color: colorScheme.onSurface,
                 ),
               ),
-              onPressed: () {},
+              onPressed: () => context.pushNamed('notificationsScreen'),
             ),
             IconButton(
               icon: Badge(
@@ -1338,13 +1350,29 @@ class _CuisineCardList extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              "Rs. ${item.price}",
-                              style: GoogleFonts.poppins(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  "Rs. ${item.price}",
+                                  style: GoogleFonts.poppins(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                if (item.country != null) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    countries
+                                        .firstWhere(
+                                          (c) => c.name == item.country,
+                                          orElse: () => countries.first,
+                                        )
+                                        .flag,
+                                    style: const TextStyle(fontSize: 10),
+                                  ),
+                                ],
+                              ],
                             ),
                             Container(
                               padding: const EdgeInsets.all(4),

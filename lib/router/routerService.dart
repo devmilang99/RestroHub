@@ -13,9 +13,10 @@ import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 import 'package:restro_hub/features/splash/presentation/views/splash_screen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
 import 'package:restro_hub/features/auth/presentation/views/authenticated_password_screen.dart';
-import 'package:restro_hub/features/restaurants/presentation/views/restaurant_explore_screen.dart';
+import 'package:restro_hub/features/country/presentation/views/explore_country.dart';
 import 'package:restro_hub/features/country/presentation/views/country_list_screen.dart';
 import 'package:restro_hub/features/restaurants/presentation/views/explore_restaurants_screen.dart';
+import 'package:restro_hub/features/notifications/presentation/views/notifications_screen.dart';
 
 class RouterService {
   static final _goRouter = GoRouter(
@@ -115,6 +116,11 @@ class RouterService {
         path: '/exploreRestaurantsScreen',
         name: "exploreRestaurantsScreen",
         builder: (context, state) => const ExploreRestaurantsScreen(),
+      ),
+      GoRoute(
+        path: '/notificationsScreen',
+        name: "notificationsScreen",
+        builder: (context, state) => const NotificationsScreen(),
       ),
     ],
   );

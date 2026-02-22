@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
-import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
-import 'package:restro_hub/features/country/data/models/country_model.dart';
+
 import 'package:restro_hub/core/data/mock_data.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/country/data/models/country_model.dart';
+import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   final String? initialCountry;
@@ -16,7 +17,7 @@ class ExploreScreen extends ConsumerStatefulWidget {
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   late String _selectedCountry;
-  bool _showOnlyOffers = false;
+  final bool _showOnlyOffers = false;
 
   @override
   void initState() {
@@ -92,7 +93,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset(selectedCountryData.image, fit: BoxFit.cover),
+                  Image.network(
+                    selectedCountryData.historicalImage,
+                    fit: BoxFit.cover,
+                  ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(

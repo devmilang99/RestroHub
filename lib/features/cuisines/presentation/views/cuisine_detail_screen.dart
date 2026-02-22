@@ -45,19 +45,33 @@ class CuisineSingleItem extends ConsumerWidget {
             actions: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: CircleAvatar(
-                  backgroundColor: Colors.white.withValues(alpha: 0.8),
-                  child: IconButton(
-                    icon: Icon(
-                      isFav ? Icons.favorite : Icons.favorite_border,
-                      color: Colors.red,
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: Colors.white.withValues(alpha: 0.8),
+                      child: IconButton(
+                        icon: Icon(
+                          isFav ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.red,
+                        ),
+                        onPressed: () {
+                          ref
+                              .read(favouritesProvider.notifier)
+                              .toggleFavourite(item);
+                        },
+                      ),
                     ),
-                    onPressed: () {
-                      ref
-                          .read(favouritesProvider.notifier)
-                          .toggleFavourite(item);
-                    },
-                  ),
+                    const SizedBox(width: 8),
+                    CircleAvatar(
+                      backgroundColor: Colors.white.withValues(alpha: 0.8),
+                      child: IconButton(
+                        icon: const Icon(Icons.share, color: Colors.black),
+                        onPressed: () {
+                          // Handle share action
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -436,17 +450,6 @@ class CuisineSingleItem extends ConsumerWidget {
                       content: Text("${item.name} added to cart!"),
                       duration: const Duration(seconds: 2),
                       behavior: SnackBarBehavior.floating,
-                      action: SnackBarAction(
-                        label: "View Cart",
-                        onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            builder: (context) => const CartBottomSheet(),
-                          );
-                        },
-                      ),
                     ),
                   );
                 },

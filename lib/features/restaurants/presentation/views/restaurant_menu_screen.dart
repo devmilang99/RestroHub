@@ -1,20 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
+import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
+import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
 
-class RestaurantMenuScreen extends StatefulWidget {
+class RestaurantMenuScreen extends ConsumerStatefulWidget {
   final RestaurantModel restaurant;
   const RestaurantMenuScreen({super.key, required this.restaurant});
 
   @override
-  State<RestaurantMenuScreen> createState() => _RestaurantMenuScreenState();
+  ConsumerState<RestaurantMenuScreen> createState() =>
+      _RestaurantMenuScreenState();
 }
 
-class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
+class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+  // Note: restaurant favorites will be mirrored into the global favourites
+  // list by creating a lightweight `CuisineModel` from the restaurant.
 
   @override
   void initState() {
@@ -30,7 +39,7 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
     super.dispose();
   }
 
-  List<dynamic> get _filteredMenu {
+  List<CuisineModel> get _filteredMenu {
     if (_searchQuery.isEmpty) return widget.restaurant.menu;
     return widget.restaurant.menu
         .where(
@@ -46,10 +55,39 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
     final colorScheme = context.colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final r = widget.restaurant;
+    final favCuisine = CuisineModel(
+      name: r.name,
+      description: r.description,
+      image: r.image,
+      rating: r.rating,
+      price: 0.0,
+      location: r.location,
+    );
     final menu = _filteredMenu;
-
+    final isFav = ref
+        .watch(favouritesProvider.notifier)
+        .isFavourite(favCuisine);
+    ref.watch(favouritesProvider);
     return Scaffold(
       backgroundColor: isDark ? colorScheme.surface : const Color(0xFFF7F8FC),
+      floatingActionButton: ref.watch(cartProvider).isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const CartBottomSheet(),
+                );
+              },
+              icon: Icon(Icons.shopping_cart, color: colorScheme.onPrimary),
+              label: Text(
+                '${ref.watch(cartProvider).fold(0, (sum, item) => sum + (item.quantity))} items',
+                style: TextStyle(color: colorScheme.onPrimary),
+              ),
+              backgroundColor: colorScheme.primary,
+            )
+          : null,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
@@ -70,15 +108,44 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
             actions: [
               Padding(
                 padding: const EdgeInsets.all(8),
-                child: _CircleBtn(
-                  icon: Icons.favorite_border_rounded,
-                  iconColor: Colors.red,
-                  onTap: () {},
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    return _CircleBtn(
+                      icon: isFav
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      iconColor: Colors.red,
+                      onTap: () {
+                        final message = isFav
+                            ? "Removed from favourites"
+                            : "Added ${r.name} to favourites!";
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(message),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                        ref
+                            .read(favouritesProvider.notifier)
+                            .toggleFavourite(favCuisine);
+                      },
+                    );
+                  },
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(right: 12, top: 8, bottom: 8),
-                child: _CircleBtn(icon: Icons.share_rounded, onTap: () {}),
+                child: _CircleBtn(
+                  icon: Icons.share_rounded,
+                  onTap: () {
+                    // Simple share logic placeholder
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Sharing restaurant link..."),
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -314,8 +381,8 @@ class _RestaurantMenuScreenState extends State<RestaurantMenuScreen> {
 }
 
 // ── Menu item card with staggered entrance animation ─────────────────────────
-class _MenuItemCard extends StatefulWidget {
-  final dynamic item;
+class _MenuItemCard extends ConsumerStatefulWidget {
+  final CuisineModel item;
   final int index;
   final bool isFirst;
   final bool isDark;
@@ -330,10 +397,10 @@ class _MenuItemCard extends StatefulWidget {
   });
 
   @override
-  State<_MenuItemCard> createState() => _MenuItemCardState();
+  ConsumerState<_MenuItemCard> createState() => _MenuItemCardState();
 }
 
-class _MenuItemCardState extends State<_MenuItemCard>
+class _MenuItemCardState extends ConsumerState<_MenuItemCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _fade;
@@ -479,17 +546,31 @@ class _MenuItemCardState extends State<_MenuItemCard>
                                 fontSize: 14,
                               ),
                             ),
-                            Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: cs.primary,
-                                borderRadius: BorderRadius.circular(9),
-                              ),
-                              child: const Icon(
-                                Icons.add,
-                                color: Colors.white,
-                                size: 17,
+                            GestureDetector(
+                              onTap: () {
+                                ref
+                                    .read(cartProvider.notifier)
+                                    .addItem(
+                                      CartModel(
+                                        name: item.name,
+                                        image: item.image,
+                                        price: item.price,
+                                        quantity: 1,
+                                      ),
+                                    );
+                              },
+                              child: Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: cs.primary,
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 17,
+                                ),
                               ),
                             ),
                           ],

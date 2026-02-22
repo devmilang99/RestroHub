@@ -93,7 +93,6 @@ class _ExploreRestaurantsScreenState
             items: filtered,
             title: "Restaurants",
             hintText: "Search restaurants or cuisines…",
-            expandedHeight: 240,
             showBackButton: true,
             onBackPressed: () => context.pop(),
             filterPredicate: (r, query) =>

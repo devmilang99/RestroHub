@@ -37,9 +37,8 @@ class CountryListScreen extends StatelessWidget {
           // ── Reusable Searchable Layout ──
           SearchableSliverAppLayout<CountryModel>(
             items: countries,
-            title: "Global Cuisines",
+            title: null,
             hintText: "Search countries or regions…",
-            expandedHeight: 260,
             showBackButton: true,
             onBackPressed: () => Navigator.pop(context),
             enableFilters: false,
@@ -70,7 +69,7 @@ class CountryListScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Explore Cuisines',
+                      'Global Cuisines',
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

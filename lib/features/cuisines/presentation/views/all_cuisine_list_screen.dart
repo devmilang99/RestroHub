@@ -28,7 +28,7 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     final cart = ref.watch(cartProvider);
-    final totalItems = cart.fold(0, (sum, item) => sum + (item.quantity ?? 0));
+    final totalItems = cart.fold(0, (sum, item) => sum + (item.quantity));
     const bool enableFilters = false;
 
     return Scaffold(
@@ -51,7 +51,6 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
         title: "Cuisines",
         items: widget.items,
         hintText: "Search in Cuisines",
-        expandedHeight: 90,
         enableFilters: enableFilters,
         filterPredicate: (item, query) {
           final matchesQuery =

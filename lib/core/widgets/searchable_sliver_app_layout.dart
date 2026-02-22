@@ -6,7 +6,7 @@ class SearchableSliverAppLayout<T> extends StatefulWidget {
   final List<T> items;
   final bool Function(T item, String query) filterPredicate;
   final Widget Function(BuildContext context, T item, int index) itemBuilder;
-  final String title;
+  final String? title;
   final String heroTag;
   final Widget? background;
   final Widget? filterBar;
@@ -237,7 +237,7 @@ class _SearchableSliverAppLayoutState<T>
                           children: [
                             Center(
                               child: Text(
-                                widget.title,
+                                widget.title!,
                                 style: GoogleFonts.poppins(
                                   color: colorScheme.onSurface,
                                   fontWeight: FontWeight.bold,
