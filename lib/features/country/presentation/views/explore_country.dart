@@ -6,6 +6,8 @@ import 'package:restro_hub/core/data/mock_data.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/country/data/models/country_model.dart';
 import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   final String? initialCountry;
@@ -44,6 +46,24 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      floatingActionButton: ref.watch(cartProvider).isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const CartBottomSheet(),
+                );
+              },
+              icon: Icon(Icons.shopping_cart, color: colorScheme.onPrimary),
+              label: Text(
+                '${ref.watch(cartProvider).fold(0, (sum, item) => sum + (item.quantity))} items',
+                style: TextStyle(color: colorScheme.onPrimary),
+              ),
+              backgroundColor: colorScheme.primary,
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(

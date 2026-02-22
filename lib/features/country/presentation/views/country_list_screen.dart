@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/country/data/models/country_model.dart';
 import 'package:restro_hub/core/data/mock_data.dart';
@@ -7,17 +8,37 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:restro_hub/core/widgets/searchable_sliver_app_layout.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
 
-class CountryListScreen extends StatelessWidget {
+class CountryListScreen extends ConsumerWidget {
   const CountryListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+      floatingActionButton: ref.watch(cartProvider).isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const CartBottomSheet(),
+                );
+              },
+              icon: Icon(Icons.shopping_cart, color: colorScheme.onPrimary),
+              label: Text(
+                '${ref.watch(cartProvider).fold(0, (sum, item) => sum + (item.quantity))} items',
+                style: TextStyle(color: colorScheme.onPrimary),
+              ),
+              backgroundColor: colorScheme.primary,
+            )
+          : null,
       body: Stack(
         children: [
           // ── Subtle background texture ──
