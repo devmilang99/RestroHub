@@ -24,9 +24,23 @@ class MyApp extends ConsumerWidget {
       themeMode: themeMode,
       theme: ThemeData(
         useMaterial3: true,
+        // colorScheme: ColorScheme.fromSeed(
+        //   seedColor: const Color(0xFFFFD700), // Premium Gold
+        //   primary: const Color(0xFFD4AF37), // Metallic Gold
+        //   secondary: const Color(0xFFC5A028),
+        //   brightness: Brightness.light,
+        // ),
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.purpleAccent,
+          seedColor: const Color.fromARGB(255, 23, 161, 30),
           brightness: Brightness.light,
+        ),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       darkTheme: ThemeData(

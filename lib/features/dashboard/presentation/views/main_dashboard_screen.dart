@@ -14,6 +14,7 @@ import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
+import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 import 'package:restro_hub/features/country/data/models/country_model.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
@@ -66,6 +67,15 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
     final colorScheme = context.colorScheme;
     final cart = ref.watch(cartProvider);
     final totalItems = cart.fold(0, (sum, item) => sum + (item.quantity));
+
+    final orders = ref.watch(ordersProvider);
+    final activeOrdersCount = orders
+        .where(
+          (o) =>
+              o.subStatus != OrderSubStatus.success &&
+              o.subStatus != OrderSubStatus.cancelled,
+        )
+        .length;
 
     final List<Widget> pages = [
       _buildHomeView(context, colorScheme),
@@ -182,8 +192,8 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
             ),
             BottomNavigationBarItem(
               icon: Badge(
-                label: const Text("3"),
-                isLabelVisible: true,
+                label: Text(activeOrdersCount.toString()),
+                isLabelVisible: activeOrdersCount > 0,
                 child: const Icon(Icons.food_bank_rounded),
               ),
               label: 'Orders',

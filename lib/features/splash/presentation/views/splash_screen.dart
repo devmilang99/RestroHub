@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:restro_hub/screens/permission_screen.dart';
 import 'dart:async';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,11 +27,10 @@ class _splashScreenState extends State<splashScreen>
   bool _imagesLoaded = false;
   final List<ImageProvider> _preloadedImages = [];
 
-  // Black and Gold color scheme
-  static const Color goldColor = Colors.orange;
-  static const Color darkGoldColor = Colors.deepOrange;
-  static const Color blackColor = Colors.black;
-  static const Color darkGreyColor = Colors.grey;
+  // Theme-aware colors (will be initialized in build)
+  late Color primaryColor;
+  late Color surfaceColor;
+  late Color onSurfaceColor;
 
   // Feature slides data with web image URLs
   final List<Map<String, String>> _slides = [
@@ -68,45 +68,35 @@ class _splashScreenState extends State<splashScreen>
   void initState() {
     super.initState();
 
-    // Icon animation controller (2 seconds)
     _iconController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
-    // Pulse animation controller
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
 
-    // Scale animation (smooth bounce)
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _iconController, curve: Curves.elasticOut),
     );
 
-    // Rotation animation
     _rotationAnimation = Tween<double>(begin: 0.0, end: 2 * 3.14159).animate(
       CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
     );
 
-    // Pulse animation for loading ring
     _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Start icon animation
     _iconController.forward();
-
-    // Preload images and transition after 2 seconds
     _preloadImages();
   }
 
   Future<void> _preloadImages() async {
-    // Wait for 2 seconds (icon animation)
     await Future.delayed(const Duration(milliseconds: 2000));
 
-    // Preload all images
     try {
       for (var slide in _slides) {
         final imageProvider = NetworkImage(slide['image']!);
@@ -121,7 +111,6 @@ class _splashScreenState extends State<splashScreen>
         });
       }
     } catch (e) {
-      // If preloading fails, still show the slider
       if (mounted) {
         setState(() {
           _imagesLoaded = true;
@@ -139,7 +128,7 @@ class _splashScreenState extends State<splashScreen>
     super.dispose();
   }
 
-  void _nextSlide() {
+  Future<void> _nextSlide() async {
     if (_currentPage < _slides.length - 1) {
       _pageController.animateToPage(
         _currentPage + 1,
@@ -147,19 +136,36 @@ class _splashScreenState extends State<splashScreen>
         curve: Curves.easeInOutCubic,
       );
     } else {
-      // Navigate to login
-      context.goNamed('permissionsScreen');
+      final allGranted = await PermissionScreen.areAllPermissionsGranted();
+      if (mounted) {
+        if (allGranted) {
+          context.goNamed('mainLoginScreen');
+        } else {
+          context.goNamed('permissionsScreen');
+        }
+      }
     }
   }
 
-  void _skipToLogin() {
-    context.goNamed('mainLoginScreen');
+  Future<void> _skipToLogin() async {
+    final allGranted = await PermissionScreen.areAllPermissionsGranted();
+    if (mounted) {
+      if (allGranted) {
+        context.goNamed('mainLoginScreen');
+      } else {
+        context.goNamed('permissionsScreen');
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    primaryColor = Theme.of(context).colorScheme.primary;
+    surfaceColor = Theme.of(context).colorScheme.surface;
+    onSurfaceColor = Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
-      backgroundColor: blackColor,
+      backgroundColor: Colors.black,
       body: _showLoader ? _buildLoader() : _buildSlider(),
     );
   }
@@ -167,7 +173,6 @@ class _splashScreenState extends State<splashScreen>
   Widget _buildLoader() {
     return Stack(
       children: [
-        // Aesthetic Background Image
         Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
@@ -178,7 +183,6 @@ class _splashScreenState extends State<splashScreen>
             ),
           ),
         ),
-        // Darkened Overlay for Contrast
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -196,7 +200,6 @@ class _splashScreenState extends State<splashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated Icon with Premium Glassmorphism Effect
               AnimatedBuilder(
                 animation: Listenable.merge([
                   _iconController,
@@ -208,7 +211,6 @@ class _splashScreenState extends State<splashScreen>
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Pulsing outer ring
                         Transform.scale(
                           scale: _pulseAnimation.value,
                           child: Container(
@@ -217,13 +219,12 @@ class _splashScreenState extends State<splashScreen>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: goldColor.withValues(alpha: 0.2),
+                                color: primaryColor.withValues(alpha: 0.2),
                                 width: 1,
                               ),
                             ),
                           ),
                         ),
-                        // Glassmorphism background for the logo
                         ClipRRect(
                           borderRadius: BorderRadius.circular(100),
                           child: BackdropFilter(
@@ -242,22 +243,24 @@ class _splashScreenState extends State<splashScreen>
                             ),
                           ),
                         ),
-                        // Main icon container
                         Transform.rotate(
                           angle: _rotationAnimation.value,
                           child: Container(
                             width: 110,
                             height: 110,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [goldColor, darkGoldColor],
+                                colors: [
+                                  primaryColor,
+                                  primaryColor.withValues(alpha: 0.7),
+                                ],
                               ),
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: goldColor.withValues(alpha: 0.6),
+                                  color: primaryColor.withValues(alpha: 0.6),
                                   blurRadius: 40,
                                   spreadRadius: 5,
                                 ),
@@ -271,7 +274,7 @@ class _splashScreenState extends State<splashScreen>
                             child: const Icon(
                               Icons.restaurant_menu,
                               size: 55,
-                              color: blackColor,
+                              color: Colors.black,
                             ),
                           ),
                         ),
@@ -280,16 +283,13 @@ class _splashScreenState extends State<splashScreen>
                   );
                 },
               ),
-
               const SizedBox(height: 50),
-
-              // App Name with richer styling
               Text(
                 'Restro Hub',
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
-                  color: goldColor,
+                  color: primaryColor,
                   letterSpacing: 4,
                   shadows: [
                     Shadow(
@@ -298,15 +298,13 @@ class _splashScreenState extends State<splashScreen>
                       blurRadius: 10,
                     ),
                     Shadow(
-                      color: goldColor.withValues(alpha: 0.3),
+                      color: primaryColor.withValues(alpha: 0.3),
                       blurRadius: 20,
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(height: 12),
-
               Text(
                 'PREMIUM DINING EXPERIENCE',
                 style: GoogleFonts.poppins(
@@ -316,10 +314,7 @@ class _splashScreenState extends State<splashScreen>
                   fontWeight: FontWeight.w300,
                 ),
               ),
-
               const SizedBox(height: 80),
-
-              // Loading indicator
               if (!_imagesLoaded)
                 Column(
                   children: [
@@ -329,7 +324,7 @@ class _splashScreenState extends State<splashScreen>
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          goldColor.withValues(alpha: 0.8),
+                          primaryColor.withValues(alpha: 0.8),
                         ),
                       ),
                     ),
@@ -354,7 +349,6 @@ class _splashScreenState extends State<splashScreen>
   Widget _buildSlider() {
     return Stack(
       children: [
-        // Fullscreen PageView
         PageView.builder(
           controller: _pageController,
           itemCount: _slides.length,
@@ -367,25 +361,23 @@ class _splashScreenState extends State<splashScreen>
             return _buildSlideItem(_slides[index], index);
           },
         ),
-
-        // Skip button (top right)
         Positioned(
           top: MediaQuery.of(context).padding.top + 20,
           right: 20,
           child: TextButton(
             onPressed: _skipToLogin,
             style: TextButton.styleFrom(
-              backgroundColor: blackColor.withValues(alpha: .5),
+              backgroundColor: Colors.black.withValues(alpha: .5),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: goldColor.withValues(alpha: .3)),
+                side: BorderSide(color: primaryColor.withValues(alpha: .3)),
               ),
             ),
             child: Text(
               'SKIP',
               style: GoogleFonts.poppins(
-                color: goldColor,
+                color: primaryColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 2,
@@ -393,8 +385,6 @@ class _splashScreenState extends State<splashScreen>
             ),
           ),
         ),
-
-        // Bottom controls
         Positioned(
           bottom: 0,
           left: 0,
@@ -406,8 +396,8 @@ class _splashScreenState extends State<splashScreen>
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  blackColor.withValues(alpha: .8),
-                  blackColor,
+                  Colors.black.withValues(alpha: .8),
+                  Colors.black,
                 ],
               ),
             ),
@@ -419,7 +409,6 @@ class _splashScreenState extends State<splashScreen>
             ),
             child: Column(
               children: [
-                // Page Indicators
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(
@@ -427,20 +416,17 @@ class _splashScreenState extends State<splashScreen>
                     (index) => _buildIndicator(index == _currentPage),
                   ),
                 ),
-
                 const SizedBox(height: 30),
-
-                // Next Button
                 SizedBox(
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
                     onPressed: _nextSlide,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: goldColor,
-                      foregroundColor: blackColor,
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.black,
                       elevation: 8,
-                      shadowColor: goldColor.withValues(alpha: .5),
+                      shadowColor: primaryColor.withValues(alpha: .5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -476,7 +462,6 @@ class _splashScreenState extends State<splashScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Background Image
         _imagesLoaded && index < _preloadedImages.length
             ? Image(image: _preloadedImages[index], fit: BoxFit.cover)
             : Image.network(
@@ -485,10 +470,10 @@ class _splashScreenState extends State<splashScreen>
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress == null) return child;
                   return Container(
-                    color: darkGreyColor,
+                    color: const Color(0xFF1A1A1A),
                     child: Center(
                       child: CircularProgressIndicator(
-                        color: goldColor,
+                        color: primaryColor,
                         value: loadingProgress.expectedTotalBytes != null
                             ? loadingProgress.cumulativeBytesLoaded /
                                   loadingProgress.expectedTotalBytes!
@@ -499,33 +484,29 @@ class _splashScreenState extends State<splashScreen>
                 },
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: darkGreyColor,
+                    color: const Color(0xFF1A1A1A),
                     child: Icon(
                       Icons.restaurant,
                       size: 100,
-                      color: goldColor.withValues(alpha: .3),
+                      color: primaryColor.withValues(alpha: .3),
                     ),
                   );
                 },
               ),
-
-        // Gradient Overlay
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                blackColor.withValues(alpha: .3),
-                blackColor.withValues(alpha: .5),
-                blackColor.withValues(alpha: .9),
+                Colors.black.withValues(alpha: .3),
+                Colors.black.withValues(alpha: .5),
+                Colors.black.withValues(alpha: .9),
               ],
               stops: const [0.0, 0.5, 1.0],
             ),
           ),
         ),
-
-        // Content
         Positioned(
           bottom: 200,
           left: 24,
@@ -533,27 +514,23 @@ class _splashScreenState extends State<splashScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Gold accent line
               Container(
                 width: 60,
                 height: 4,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [goldColor, darkGoldColor],
+                  gradient: LinearGradient(
+                    colors: [primaryColor, primaryColor.withValues(alpha: 0.7)],
                   ),
                   borderRadius: BorderRadius.circular(2),
                   boxShadow: [
                     BoxShadow(
-                      color: goldColor.withValues(alpha: .5),
+                      color: primaryColor.withValues(alpha: .5),
                       blurRadius: 10,
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // Title
               Text(
                 slide['title']!,
                 style: GoogleFonts.playfairDisplay(
@@ -563,16 +540,13 @@ class _splashScreenState extends State<splashScreen>
                   height: 1.2,
                   shadows: [
                     Shadow(
-                      color: blackColor.withValues(alpha: .8),
+                      color: Colors.black.withValues(alpha: .8),
                       blurRadius: 20,
                     ),
                   ],
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              // Description
               Text(
                 slide['description']!,
                 style: GoogleFonts.poppins(
@@ -582,7 +556,7 @@ class _splashScreenState extends State<splashScreen>
                   letterSpacing: 0.5,
                   shadows: [
                     Shadow(
-                      color: blackColor.withValues(alpha: .8),
+                      color: Colors.black.withValues(alpha: .8),
                       blurRadius: 10,
                     ),
                   ],
@@ -603,12 +577,19 @@ class _splashScreenState extends State<splashScreen>
       width: isActive ? 32 : 16,
       decoration: BoxDecoration(
         gradient: isActive
-            ? const LinearGradient(colors: [goldColor, darkGoldColor])
+            ? LinearGradient(
+                colors: [primaryColor, primaryColor.withValues(alpha: 0.7)],
+              )
             : null,
-        color: isActive ? null : goldColor.withValues(alpha: .3),
+        color: isActive ? null : primaryColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(2),
         boxShadow: isActive
-            ? [BoxShadow(color: goldColor.withValues(alpha: .5), blurRadius: 8)]
+            ? [
+                BoxShadow(
+                  color: primaryColor.withValues(alpha: 0.5),
+                  blurRadius: 8,
+                ),
+              ]
             : null,
       ),
     );

@@ -12,6 +12,21 @@ import 'dart:ui';
 class PermissionScreen extends ConsumerStatefulWidget {
   const PermissionScreen({super.key});
 
+  static Future<bool> areAllPermissionsGranted() async {
+    // Check key permissions
+    final permissionsToCheck = [
+      Permission.location,
+      Permission.camera,
+      if (!kIsWeb) Permission.contacts,
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) Permission.photos,
+    ];
+
+    for (var p in permissionsToCheck) {
+      if (!await p.isGranted) return false;
+    }
+    return true;
+  }
+
   @override
   ConsumerState<PermissionScreen> createState() => _PermissionScreenState();
 }
@@ -32,7 +47,6 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     final permissions = <PermissionItem>[];
 
     if (kIsWeb) {
-      // Web: Location only
       permissions.add(
         PermissionItem(
           permission: Permission.location,
@@ -44,14 +58,13 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
         ),
       );
     } else if (Platform.isAndroid) {
-      // Android: Storage, Location, Contacts, Camera
       permissions.addAll([
         PermissionItem(
-          permission: Permission.storage,
-          title: 'Storage Access',
+          permission: Permission.photos,
+          title: 'Media Access',
           description:
-              'Needed to save your receipts and download digital menus.',
-          icon: Icons.folder_open_rounded,
+              'Needed to access your gallery for profile pictures and food memories.',
+          icon: Icons.photo_library_rounded,
           imageUrl:
               'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
         ),
@@ -82,11 +95,10 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
         ),
       ]);
     } else if (Platform.isIOS) {
-      // iOS: Storage, Location, Contacts, Camera
       permissions.addAll([
         PermissionItem(
-          permission: Permission.storage,
-          title: 'Storage Access',
+          permission: Permission.photos,
+          title: 'Photos Access',
           description:
               'Needed to save your receipts and download digital menus.',
           icon: Icons.folder_open_rounded,
@@ -184,6 +196,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
 
     final item = _permissions[_currentIndex];
     final status = await item.permission.request();
+    final isDark = ref.read(themeProvider) == ThemeMode.dark;
 
     if (status.isPermanentlyDenied) {
       if (mounted) {
@@ -192,7 +205,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           builder: (context) => BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
             child: AlertDialog(
-              backgroundColor: Colors.white.withValues(alpha: 0.9),
+              backgroundColor: isDark
+                  ? Theme.of(context).colorScheme.surface
+                  : Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
@@ -218,7 +233,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -272,6 +287,56 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     }
   }
 
+  void _showSkipConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: Text(
+            'Skip Permissions?',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Some features like nearby restaurants and capturing memories will be limited. You can always enable them later in settings.',
+            style: GoogleFonts.poppins(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'CANCEL',
+                style: GoogleFonts.poppins(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.goNamed('mainLoginScreen');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'CONTINUE',
+                style: GoogleFonts.poppins(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
@@ -280,9 +345,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // Animated Background
           _buildAestheticBackground(),
-
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -292,11 +355,8 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  // Progress Bar
                   _buildProgressBar(),
-
                   const Spacer(),
-
                   FadeTransition(
                     opacity: _fadeAnimation,
                     child: SlideTransition(
@@ -306,30 +366,16 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                           : _buildPermissionView(isDark),
                     ),
                   ),
-
                   const Spacer(),
-
-                  // Primary Button
                   _buildPrimaryButton(isDark),
-
                   const SizedBox(height: 20),
-
                   if (!_showThemeSelection)
                     TextButton(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'These permissions ensure a personalized culinary journey.',
-                            ),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
+                      onPressed: () => _showSkipConfirmation(context),
                       child: Text(
                         'I\'LL DO IT LATER',
                         style: GoogleFonts.poppins(
-                          color: isDark ? Colors.white38 : Colors.black38,
+                          color: isDark ? Colors.white : Colors.black38,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.2,
                           fontSize: 12,
@@ -354,7 +400,6 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
 
     return Stack(
       children: [
-        // Base Dynamic Gradient
         AnimatedBuilder(
           animation: _bgAnimationController,
           builder: (context, child) {
@@ -382,7 +427,6 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
             );
           },
         ),
-        // Aesthetic Image Background with Cross-fade logic (simplified with AnimatedSwitcher if needed, but here basic)
         if (currentImageUrl != null)
           AnimatedSwitcher(
             duration: const Duration(seconds: 1),
@@ -400,7 +444,6 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
               ),
             ),
           ),
-        // Blur Effect
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(color: Colors.black.withValues(alpha: 0.3)),
@@ -413,7 +456,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
-        _permissions.length + 1, // +1 for Theme selection
+        _permissions.length + 1,
         (index) => Expanded(
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -425,7 +468,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                       (_showThemeSelection
                           ? _permissions.length
                           : _currentIndex)
-                  ? Colors.orange
+                  ? Theme.of(context).colorScheme.primary
                   : Colors.grey.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(2),
               boxShadow:
@@ -435,7 +478,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                           : _currentIndex)
                   ? [
                       BoxShadow(
-                        color: Colors.orange.withValues(alpha: 0.5),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.5),
                         blurRadius: 4,
                       ),
                     ]
@@ -448,6 +493,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
   }
 
   Widget _buildPermissionView(bool isDark) {
+    if (_permissions.isEmpty) return const SizedBox.shrink();
     final item = _permissions[_currentIndex];
     return Column(
       children: [
@@ -456,20 +502,26 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.orange.withValues(alpha: 0.2),
-                Colors.deepOrange.withValues(alpha: 0.1),
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
               ],
             ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.orange.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.2),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
             ],
           ),
-          child: Icon(item.icon, size: 80, color: Colors.orange),
+          child: Icon(
+            item.icon,
+            size: 80,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
         const SizedBox(height: 50),
         Text(
@@ -548,7 +600,6 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           ),
         ),
         const SizedBox(height: 40),
-        // Custom Styled Slider/Toggle
         Container(
           width: 280,
           padding: const EdgeInsets.all(8),
@@ -569,11 +620,13 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                   width: 135,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Colors.orange,
+                    color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(25),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.orange.withValues(alpha: 0.4),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.4),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -647,13 +700,15 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                 }
               },
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          foregroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           elevation: 10,
-          shadowColor: Colors.orange.withValues(alpha: 0.4),
+          shadowColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.4),
         ),
         child: _isProcessing
             ? const SizedBox(

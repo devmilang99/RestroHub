@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
+import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'dart:ui';
 
 class ProcessCheckOut extends ConsumerWidget {
@@ -410,9 +411,31 @@ class ProcessCheckOut extends ConsumerWidget {
         ),
         child: ElevatedButton(
           onPressed: () {
+            // Create a new order
+            final newOrder = OrderModel(
+              id: "RH-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}",
+              items: List.from(cart),
+              totalAmount: finalTotal,
+              subStatus: OrderSubStatus.preparing,
+              timestamp: DateTime.now(),
+              voucherCode: checkoutState.voucherCode,
+              discount: checkoutState.discount,
+              paymentMethod: checkoutState.paymentMethod,
+            );
+
+            // Add order to history/active tracking
+            ref.read(ordersProvider.notifier).addOrder(newOrder);
+
             ref.read(cartProvider.notifier).clearCart();
             ref.read(checkoutProvider.notifier).reset();
             context.goNamed("mainDashBoard");
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Order confirmed! Tracking is active."),
+                backgroundColor: Colors.green,
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,

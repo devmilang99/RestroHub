@@ -1,0 +1,128 @@
+import 'dart:async';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
+
+enum OrderSubStatus {
+  preparing, // Cooking, Packed, InRoute phases
+  delivered, // Order is being carried
+  pickup, // Please pick up
+  success,
+  cancelled,
+}
+
+class OrderModel {
+  final String id;
+  final List<CartModel> items;
+  final double totalAmount;
+  final OrderSubStatus subStatus;
+  final DateTime timestamp;
+  final String? voucherCode;
+  final double discount;
+  final PaymentMethod paymentMethod;
+  final double progress; // 0.0 to 1.0 for the current phase
+
+  OrderModel({
+    required this.id,
+    required this.items,
+    required this.totalAmount,
+    required this.subStatus,
+    required this.timestamp,
+    this.voucherCode,
+    this.discount = 0.0,
+    required this.paymentMethod,
+    this.progress = 0.0,
+  });
+
+  OrderModel copyWith({OrderSubStatus? subStatus, double? progress}) {
+    return OrderModel(
+      id: id,
+      items: items,
+      totalAmount: totalAmount,
+      subStatus: subStatus ?? this.subStatus,
+      timestamp: timestamp,
+      voucherCode: voucherCode,
+      discount: discount,
+      paymentMethod: paymentMethod,
+      progress: progress ?? this.progress,
+    );
+  }
+}
+
+class OrdersNotifier extends Notifier<List<OrderModel>> {
+  @override
+  List<OrderModel> build() => [];
+
+  void addOrder(OrderModel order) {
+    state = [order, ...state];
+    _startOrderTracking(order.id);
+  }
+
+  void _startOrderTracking(String orderId) {
+    // 1. Preparing (Cooking, Packed, InRoute) - 60 seconds
+    _runPhase(orderId, OrderSubStatus.preparing, 60, () {
+      // 2. Delivered / Order being carried - 60 seconds
+      _runPhase(orderId, OrderSubStatus.delivered, 60, () {
+        // 3. Pick Up - 15 seconds
+        _runPhase(orderId, OrderSubStatus.pickup, 15, () {
+          // 4. Move to Success
+          _updateOrderStatus(orderId, OrderSubStatus.success, 1.0);
+        });
+      });
+    });
+  }
+
+  void _runPhase(
+    String orderId,
+    OrderSubStatus status,
+    int durationSeconds,
+    Function onComplete,
+  ) {
+    int elapsed = 0;
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      elapsed++;
+      double progress = elapsed / durationSeconds;
+
+      if (elapsed >= durationSeconds) {
+        timer.cancel();
+        _updateOrderStatus(orderId, status, 1.0);
+        onComplete();
+      } else {
+        _updateOrderStatus(orderId, status, progress);
+      }
+
+      // If order was cancelled or removed, stop timer
+      if (!state.any((o) => o.id == orderId)) {
+        timer.cancel();
+      }
+    });
+  }
+
+  void _updateOrderStatus(
+    String orderId,
+    OrderSubStatus status,
+    double progress,
+  ) {
+    state = [
+      for (final order in state)
+        if (order.id == orderId)
+          order.copyWith(subStatus: status, progress: progress)
+        else
+          order,
+    ];
+  }
+
+  void cancelOrder(String orderId) {
+    state = [
+      for (final order in state)
+        if (order.id == orderId)
+          order.copyWith(subStatus: OrderSubStatus.cancelled)
+        else
+          order,
+    ];
+  }
+}
+
+final ordersProvider = NotifierProvider<OrdersNotifier, List<OrderModel>>(() {
+  return OrdersNotifier();
+});

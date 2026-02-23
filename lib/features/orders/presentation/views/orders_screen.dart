@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:go_router/go_router.dart';
+import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 
-class OrdersScreen extends StatelessWidget {
+class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
     final textTheme = context.textTheme;
 
@@ -18,18 +22,22 @@ class OrdersScreen extends StatelessWidget {
         backgroundColor: colorScheme.surface,
         appBar: AppBar(
           backgroundColor: colorScheme.surface,
+          surfaceTintColor: colorScheme.surface,
           elevation: 0,
+          centerTitle: false,
           title: Text(
             "My Orders",
-            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
           ),
           bottom: TabBar(
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
             labelColor: colorScheme.primary,
             unselectedLabelColor: colorScheme.onSurfaceVariant,
             indicatorColor: colorScheme.primary,
             dividerColor: Colors.transparent,
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold),
             tabs: const [
               Tab(text: "In Progress"),
               Tab(text: "Success"),
@@ -39,9 +47,9 @@ class OrdersScreen extends StatelessWidget {
         ),
         body: const TabBarView(
           children: [
-            _OrderList(status: "In Progress"),
-            _OrderList(status: "Success"),
-            _OrderList(status: "Cancelled"),
+            _OrderList(statusType: "In Progress"),
+            _OrderList(statusType: "Success"),
+            _OrderList(statusType: "Cancelled"),
           ],
         ),
       ),
@@ -49,49 +57,89 @@ class OrdersScreen extends StatelessWidget {
   }
 }
 
-class _OrderList extends StatelessWidget {
-  final String status;
-  const _OrderList({required this.status});
+class _OrderList extends ConsumerWidget {
+  final String statusType;
+  const _OrderList({required this.statusType});
 
   @override
-  Widget build(BuildContext context) {
-    // Mock data based on status
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orders = ref.watch(ordersProvider);
+
+    final colorScheme = context.colorScheme;
+    final filteredOrders = orders.where((o) {
+      if (statusType == "In Progress") {
+        return o.subStatus != OrderSubStatus.success &&
+            o.subStatus != OrderSubStatus.cancelled;
+      } else if (statusType == "Success") {
+        return o.subStatus == OrderSubStatus.success;
+      } else {
+        return o.subStatus == OrderSubStatus.cancelled;
+      }
+    }).toList();
+
+    if (filteredOrders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              statusType == "In Progress"
+                  ? Icons.restaurant_menu_outlined
+                  : (statusType == "Success"
+                        ? Icons.check_circle_outline
+                        : Icons.cancel_outlined),
+              size: 80,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: .2),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "No $statusType orders found",
+              style: context.textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 3,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+      itemCount: filteredOrders.length,
       itemBuilder: (context, index) {
-        return _OrderCard(status: status, index: index);
+        final order = filteredOrders[index];
+        return _OrderCard(order: order);
       },
     );
   }
 }
 
 class _OrderCard extends StatelessWidget {
-  final String status;
-  final int index;
-  const _OrderCard({required this.status, required this.index});
+  final OrderModel order;
+  const _OrderCard({required this.order});
 
   @override
   Widget build(BuildContext context) {
-    if (status == "In Progress") {
-      return _InProgressOrderCard(index: index);
-    } else if (status == "Success") {
-      return _SuccessOrderCard(index: index);
+    if (order.subStatus != OrderSubStatus.success &&
+        order.subStatus != OrderSubStatus.cancelled) {
+      return _InProgressOrderCard(order: order);
+    } else if (order.subStatus == OrderSubStatus.success) {
+      return _SuccessOrderCard(order: order);
     } else {
-      return _CancelledOrderCard(index: index);
+      return _CancelledOrderCard(order: order);
     }
   }
 }
 
-class _SuccessOrderCard extends StatefulWidget {
-  final int index;
-  const _SuccessOrderCard({required this.index});
+class _SuccessOrderCard extends ConsumerStatefulWidget {
+  final OrderModel order;
+  const _SuccessOrderCard({super.key, required this.order});
 
   @override
-  State<_SuccessOrderCard> createState() => _SuccessOrderCardState();
+  ConsumerState<_SuccessOrderCard> createState() => _SuccessOrderCardState();
 }
 
-class _SuccessOrderCardState extends State<_SuccessOrderCard> {
+class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
   int _rating = 0;
   final TextEditingController _feedbackController = TextEditingController();
   int _wordCount = 0;
@@ -178,7 +226,7 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: Colors.lightGreen.shade300, width: 2),
+        side: BorderSide(color: Colors.green.withValues(alpha: .3), width: 2),
       ),
       color: colorScheme.surfaceContainerLowest,
       child: Padding(
@@ -194,12 +242,12 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.lightGreen.shade100,
+                        color: Colors.green.withValues(alpha: .1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(
-                        Icons.check_circle,
-                        color: Colors.lightGreen.shade700,
+                      child: const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.green,
                         size: 20,
                       ),
                     ),
@@ -208,7 +256,7 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Order #RH-123${widget.index}",
+                          "Order #${widget.order.id}",
                           style: textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -216,7 +264,7 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                         Text(
                           "Delivered successfully",
                           style: textTheme.bodySmall?.copyWith(
-                            color: Colors.lightGreen.shade700,
+                            color: Colors.green,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -225,7 +273,7 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                   ],
                 ),
                 Text(
-                  "Rs. 450",
+                  "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -239,8 +287,7 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
               children: [
                 ClipOval(
                   child: CachedNetworkImage(
-                    imageUrl:
-                        'https://i.pravatar.cc/150?u=driver${widget.index}',
+                    imageUrl: 'https://i.pravatar.cc/150?u=driver_success',
                     width: 40,
                     height: 40,
                     placeholder: (context, url) => const CircleAvatar(
@@ -265,63 +312,67 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                   ),
                 ),
                 Row(
-                  children: List.generate(
-                    5,
-                    (i) => GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _rating = i + 1;
-                        });
-                      },
-                      child: Icon(
-                        i < _rating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
-                        size: 28,
+                  children: [
+                    ...List.generate(
+                      5,
+                      (i) => GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _rating = i + 1;
+                          });
+                        },
+                        child: Icon(
+                          i < _rating ? Icons.star : Icons.star_border,
+                          color: Colors.amber,
+                          size: 24,
+                        ),
                       ),
                     ),
+                    if (_rating > 0)
+                      IconButton(
+                        onPressed: () => setState(() => _rating = 0),
+                        icon: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.grey,
+                        ),
+                        tooltip: "Clear Rating",
+                      ),
+                  ],
+                ),
+              ],
+            ),
+
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Divider(),
+            ),
+
+            if (_sentFeedback == null) ...[
+              // Item Table Layout
+              const Text(
+                "Order Details",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              Table(
+                columnWidths: const {
+                  0: IntrinsicColumnWidth(),
+                  1: IntrinsicColumnWidth(),
+                  2: FlexColumnWidth(4),
+                  3: IntrinsicColumnWidth(),
+                },
+                children: [
+                  ...widget.order.items.map(
+                    (item) => _buildCommonTableRow(item),
                   ),
-                ),
-              ],
-            ),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(),
-            ),
-
-            // Item Table Layout
-            const Text(
-              "Order Details",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
-            Table(
-              columnWidths: const {
-                0: FlexColumnWidth(2),
-                1: FlexColumnWidth(4),
-                2: FlexColumnWidth(3),
-                3: FlexColumnWidth(2),
-              },
-              children: [
-                _buildTableRow(
-                  "Chicken Burger",
-                  "x1",
-                  "Rs. 350",
-                  "assets/food1.webp",
-                ),
-                _buildTableRow(
-                  "Coca Cola",
-                  "x1",
-                  "Rs. 100",
-                  "assets/food2.webp",
-                ),
-              ],
-            ),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(),
-            ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(),
+              ),
+            ],
             // Feedback Box or Sent Feedback Card
             _sentFeedback == null
                 ? Container(
@@ -338,11 +389,11 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                             maxLines: null,
                             expands: true,
                             textAlignVertical: TextAlignVertical.top,
-                            decoration: InputDecoration(
+                            decoration: const InputDecoration(
                               hintText: "Share your feedback...",
                               filled: false,
                               border: InputBorder.none,
-                              contentPadding: const EdgeInsets.fromLTRB(
+                              contentPadding: EdgeInsets.fromLTRB(
                                 12,
                                 12,
                                 12,
@@ -384,8 +435,8 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                               Row(
                                 children: [
                                   if (_wordCount > 20)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 8),
+                                    const Padding(
+                                      padding: EdgeInsets.only(right: 8),
                                       child: Text(
                                         'Limit exceeded!',
                                         style: TextStyle(
@@ -425,76 +476,62 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
                       ],
                     ),
                   )
-                : Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: colorScheme.primary.withValues(alpha: 0.3),
-                        width: 1,
+                : Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Colors.green.withValues(alpha: 0.2),
                       ),
                     ),
-                    color: colorScheme.primaryContainer.withValues(alpha: 0.1),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.verified,
+                          color: Colors.green,
+                          size: 32,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.check_circle,
-                                color: Colors.green,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
                               Text(
-                                'Feedback Sent',
+                                "Feedback Sent!",
                                 style: textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.green,
+                                  color: Colors.green.shade700,
                                 ),
                               ),
-                              const Spacer(),
-                              TextButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    _feedbackController.text = _sentFeedback!;
-                                    _sentFeedback = null;
-                                    _sentTimestamp = null;
-                                  });
-                                },
-                                icon: Icon(Icons.edit, size: 16),
-                                label: Text('Edit'),
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(horizontal: 8),
-                                  minimumSize: Size(0, 32),
+                              if (_sentTimestamp != null)
+                                Text(
+                                  "Sent ${_formatTimestamp(_sentTimestamp!)}",
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: Colors.green.shade600,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              Text(
+                                "Thank you for helping us improve",
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: Colors.green.shade600,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surface,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _sentFeedback!,
-                              style: textTheme.bodyMedium,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sent on ${_formatTimestamp(_sentTimestamp!)}',
-                            style: textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _feedbackController.text = _sentFeedback!;
+                              _sentFeedback = null;
+                              _sentTimestamp = null;
+                            });
+                          },
+                          child: const Text("Edit"),
+                        ),
+                      ],
                     ),
                   ),
 
@@ -504,7 +541,7 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () => _reorder(ref, context, widget.order),
                 icon: const Icon(Icons.refresh, size: 20),
                 label: const Text("Order Again"),
                 style: ElevatedButton.styleFrom(
@@ -522,45 +559,44 @@ class _SuccessOrderCardState extends State<_SuccessOrderCard> {
       ),
     );
   }
-
-  TableRow _buildTableRow(
-    String item,
-    String qty,
-    String price,
-    String assetPath,
-  ) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundImage: AssetImage(assetPath),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(item),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          child: Text(qty),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(price),
-        ),
-      ],
-    );
-  }
 }
 
-class _CancelledOrderCard extends StatelessWidget {
-  final int index;
-  const _CancelledOrderCard({required this.index});
+void _reorder(WidgetRef ref, BuildContext context, OrderModel order) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Order Again?"),
+      content: const Text(
+        "Proceeding will replace your current cart with these items and take you to checkout.",
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel"),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final cartNotifier = ref.read(cartProvider.notifier);
+            cartNotifier.clearCart();
+            for (var item in order.items) {
+              cartNotifier.addItem(item);
+            }
+            Navigator.pop(context);
+            context.pushNamed("checkoutScreen");
+          },
+          child: const Text("Proceed"),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CancelledOrderCard extends ConsumerWidget {
+  final OrderModel order;
+  const _CancelledOrderCard({super.key, required this.order});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
     final textTheme = context.textTheme;
 
@@ -569,7 +605,7 @@ class _CancelledOrderCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: Colors.red.shade300, width: 2),
+        side: BorderSide(color: Colors.red.withValues(alpha: .3), width: 2),
       ),
       color: colorScheme.surfaceContainerLowest,
       child: Padding(
@@ -585,12 +621,12 @@ class _CancelledOrderCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade100,
+                        color: Colors.red.withValues(alpha: .1),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(
-                        Icons.cancel,
-                        color: Colors.red.shade700,
+                      child: const Icon(
+                        Icons.cancel_outlined,
+                        color: Colors.red,
                         size: 20,
                       ),
                     ),
@@ -599,7 +635,7 @@ class _CancelledOrderCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Order #RH-123$index",
+                          "Order #${order.id}",
                           style: textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -607,7 +643,7 @@ class _CancelledOrderCard extends StatelessWidget {
                         Text(
                           "Order cancelled",
                           style: textTheme.bodySmall?.copyWith(
-                            color: Colors.red.shade700,
+                            color: Colors.red,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -616,7 +652,7 @@ class _CancelledOrderCard extends StatelessWidget {
                   ],
                 ),
                 Text(
-                  "Rs. 450",
+                  "Rs. ${order.totalAmount.toStringAsFixed(0)}",
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -630,7 +666,7 @@ class _CancelledOrderCard extends StatelessWidget {
               children: [
                 ClipOval(
                   child: CachedNetworkImage(
-                    imageUrl: 'https://i.pravatar.cc/150?u=driver$index',
+                    imageUrl: 'https://i.pravatar.cc/150?u=driver_cancelled',
                     width: 40,
                     height: 40,
                     placeholder: (context, url) => const CircleAvatar(
@@ -679,24 +715,13 @@ class _CancelledOrderCard extends StatelessWidget {
             const SizedBox(height: 8),
             Table(
               columnWidths: const {
-                0: FlexColumnWidth(1),
-                1: FlexColumnWidth(2),
-                2: FlexColumnWidth(2),
-                3: FlexColumnWidth(2),
+                0: IntrinsicColumnWidth(),
+                1: FlexColumnWidth(4),
+                2: IntrinsicColumnWidth(),
+                3: IntrinsicColumnWidth(),
               },
               children: [
-                _buildTableRow(
-                  "Chicken Burger",
-                  "x1",
-                  "Rs. 350",
-                  "assets/food1.webp",
-                ),
-                _buildTableRow(
-                  "Coca Cola",
-                  "x1",
-                  "Rs. 100",
-                  "assets/food2.webp",
-                ),
+                ...order.items.map((item) => _buildCommonTableRow(item)),
               ],
             ),
 
@@ -732,84 +757,89 @@ class _CancelledOrderCard extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            // Order Again Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _reorder(ref, context, order),
+                icon: const Icon(Icons.refresh, size: 20),
+                label: const Text("Order Again"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.primary,
+                  side: BorderSide(color: colorScheme.primary),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  TableRow _buildTableRow(
-    String item,
-    String qty,
-    String price,
-    String assetPath,
-  ) {
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundImage: AssetImage(assetPath),
+TableRow _buildCommonTableRow(dynamic item) {
+  return TableRow(
+    children: [
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.asset(
+            item.image,
+            width: 45,
+            height: 45,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              width: 45,
+              height: 45,
+              color: Colors.grey.shade200,
+              child: const Icon(Icons.fastfood, size: 20, color: Colors.grey),
+            ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(item),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        child: Text(
+          "${item.quantity}x",
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          child: Text(qty),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          item.name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(price),
+      ),
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        child: Text(
+          "Rs. ${(item.price * item.quantity).toStringAsFixed(0)}",
+          textAlign: TextAlign.end,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }
 
 class _InProgressOrderCard extends StatefulWidget {
-  final int index;
-  const _InProgressOrderCard({required this.index});
+  final OrderModel order;
+  const _InProgressOrderCard({required this.order});
 
   @override
   State<_InProgressOrderCard> createState() => _InProgressOrderCardState();
 }
 
 class _InProgressOrderCardState extends State<_InProgressOrderCard> {
-  final ValueNotifier<double> _progressNotifier = ValueNotifier(0.3);
-  final ValueNotifier<int> _timeNotifier = ValueNotifier(10);
-  late Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_timeNotifier.value > 0) {
-        _timeNotifier.value--;
-        _progressNotifier.value = 1.0 - (_timeNotifier.value / 500.0);
-      } else {
-        _timer.cancel();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    _progressNotifier.dispose();
-    _timeNotifier.dispose();
-    super.dispose();
-  }
-
-  String _formatTime(int seconds) {
-    int minutes = seconds ~/ 60;
-    int remainingSeconds = seconds % 60;
-    return "$minutes:${remainingSeconds.toString().padLeft(2, '0')} mins";
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -820,7 +850,12 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
-        side: BorderSide(color: Colors.amber.shade600, width: 2),
+        side: BorderSide(
+          color: widget.order.subStatus == OrderSubStatus.pickup
+              ? Colors.green.withValues(alpha: .5)
+              : Colors.amber.withValues(alpha: .5),
+          width: 2,
+        ),
       ),
       color: colorScheme.surfaceContainerLowest,
       child: Padding(
@@ -831,61 +866,53 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ValueListenableBuilder<double>(
-                  valueListenable: _progressNotifier,
-                  builder: (context, progress, child) {
-                    IconData statusIcon;
-                    String statusText;
-                    if (progress < 0.33) {
-                      statusIcon = Icons.soup_kitchen;
-                      statusText = "Cooking your meal...";
-                    } else if (progress < 0.66) {
-                      statusIcon = Icons.inventory_2;
-                      statusText = "Meal is being packed...";
-                    } else {
-                      statusIcon = Icons.delivery_dining;
-                      statusText = "Out for delivery...";
-                    }
-
-                    return Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(
-                            statusIcon,
-                            color: colorScheme.onPrimaryContainer,
-                            size: 20,
-                          ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: widget.order.subStatus == OrderSubStatus.pickup
+                              ? Colors.green.withValues(alpha: .1)
+                              : colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Order #RH-123${widget.index}",
-                              style: textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              statusText,
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        child: Icon(
+                          _getStatusIcon(widget.order),
+                          color: widget.order.subStatus == OrderSubStatus.pickup
+                              ? Colors.green
+                              : colorScheme.onPrimaryContainer,
+                          size: 20,
                         ),
-                      ],
-                    );
-                  },
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Order #${widget.order.id}",
+                            style: textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            _getStatusText(widget.order),
+                            style: textTheme.bodySmall?.copyWith(
+                              color:
+                                  widget.order.subStatus ==
+                                      OrderSubStatus.pickup
+                                  ? Colors.green
+                                  : colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 Text(
-                  "Rs. 450",
+                  "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -899,8 +926,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
               children: [
                 ClipOval(
                   child: CachedNetworkImage(
-                    imageUrl:
-                        'https://i.pravatar.cc/150?u=driver${widget.index}',
+                    imageUrl: 'https://i.pravatar.cc/150?u=driver_active',
                     width: 40,
                     height: 40,
                     placeholder: (context, url) => const CircleAvatar(
@@ -924,6 +950,23 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     ],
                   ),
                 ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      _getETA(widget.order),
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    Text(
+                      "Estimated Time",
+                      style: textTheme.bodySmall?.copyWith(fontSize: 9),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 12),
                 IconButton(
                   onPressed: () {},
                   icon: Icon(Icons.phone, color: colorScheme.primary, size: 20),
@@ -942,145 +985,67 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
             ),
 
             // Item Table Layout
-            const Text(
-              "Order Details",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-            const SizedBox(height: 8),
             Table(
               columnWidths: const {
-                0: FlexColumnWidth(1),
-                1: FlexColumnWidth(2),
-                2: FlexColumnWidth(2),
-                3: FlexColumnWidth(2),
+                0: IntrinsicColumnWidth(),
+                1: IntrinsicColumnWidth(),
+                2: FlexColumnWidth(4),
+                3: IntrinsicColumnWidth(),
               },
               children: [
-                _buildTableRow(
-                  "Chicken Burger",
-                  "x1",
-                  "Rs. 350",
-                  "assets/food1.webp",
-                  isHeader: false,
-                ),
-                _buildTableRow(
-                  "Coca Cola",
-                  "x1",
-                  "Rs. 100",
-                  "assets/food2.webp",
-                  isHeader: false,
-                ),
+                ...widget.order.items.map((item) => _buildCommonTableRow(item)),
               ],
-            ),
-
-            // Progress Bar & Timer (Hidden when tracking starts)
-            ValueListenableBuilder<double>(
-              valueListenable: _progressNotifier,
-              builder: (context, progress, child) {
-                if (progress >= 1.0) return const SizedBox.shrink();
-                return Column(
-                  children: [
-                    ValueListenableBuilder<int>(
-                      valueListenable: _timeNotifier,
-                      builder: (context, secondsRemaining, child) {
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  color: colorScheme.primary,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Estimated: ${_formatTime(secondsRemaining)}",
-                                  style: TextStyle(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              "${(progress * 100).toInt()}%",
-                              style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                );
-              },
             ),
             const SizedBox(height: 16),
 
-            // Three-step Progress Tracker or Live Tracking bar
-            ValueListenableBuilder<double>(
-              valueListenable: _progressNotifier,
-              builder: (context, progress, child) {
-                if (progress >= 1.0) {
-                  return GestureDetector(
-                    onTap: () => _openTrackingSheet(context),
-                    child: const _LiveTrackingBar(),
-                  );
-                }
-                return _OrderStepProgress(progress: progress);
-              },
-            ),
+            // Progress Tracker or Live Tracking bar
+            if (widget.order.subStatus == OrderSubStatus.preparing)
+              _OrderStepProgress(progress: widget.order.progress)
+            else
+              _LiveTrackingBar(order: widget.order),
           ],
         ),
       ),
     );
   }
 
-  void _openTrackingSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _DriverTrackingSheet(),
-    );
+  IconData _getStatusIcon(OrderModel order) {
+    if (order.subStatus == OrderSubStatus.preparing) {
+      if (order.progress < 0.33) return Icons.soup_kitchen;
+      if (order.progress < 0.66) return Icons.inventory_2;
+      return Icons.delivery_dining;
+    }
+    if (order.subStatus == OrderSubStatus.delivered)
+      return Icons.delivery_dining;
+    if (order.subStatus == OrderSubStatus.pickup) return Icons.shopping_bag;
+    return Icons.check_circle;
   }
 
-  TableRow _buildTableRow(
-    String item,
-    String qty,
-    String price,
-    String assetPath, {
-    bool isHeader = false,
-  }) {
-    final style = isHeader
-        ? const TextStyle(fontWeight: FontWeight.bold)
-        : null;
-    return TableRow(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundImage: AssetImage(assetPath),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(item, style: style),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          child: Text(qty, style: style),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(price, style: style),
-        ),
-      ],
-    );
+  String _getStatusText(OrderModel order) {
+    if (order.subStatus == OrderSubStatus.preparing) {
+      if (order.progress < 0.33) return "Cooking your meal...";
+      if (order.progress < 0.66) return "Meal is being packed...";
+      return "Out for delivery...";
+    }
+    if (order.subStatus == OrderSubStatus.delivered)
+      return "Order being carried...";
+    if (order.subStatus == OrderSubStatus.pickup) return "PLEASE PICK UP!";
+    return "Completed";
+  }
+
+  String _getETA(OrderModel order) {
+    if (order.subStatus == OrderSubStatus.preparing) {
+      double remaining = (1.0 - order.progress) * 15; // 15 mins total max
+      return "${remaining.ceil()} mins";
+    }
+    if (order.subStatus == OrderSubStatus.delivered) {
+      double remaining = (1.0 - order.progress) * 8; // 8 mins total max
+      return "${remaining.ceil()} mins";
+    }
+    if (order.subStatus == OrderSubStatus.pickup) {
+      return "0 mins";
+    }
+    return "--";
   }
 }
 
@@ -1189,7 +1154,8 @@ class _ProgressStep extends StatelessWidget {
 }
 
 class _LiveTrackingBar extends StatefulWidget {
-  const _LiveTrackingBar();
+  final OrderModel order;
+  const _LiveTrackingBar({required this.order});
 
   @override
   State<_LiveTrackingBar> createState() => _LiveTrackingBarState();
@@ -1246,7 +1212,7 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isArrived = _currentLocationIndex == _locations.length - 1;
+    final isArrived = widget.order.subStatus == OrderSubStatus.pickup;
 
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -1314,7 +1280,9 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
                     Text(
                       isArrived
                           ? "The driver is waiting for you"
-                          : _locations[_currentLocationIndex],
+                          : _locations[_currentLocationIndex < _locations.length
+                                ? _currentLocationIndex
+                                : _locations.length - 1],
                       style: TextStyle(
                         color: isArrived
                             ? Colors.green.shade600
@@ -1329,11 +1297,27 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
               if (isArrived)
                 const _BlinkingIcon(icon: Icons.hail, color: Colors.green)
               else
-                const Icon(Icons.map_outlined, color: Colors.grey, size: 20),
+                IconButton(
+                  onPressed: () => _openTrackingSheet(context),
+                  icon: const Icon(
+                    Icons.map_outlined,
+                    color: Colors.grey,
+                    size: 20,
+                  ),
+                ),
             ],
           ),
         );
       },
+    );
+  }
+
+  void _openTrackingSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const _DriverTrackingSheet(),
     );
   }
 }
@@ -1495,7 +1479,6 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
                   icon: BitmapDescriptor.defaultMarkerWithHue(
                     BitmapDescriptor.hueOrange,
                   ),
-                  infoWindow: const InfoWindow(title: 'Restaurant'),
                 ),
                 Marker(
                   markerId: const MarkerId('delivery'),
@@ -1503,7 +1486,6 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
                   icon: BitmapDescriptor.defaultMarkerWithHue(
                     BitmapDescriptor.hueAzure,
                   ),
-                  infoWindow: const InfoWindow(title: 'Delivery Location'),
                 ),
                 Marker(
                   markerId: const MarkerId('driver'),
@@ -1511,7 +1493,6 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
                   icon: BitmapDescriptor.defaultMarkerWithHue(
                     BitmapDescriptor.hueRed,
                   ),
-                  infoWindow: const InfoWindow(title: 'Driver'),
                 ),
               },
               // TODO: Add Google Maps API key in AndroidManifest.xml and AppDelegate.swift
