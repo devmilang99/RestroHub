@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'dart:ui';
 
 class AuthenticatedPasswordScreen extends ConsumerStatefulWidget {
@@ -88,35 +88,32 @@ class _AuthenticatedPasswordScreenState
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
-
-    const Color goldColor = Colors.orange;
-    final Color blackColor = isDark ? Colors.black : Colors.white;
-    final Color textColor = isDark ? Colors.white : Colors.black;
-    final Color glassColor = isDark
-        ? Colors.white.withValues(alpha: .05)
-        : Colors.black.withValues(alpha: .05);
+    final colorScheme = context.colorScheme;
+    final primaryColor = colorScheme.primary;
+    final backgroundColor = colorScheme.surface;
+    final textColor = colorScheme.onSurface;
+    final Color glassColor = colorScheme.surfaceContainerHighest.withValues(
+      alpha: .3,
+    );
 
     return Scaffold(
-      backgroundColor: blackColor,
+      backgroundColor: backgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: isDark ? Colors.white : Colors.black,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new, color: textColor),
         ),
       ),
       body: Stack(
         children: [
           // Dynamic Background Image
           Opacity(
-            opacity: isDark ? 0.3 : 0.1,
+            opacity: Theme.of(context).brightness == Brightness.dark
+                ? 0.3
+                : 0.1,
             child: Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
@@ -135,9 +132,9 @@ class _AuthenticatedPasswordScreenState
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  blackColor.withValues(alpha: .1),
-                  blackColor.withValues(alpha: .5),
-                  blackColor,
+                  backgroundColor.withValues(alpha: .1),
+                  backgroundColor.withValues(alpha: .5),
+                  backgroundColor,
                 ],
               ),
             ),
@@ -158,7 +155,7 @@ class _AuthenticatedPasswordScreenState
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 42,
                           fontWeight: FontWeight.bold,
-                          color: goldColor,
+                          color: primaryColor,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -189,10 +186,13 @@ class _AuthenticatedPasswordScreenState
                             child: Column(
                               children: [
                                 _buildTextField(
+                                  context: context,
                                   controller: currentPasswordController,
                                   label: 'Current Password',
                                   icon: Icons.lock_outline,
-                                  isDark: isDark,
+                                  isDark:
+                                      Theme.of(context).brightness ==
+                                      Brightness.dark,
                                   isPassword: true,
                                   isVisible: _isCurrentPasswordVisible,
                                   onVisibilityToggle: () {
@@ -204,10 +204,13 @@ class _AuthenticatedPasswordScreenState
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
+                                  context: context,
                                   controller: newPasswordController,
                                   label: 'New Password',
                                   icon: Icons.vpn_key_outlined,
-                                  isDark: isDark,
+                                  isDark:
+                                      Theme.of(context).brightness ==
+                                      Brightness.dark,
                                   isPassword: true,
                                   isVisible: _isNewPasswordVisible,
                                   onVisibilityToggle: () {
@@ -219,10 +222,13 @@ class _AuthenticatedPasswordScreenState
                                 ),
                                 const SizedBox(height: 16),
                                 _buildTextField(
+                                  context: context,
                                   controller: confirmPasswordController,
                                   label: 'Confirm New Password',
                                   icon: Icons.check_circle_outline,
-                                  isDark: isDark,
+                                  isDark:
+                                      Theme.of(context).brightness ==
+                                      Brightness.dark,
                                   isPassword: true,
                                   isVisible: _isConfirmPasswordVisible,
                                   onVisibilityToggle: () {
@@ -279,10 +285,8 @@ class _AuthenticatedPasswordScreenState
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: goldColor,
-                                      foregroundColor: isDark
-                                          ? Colors.black
-                                          : Colors.white,
+                                      backgroundColor: primaryColor,
+                                      foregroundColor: colorScheme.onPrimary,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(18),
                                       ),
@@ -316,6 +320,7 @@ class _AuthenticatedPasswordScreenState
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -325,6 +330,7 @@ class _AuthenticatedPasswordScreenState
     VoidCallback? onVisibilityToggle,
   }) {
     final Color textColor = isDark ? Colors.white : Colors.black;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return TextFormField(
       controller: controller,
@@ -333,12 +339,12 @@ class _AuthenticatedPasswordScreenState
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: textColor.withValues(alpha: .6)),
-        prefixIcon: Icon(icon, color: Colors.orange.withValues(alpha: .8)),
+        prefixIcon: Icon(icon, color: primaryColor.withValues(alpha: .8)),
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
                   isVisible ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.orange.withValues(alpha: .8),
+                  color: primaryColor.withValues(alpha: .8),
                 ),
                 onPressed: onVisibilityToggle,
               )
@@ -349,7 +355,7 @@ class _AuthenticatedPasswordScreenState
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.orange, width: 2),
+          borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         filled: true,
         fillColor: textColor.withValues(alpha: 0.05),
@@ -407,7 +413,9 @@ class _AestheticDialogState extends State<_AestheticDialog>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: AlertDialog(
-          backgroundColor: Colors.white.withValues(alpha: .9),
+          backgroundColor: Theme.of(
+            context,
+          ).colorScheme.surface.withValues(alpha: .9),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
           ),
@@ -426,7 +434,7 @@ class _AestheticDialogState extends State<_AestheticDialog>
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: Colors.black,
+                  color: Theme.of(context).colorScheme.onSurface,
                   letterSpacing: 1,
                 ),
               ),
@@ -434,7 +442,12 @@ class _AestheticDialogState extends State<_AestheticDialog>
               Text(
                 widget.message,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14, color: Colors.black54),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: .7),
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(

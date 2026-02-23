@@ -5,7 +5,7 @@ import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
-import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
+import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 import 'package:restro_hub/core/widgets/searchable_sliver_app_layout.dart';
 

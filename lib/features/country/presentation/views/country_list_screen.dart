@@ -9,7 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:restro_hub/core/widgets/searchable_sliver_app_layout.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
-import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
+import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 
 class CountryListScreen extends ConsumerWidget {
   const CountryListScreen({super.key});

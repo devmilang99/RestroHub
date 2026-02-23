@@ -43,7 +43,7 @@ class _AestheticLoadingDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const CircularProgressIndicator(
-                color: Colors.orange,
+                color: Colors.deepPurpleAccent,
                 strokeWidth: 3,
               ),
               const SizedBox(height: 24),

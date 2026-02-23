@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
+import 'dart:ui';
 
 class ProcessCheckOut extends ConsumerWidget {
   const ProcessCheckOut({super.key});
@@ -14,10 +16,11 @@ class ProcessCheckOut extends ConsumerWidget {
       0,
       (sum, item) => sum + (item.price * item.quantity),
     );
+    final checkoutState = ref.watch(checkoutProvider);
     final colorScheme = context.colorScheme;
     final textTheme = context.textTheme;
-    const double deliveryCharge = 50.0;
-    const double discount = 0.0; // Assume no discount for now
+    const double deliveryCharge = 40.0;
+    final discount = checkoutState.discount;
     final finalTotal = totalAmount + deliveryCharge - discount;
 
     return Scaffold(
@@ -26,59 +29,68 @@ class ProcessCheckOut extends ConsumerWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 250,
-            centerTitle: true,
-            title: Text(
-              'Order Details',
-              style: textTheme.titleLarge?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            expandedHeight: 280,
+            stretch: true,
+            backgroundColor: colorScheme.surface,
             leading: IconButton(
-              icon: CircleAvatar(
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                child: const Icon(Icons.arrow_back, color: Colors.white),
-              ),
+              icon: Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => context.pop(),
+              style: IconButton.styleFrom(backgroundColor: Colors.black26),
             ),
-            backgroundColor: colorScheme.primary,
-            elevation: 0.0,
             flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [
+                StretchMode.zoomBackground,
+                StretchMode.blurBackground,
+              ],
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.asset("assets/food4.webp", fit: BoxFit.cover),
+                  Image.network(
+                    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070",
+                    fit: BoxFit.cover,
+                  ),
                   Container(
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black54,
                           Colors.transparent,
-                          Colors.black87,
+                          colorScheme.surface.withValues(alpha: .8),
+                          colorScheme.surface,
                         ],
                       ),
                     ),
                   ),
-                  const Center(
+                  Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(height: 40),
-                        Icon(
-                          Icons.check_circle_outline,
-                          color: Colors.white,
-                          size: 80,
+                        const SizedBox(height: 40),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: .2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: 64,
+                          ),
                         ),
-                        SizedBox(height: 10),
+                        const SizedBox(height: 16),
                         Text(
-                          "Order Placed Successfully!",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                          "Ready for Checkout",
+                          style: textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        Text(
+                          "Your delicious order is just a tap away",
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -216,11 +228,81 @@ class ProcessCheckOut extends ConsumerWidget {
           SliverToBoxAdapter(child: _buildOrderItemsTable(context, cart)),
 
           // Voucher Section
+          if (checkoutState.voucherCode != null) ...[
+            SliverToBoxAdapter(
+              child: _buildSectionHeader(
+                context,
+                Icons.confirmation_num,
+                "Voucher Applied",
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: .3,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: .2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: .1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.discount,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          checkoutState.voucherCode!,
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.primary,
+                          ),
+                        ),
+                        Text(
+                          'Saving your appetite & wallet',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      '- Rs. ${checkoutState.discount.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // Payment Method Confirmation
           SliverToBoxAdapter(
             child: _buildSectionHeader(
               context,
-              Icons.confirmation_num,
-              "Voucher Applied",
+              Icons.payment,
+              "Payment Method",
             ),
           ),
           SliverToBoxAdapter(
@@ -228,57 +310,30 @@ class ProcessCheckOut extends ConsumerWidget {
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLowest,
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: .3,
+                ),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.discount, color: colorScheme.primary),
+                  Icon(
+                    checkoutState.paymentMethod == PaymentMethod.cod
+                        ? Icons.money
+                        : Icons.qr_code_scanner,
+                    color: colorScheme.primary,
+                  ),
                   const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          'FOODIE20',
-                          style: textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[800],
-                          ),
-                        ),
-                      ],
+                  Text(
+                    checkoutState.paymentMethod == PaymentMethod.cod
+                        ? "Cash on Delivery"
+                        : "QR Payment",
+                    style: textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const Spacer(),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: const [
-                      Text(
-                        'Saved',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Rs. 20',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
+                  Icon(Icons.check_circle, color: Colors.green, size: 20),
                 ],
               ),
             ),
@@ -355,19 +410,27 @@ class ProcessCheckOut extends ConsumerWidget {
         ),
         child: ElevatedButton(
           onPressed: () {
+            ref.read(cartProvider.notifier).clearCart();
+            ref.read(checkoutProvider.notifier).reset();
             context.goNamed("mainDashBoard");
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
             minimumSize: const Size(double.infinity, 55),
+            elevation: 8,
+            shadowColor: colorScheme.primary.withValues(alpha: .4),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(18),
             ),
           ),
           child: const Text(
-            "Continue Ordering",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            "Confirm Order",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
           ),
         ),
       ),

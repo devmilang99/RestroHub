@@ -8,7 +8,7 @@ import 'package:restro_hub/features/cart/presentation/providers/cart_provider.da
 import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
-import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
+import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 
 class RestaurantMenuScreen extends ConsumerStatefulWidget {
   final RestaurantModel restaurant;

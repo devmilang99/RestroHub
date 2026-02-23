@@ -10,6 +10,7 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
 
 class Register extends ConsumerStatefulWidget {
   const Register({super.key});
@@ -94,26 +95,23 @@ class _RegisterState extends ConsumerState<Register>
 
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
-
-    const Color goldColor = Colors.orange;
-    final Color blackColor = isDark ? Colors.black : Colors.white;
-    final Color textColor = isDark ? Colors.white : Colors.black;
-    final Color glassColor = isDark
-        ? Colors.white.withValues(alpha: .05)
-        : Colors.black.withValues(alpha: .05);
+    final colorScheme = context.colorScheme;
+    final primaryColor = colorScheme.primary;
+    final backgroundColor = colorScheme.surface;
+    final textColor = colorScheme.onSurface;
+    final Color glassColor = colorScheme.surfaceContainerHighest.withOpacity(
+      .3,
+    );
 
     return Scaffold(
-      backgroundColor: blackColor,
+      backgroundColor: backgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.goNamed('mainLoginScreen'),
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: isDark ? Colors.white : Colors.black,
-          ),
+          icon: Icon(Icons.arrow_back_ios_new, color: textColor),
         ),
       ),
       body: Stack(
@@ -139,9 +137,9 @@ class _RegisterState extends ConsumerState<Register>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  blackColor.withValues(alpha: .1),
-                  blackColor.withValues(alpha: .5),
-                  blackColor,
+                  backgroundColor.withValues(alpha: .1),
+                  backgroundColor.withValues(alpha: .5),
+                  backgroundColor,
                 ],
               ),
             ),
@@ -165,7 +163,7 @@ class _RegisterState extends ConsumerState<Register>
                           style: GoogleFonts.playfairDisplay(
                             fontSize: 42,
                             fontWeight: FontWeight.bold,
-                            color: goldColor,
+                            color: primaryColor,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -197,38 +195,42 @@ class _RegisterState extends ConsumerState<Register>
                               child: Column(
                                 children: [
                                   _buildTextField(
+                                    context: context,
                                     controller: fullNameController,
                                     label: 'Full Name',
                                     icon: Icons.person_outline,
-                                    isDark: isDark,
+                                    isDark: themeMode == ThemeMode.dark,
                                     validator:
                                         RegistrationValidator.validateFullName,
                                   ),
                                   const SizedBox(height: 20),
                                   _buildTextField(
+                                    context: context,
                                     controller: emailController,
                                     label: 'Email',
                                     icon: Icons.email_outlined,
-                                    isDark: isDark,
+                                    isDark: themeMode == ThemeMode.dark,
                                     keyboardType: TextInputType.emailAddress,
                                     validator:
                                         RegistrationValidator.validateEmail,
                                   ),
                                   const SizedBox(height: 20),
                                   _buildTextField(
+                                    context: context,
                                     controller: addressController,
                                     label: 'Address',
                                     icon: Icons.location_on_outlined,
-                                    isDark: isDark,
+                                    isDark: themeMode == ThemeMode.dark,
                                     validator:
                                         RegistrationValidator.validateAddress,
                                   ),
                                   const SizedBox(height: 20),
                                   _buildTextField(
+                                    context: context,
                                     controller: phoneNumberController,
                                     label: 'Phone Number',
                                     icon: Icons.phone_outlined,
-                                    isDark: isDark,
+                                    isDark: themeMode == ThemeMode.dark,
                                     keyboardType: TextInputType.phone,
                                     prefixText: "+977 ",
                                     validator:
@@ -236,9 +238,10 @@ class _RegisterState extends ConsumerState<Register>
                                   ),
                                   const SizedBox(height: 20),
                                   _buildTextField(
+                                    context: context,
                                     controller: passwordController,
                                     label: 'Password',
-                                    isDark: isDark,
+                                    isDark: themeMode == ThemeMode.dark,
                                     icon: Icons.lock_outline,
                                     isPassword: true,
                                     validator:
@@ -297,17 +300,15 @@ class _RegisterState extends ConsumerState<Register>
                                         }
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: goldColor,
-                                        foregroundColor: isDark
-                                            ? Colors.black
-                                            : Colors.white,
+                                        backgroundColor: primaryColor,
+                                        foregroundColor: colorScheme.onPrimary,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             18,
                                           ),
                                         ),
                                         elevation: 12,
-                                        shadowColor: goldColor.withValues(
+                                        shadowColor: primaryColor.withValues(
                                           alpha: .5,
                                         ),
                                       ),
@@ -340,6 +341,7 @@ class _RegisterState extends ConsumerState<Register>
   }
 
   Widget _buildTextField({
+    required BuildContext context,
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -350,6 +352,7 @@ class _RegisterState extends ConsumerState<Register>
     String? Function(String?)? validator,
   }) {
     final Color textColor = isDark ? Colors.white : Colors.black;
+    final primaryColor = Theme.of(context).colorScheme.primary;
 
     return TextFormField(
       controller: controller,
@@ -359,7 +362,7 @@ class _RegisterState extends ConsumerState<Register>
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(color: textColor.withValues(alpha: .6)),
-        prefixIcon: Icon(icon, color: Colors.orange.withValues(alpha: .8)),
+        prefixIcon: Icon(icon, color: primaryColor.withValues(alpha: .8)),
         prefixText: prefixText,
         prefixStyle: GoogleFonts.poppins(color: textColor),
         enabledBorder: OutlineInputBorder(
@@ -368,7 +371,7 @@ class _RegisterState extends ConsumerState<Register>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.orange, width: 2),
+          borderSide: BorderSide(color: primaryColor, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),

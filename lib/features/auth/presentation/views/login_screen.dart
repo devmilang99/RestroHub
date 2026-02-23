@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
 
 class MainLoginScreen extends ConsumerStatefulWidget {
   const MainLoginScreen({super.key});
@@ -81,6 +82,8 @@ class _LoginCardState extends ConsumerState<LoginCard>
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeProvider);
+    final colorScheme = context.colorScheme;
+    final primaryColor = colorScheme.primary;
     final isDark = themeMode == ThemeMode.dark;
 
     return Scaffold(
@@ -147,7 +150,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                         Icon(
                           Icons.restaurant_menu,
                           size: 80,
-                          color: Colors.orange.shade400,
+                          color: primaryColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -248,7 +251,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                       ),
                                       prefixIcon: Icon(
                                         Icons.email_outlined,
-                                        color: Colors.orange.shade400,
+                                        color: primaryColor,
                                       ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
@@ -264,7 +267,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
-                                          color: Colors.orange.shade400,
+                                          color: primaryColor,
                                           width: 2,
                                         ),
                                       ),
@@ -304,7 +307,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                       ),
                                       prefixIcon: Icon(
                                         Icons.lock_outline,
-                                        color: Colors.orange.shade400,
+                                        color: primaryColor,
                                       ),
                                       suffixIcon: IconButton(
                                         onPressed: () {
@@ -335,7 +338,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         borderSide: BorderSide(
-                                          color: Colors.orange.shade400,
+                                          color: primaryColor,
                                           width: 2,
                                         ),
                                       ),
@@ -365,8 +368,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                                   rememberMe = value!;
                                                 });
                                               },
-                                              activeColor:
-                                                  Colors.orange.shade400,
+                                              activeColor: primaryColor,
                                             ),
                                           ),
                                           const SizedBox(width: 8),
@@ -391,7 +393,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                           'Forgot Password?',
                                           style: GoogleFonts.poppins(
                                             fontSize: 13,
-                                            color: Colors.orange.shade600,
+                                            color: primaryColor,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -455,8 +457,8 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                         }
                                       },
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.orange.shade400,
-                                        foregroundColor: Colors.white,
+                                        backgroundColor: primaryColor,
+                                        foregroundColor: colorScheme.onPrimary,
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -492,9 +494,9 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                         context.pushNamed('registerScreen');
                                       },
                                       style: OutlinedButton.styleFrom(
-                                        foregroundColor: Colors.orange.shade600,
+                                        foregroundColor: primaryColor,
                                         side: BorderSide(
-                                          color: Colors.orange.shade400,
+                                          color: primaryColor,
                                           width: 2,
                                         ),
                                         shape: RoundedRectangleBorder(

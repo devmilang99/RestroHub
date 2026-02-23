@@ -12,7 +12,7 @@ class CartNotifier extends Notifier<List<CartModel>> {
       state = [
         ...state.sublist(0, existingIndex),
         existingItem.copyWith(
-          quantity: (existingItem.quantity ?? 0) + (item.quantity ?? 1),
+          quantity: (existingItem.quantity) + (item.quantity),
         ),
         ...state.sublist(existingIndex + 1),
       ];
@@ -43,12 +43,12 @@ class CartNotifier extends Notifier<List<CartModel>> {
   double get totalAmount {
     return state.fold(
       0.0,
-      (sum, item) => sum + (item.price * (item.quantity ?? 0)),
+      (sum, item) => sum + (item.price * item.quantity),
     );
   }
 
   int get totalItems {
-    return state.fold(0, (sum, item) => sum + (item.quantity ?? 0));
+    return state.fold(0, (sum, item) => sum + item.quantity);
   }
 }
 
@@ -58,13 +58,13 @@ final cartProvider = NotifierProvider<CartNotifier, List<CartModel>>(() {
 
 final cartTotalItemsProvider = Provider<int>((ref) {
   final cart = ref.watch(cartProvider);
-  return cart.fold(0, (sum, item) => sum + (item.quantity ?? 0));
+  return cart.fold(0, (sum, item) => sum + item.quantity);
 });
 
 final cartTotalAmountProvider = Provider<double>((ref) {
   final cart = ref.watch(cartProvider);
   return cart.fold(
     0.0,
-    (sum, item) => sum + (item.price * (item.quantity ?? 0)),
+    (sum, item) => sum + (item.price * (item.quantity)),
   );
 });

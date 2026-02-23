@@ -12,7 +12,7 @@ import 'package:restro_hub/features/favourites/presentation/providers/favourites
 import 'package:restro_hub/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:restro_hub/core/widgets/cart_bottom_sheet.dart';
+import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
 import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 import 'package:restro_hub/features/country/data/models/country_model.dart';
@@ -1267,6 +1267,24 @@ class _CuisineCardList extends StatelessWidget {
                         height: 140,
                         fit: BoxFit.cover,
                       ),
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: CircleAvatar(
+                          radius: 15,
+                          backgroundColor: Colors.white.withValues(alpha: .2),
+                          child: Text(
+                            countries
+                                .firstWhere(
+                                  (c) => c.name == item.country,
+                                  orElse: () => countries.first,
+                                )
+                                .flag,
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ),
+
                       // WHY badge
                       Positioned(
                         top: 10,
@@ -1293,7 +1311,7 @@ class _CuisineCardList extends StatelessWidget {
                       ),
                       // star rating
                       Positioned(
-                        top: 10,
+                        bottom: 10,
                         right: 10,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -1360,33 +1378,7 @@ class _CuisineCardList extends StatelessWidget {
                                     fontSize: 12,
                                   ),
                                 ),
-                                if (item.country != null) ...[
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    countries
-                                        .firstWhere(
-                                          (c) => c.name == item.country,
-                                          orElse: () => countries.first,
-                                        )
-                                        .flag,
-                                    style: const TextStyle(fontSize: 10),
-                                  ),
-                                ],
                               ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.1,
-                                ),
-                                borderRadius: BorderRadius.circular(7),
-                              ),
-                              child: Icon(
-                                Icons.add_rounded,
-                                color: colorScheme.primary,
-                                size: 15,
-                              ),
                             ),
                           ],
                         ),
