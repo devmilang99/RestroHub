@@ -188,70 +188,173 @@ class _SearchableSliverAppLayoutState<T>
         : const <Widget>[];
     final headerHeight = _headerHeight;
 
-    return Stack(
-      children: [
-        NotificationListener<ScrollEndNotification>(
-          onNotification: (notification) {
-            final collapseTarget = widget.expandedHeight;
-            final offset = _scrollController.hasClients
-                ? _scrollController.offset
-                : 0.0;
-            if (offset > 0 && offset < collapseTarget) {
-              final mid = collapseTarget / 2;
-              final to = offset >= mid ? collapseTarget : 0.0;
-              _safeAnimateTo(to, duration: 250, curve: Curves.easeOut);
-            }
-            return false;
-          },
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: widget.physics ?? const BouncingScrollPhysics(),
-            slivers: [
-              // ── App Bar (Expandable, Collapsible) ──
-              SliverAppBar(
-                expandedHeight: widget.expandedHeight,
-                collapsedHeight: kToolbarHeight,
-                toolbarHeight: kToolbarHeight,
-                pinned: false,
-                floating: false,
-                snap: false,
-                elevation: 0,
-                backgroundColor: colorScheme.surface,
-                actions: widget.actions,
-                flexibleSpace: FlexibleSpaceBar(
-                  collapseMode: CollapseMode.parallax,
-                  background:
-                      widget.background ??
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              colorScheme.primary.withValues(alpha: 0.15),
-                              colorScheme.secondary.withValues(alpha: 0.15),
+    return SafeArea(
+      child: Stack(
+        children: [
+          NotificationListener<ScrollEndNotification>(
+            onNotification: (notification) {
+              final collapseTarget = widget.expandedHeight;
+              final offset = _scrollController.hasClients
+                  ? _scrollController.offset
+                  : 0.0;
+              if (offset > 0 && offset < collapseTarget) {
+                final mid = collapseTarget / 2;
+                final to = offset >= mid ? collapseTarget : 0.0;
+                _safeAnimateTo(to, duration: 250, curve: Curves.easeOut);
+              }
+              return false;
+            },
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: widget.physics ?? const BouncingScrollPhysics(),
+              slivers: [
+                // ── App Bar (Expandable, Collapsible) ──
+                SliverAppBar(
+                  expandedHeight: widget.expandedHeight,
+                  collapsedHeight: kToolbarHeight,
+                  toolbarHeight: kToolbarHeight,
+                  pinned: false,
+                  floating: false,
+                  snap: false,
+                  elevation: 0,
+                  backgroundColor: colorScheme.surface,
+                  actions: widget.actions,
+                  flexibleSpace: FlexibleSpaceBar(
+                    collapseMode: CollapseMode.parallax,
+                    background:
+                        widget.background ??
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                colorScheme.primary.withValues(alpha: 0.15),
+                                colorScheme.secondary.withValues(alpha: 0.15),
+                              ],
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              Center(
+                                child: Text(
+                                  widget.title!,
+                                  style: GoogleFonts.poppins(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 32,
+                                  ),
+                                ),
+                              ),
+                              if (widget.enableFilters &&
+                                  (widget.filterItems?.isNotEmpty ?? false))
+                                Positioned(
+                                  right: 12,
+                                  bottom: 12,
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: IconButton(
+                                      icon: Icon(
+                                        Icons.tune,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                      onPressed: _showFilterSheet,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
-                        child: Stack(
-                          children: [
-                            Center(
-                              child: Text(
-                                widget.title!,
-                                style: GoogleFonts.poppins(
-                                  color: colorScheme.onSurface,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 32,
+                  ),
+                ),
+
+                // ── Pinned Search Bar with Back & Filter ──
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SearchHeaderDelegate(
+                    height: headerHeight,
+                    child: Container(
+                      color: colorScheme.surface,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          // Back Button + Search + Filter Icon in one row
+                          Row(
+                            children: [
+                              // Back Button: only visible when header is fully collapsed
+                              if (widget.showBackButton && _isCollapsed)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  child: IconButton(
+                                    icon: Icon(
+                                      Icons.arrow_back,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                    onPressed:
+                                        widget.onBackPressed ??
+                                        () => Navigator.pop(context),
+                                  ),
+                                ),
+                              // Search Field
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? colorScheme.surfaceContainerHighest
+                                              .withValues(alpha: 0.3)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.05,
+                                        ),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TextField(
+                                    controller: _searchController,
+                                    focusNode: _searchFocus,
+                                    style: GoogleFonts.poppins(fontSize: 14),
+                                    decoration: InputDecoration(
+                                      hintText: widget.hintText,
+                                      hintStyle: GoogleFonts.poppins(
+                                        color: colorScheme.onSurfaceVariant,
+                                        fontSize: 14,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search,
+                                        color: colorScheme.primary,
+                                      ),
+                                      suffixIcon: _query.isNotEmpty
+                                          ? IconButton(
+                                              icon: const Icon(
+                                                Icons.clear,
+                                                size: 18,
+                                              ),
+                                              onPressed: _clearSearch,
+                                            )
+                                          : null,
+                                      border: InputBorder.none,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 14,
+                                          ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                            if (widget.enableFilters &&
-                                (widget.filterItems?.isNotEmpty ?? false))
-                              Positioned(
-                                right: 12,
-                                bottom: 12,
-                                child: Material(
-                                  color: Colors.transparent,
+                              // Filter Icon
+                              if (widget.enableFilters)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8.0),
                                   child: IconButton(
                                     icon: Icon(
                                       Icons.tune,
@@ -260,205 +363,105 @@ class _SearchableSliverAppLayoutState<T>
                                     onPressed: _showFilterSheet,
                                   ),
                                 ),
-                              ),
-                          ],
-                        ),
-                      ),
-                ),
-              ),
-
-              // ── Pinned Search Bar with Back & Filter ──
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _SearchHeaderDelegate(
-                  height: headerHeight,
-                  child: Container(
-                    color: colorScheme.surface,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        // Back Button + Search + Filter Icon in one row
-                        Row(
-                          children: [
-                            // Back Button: only visible when header is fully collapsed
-                            if (widget.showBackButton && _isCollapsed)
+                            ],
+                          ),
+                          // Filter Chips or Custom Filter Builder (Gated by enableFilters)
+                          if (widget.enableFilters) ...[
+                            if (widget.filterBar != null)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: widget.filterBar!,
+                                ),
+                              )
+                            else if (widget.customFilterBuilder != null)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: widget.customFilterBuilder!(
+                                    context,
+                                    _selectedFilters,
+                                    (selected) {
+                                      setState(() {
+                                        _selectedFilters.clear();
+                                        _selectedFilters.addAll(selected);
+                                      });
+                                      widget.onFilterChanged?.call(
+                                        _selectedFilters,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              )
+                            else if (hasFilterItems)
                               Padding(
-                                padding: const EdgeInsets.only(right: 8.0),
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.arrow_back,
-                                    color: colorScheme.onSurface,
-                                  ),
-                                  onPressed:
-                                      widget.onBackPressed ??
-                                      () => Navigator.pop(context),
-                                ),
-                              ),
-                            // Search Field
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? colorScheme.surfaceContainerHighest
-                                            .withValues(alpha: 0.3)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 5),
-                                    ),
-                                  ],
-                                ),
-                                child: TextField(
-                                  controller: _searchController,
-                                  focusNode: _searchFocus,
-                                  style: GoogleFonts.poppins(fontSize: 14),
-                                  decoration: InputDecoration(
-                                    hintText: widget.hintText,
-                                    hintStyle: GoogleFonts.poppins(
-                                      color: colorScheme.onSurfaceVariant,
-                                      fontSize: 14,
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.search,
-                                      color: colorScheme.primary,
-                                    ),
-                                    suffixIcon: _query.isNotEmpty
-                                        ? IconButton(
-                                            icon: const Icon(
-                                              Icons.clear,
-                                              size: 18,
-                                            ),
-                                            onPressed: _clearSearch,
-                                          )
-                                        : null,
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Filter Icon
-                            if (widget.enableFilters)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8.0),
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.tune,
-                                    color: colorScheme.onSurface,
-                                  ),
-                                  onPressed: _showFilterSheet,
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  child: Row(children: _filterChipWidgets),
                                 ),
                               ),
                           ],
-                        ),
-                        // Filter Chips or Custom Filter Builder (Gated by enableFilters)
-                        if (widget.enableFilters) ...[
-                          if (widget.filterBar != null)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: widget.filterBar!,
-                              ),
-                            )
-                          else if (widget.customFilterBuilder != null)
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: widget.customFilterBuilder!(
-                                  context,
-                                  _selectedFilters,
-                                  (selected) {
-                                    setState(() {
-                                      _selectedFilters.clear();
-                                      _selectedFilters.addAll(selected);
-                                    });
-                                    widget.onFilterChanged?.call(
-                                      _selectedFilters,
-                                    );
-                                  },
-                                ),
-                              ),
-                            )
-                          else if (hasFilterItems)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(children: _filterChipWidgets),
-                              ),
-                            ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // ── List Content ──
-              SliverPadding(
-                padding:
-                    widget.padding ??
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                sliver: filteredItems.isEmpty
-                    ? SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: Center(
-                          child: Text(
-                            "No results found",
-                            style: GoogleFonts.poppins(
-                              color: colorScheme.onSurfaceVariant,
+                // ── List Content ──
+                SliverPadding(
+                  padding:
+                      widget.padding ??
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  sliver: filteredItems.isEmpty
+                      ? SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Center(
+                            child: Text(
+                              "No results found",
+                              style: GoogleFonts.poppins(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
-                        ),
-                      )
-                    : SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => widget.itemBuilder(
-                            context,
-                            filteredItems[index],
-                            index,
+                        )
+                      : SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) => widget.itemBuilder(
+                              context,
+                              filteredItems[index],
+                              index,
+                            ),
+                            childCount: filteredItems.length,
                           ),
-                          childCount: filteredItems.length,
                         ),
-                      ),
-              ),
+                ),
 
-              // ── Bottom Spacing ──
-              const SliverToBoxAdapter(child: SizedBox(height: 50)),
-            ],
-          ),
-        ),
-        // Floating "back to top" button
-        if (_showBackToTop)
-          Positioned(
-            right: 16,
-            bottom: 24,
-            child: FloatingActionButton(
-              mini: true,
-              onPressed: () {
-                _searchFocus.unfocus();
-                _safeAnimateTo(0, duration: 400, curve: Curves.easeInOut);
-                setState(() {
-                  _showBackToTop = false;
-                });
-              },
-              backgroundColor: colorScheme.primary,
-              child: const Icon(Icons.keyboard_arrow_up),
+                // ── Bottom Spacing ──
+                const SliverToBoxAdapter(child: SizedBox(height: 50)),
+              ],
             ),
           ),
-      ],
+          // Floating "back to top" button
+          if (_showBackToTop)
+            Positioned(
+              right: 16,
+              bottom: 24,
+              child: FloatingActionButton(
+                mini: true,
+                onPressed: () {
+                  _searchFocus.unfocus();
+                  _safeAnimateTo(0, duration: 400, curve: Curves.easeInOut);
+                  setState(() {
+                    _showBackToTop = false;
+                  });
+                },
+                backgroundColor: colorScheme.primary,
+                child: const Icon(Icons.keyboard_arrow_up),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

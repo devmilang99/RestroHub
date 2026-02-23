@@ -272,11 +272,26 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
                     ),
                   ],
                 ),
-                Text(
-                  "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: widget.order.discount > 0 ? Colors.green : null,
+                      ),
+                    ),
+                    if (widget.order.discount > 0)
+                      Text(
+                        "Rs. ${(widget.order.totalAmount + widget.order.discount).toStringAsFixed(0)}",
+                        style: textTheme.labelSmall?.copyWith(
+                          decoration: TextDecoration.lineThrough,
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -316,11 +331,13 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
                     ...List.generate(
                       5,
                       (i) => GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _rating = i + 1;
-                          });
-                        },
+                        onTap: _sentFeedback == null
+                            ? () {
+                                setState(() {
+                                  _rating = i + 1;
+                                });
+                              }
+                            : null,
                         child: Icon(
                           i < _rating ? Icons.star : Icons.star_border,
                           color: Colors.amber,
@@ -328,16 +345,6 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
                         ),
                       ),
                     ),
-                    if (_rating > 0)
-                      IconButton(
-                        onPressed: () => setState(() => _rating = 0),
-                        icon: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.grey,
-                        ),
-                        tooltip: "Clear Rating",
-                      ),
                   ],
                 ),
               ],
@@ -348,31 +355,74 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
               child: Divider(),
             ),
 
-            if (_sentFeedback == null) ...[
-              // Item Table Layout
-              const Text(
-                "Order Details",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              Table(
-                columnWidths: const {
-                  0: IntrinsicColumnWidth(),
-                  1: IntrinsicColumnWidth(),
-                  2: FlexColumnWidth(4),
-                  3: IntrinsicColumnWidth(),
-                },
-                children: [
-                  ...widget.order.items.map(
-                    (item) => _buildCommonTableRow(item),
+            // Item Table Layout
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Order Details",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                Column(
+                  children: widget.order.items.asMap().entries.map((entry) {
+                    final item = entry.value;
+                    return _buildOrderItemCard(
+                      context,
+                      item,
+                      isCompact: widget.order.items.length > 3,
+                    );
+                  }).toList(),
+                ),
+                if (widget.order.voucherCode != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.green.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.local_offer,
+                          color: Colors.green,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Voucher Applied: ${widget.order.voucherCode}",
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          "- Rs. ${widget.order.discount.toStringAsFixed(0)}",
+                          style: const TextStyle(
+                            color: Colors.green,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(),
-              ),
-            ],
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(),
+                ),
+              ],
+            ),
             // Feedback Box or Sent Feedback Card
             _sentFeedback == null
                 ? Container(
@@ -485,51 +535,88 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
                         color: Colors.green.withValues(alpha: 0.2),
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(
-                          Icons.verified,
-                          color: Colors.green,
-                          size: 32,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Feedback Sent!",
-                                style: textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green.shade700,
-                                ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
                               ),
-                              if (_sentTimestamp != null)
-                                Text(
-                                  "Sent ${_formatTimestamp(_sentTimestamp!)}",
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: Colors.green.shade600,
-                                    fontSize: 10,
+                              child: const Icon(
+                                Icons.chat_bubble_rounded,
+                                color: Colors.green,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Feedback Sent!",
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green.shade800,
+                                    ),
                                   ),
-                                ),
-                              Text(
-                                "Thank you for helping us improve",
-                                style: textTheme.bodySmall?.copyWith(
-                                  color: Colors.green.shade600,
-                                ),
+                                  if (_sentTimestamp != null)
+                                    Text(
+                                      _formatTimestamp(_sentTimestamp!),
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: Colors.green.shade600,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                ],
                               ),
-                            ],
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _feedbackController.text = _sentFeedback!;
+                                  _sentFeedback = null;
+                                  _sentTimestamp = null;
+                                });
+                              },
+                              style: TextButton.styleFrom(
+                                visualDensity: VisualDensity.compact,
+                                padding: EdgeInsets.zero,
+                              ),
+                              child: const Text("Edit"),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.green.withValues(alpha: 0.1),
+                            ),
+                          ),
+                          child: Text(
+                            _sentFeedback!,
+                            style: textTheme.bodyMedium?.copyWith(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.green.shade900,
+                            ),
                           ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _feedbackController.text = _sentFeedback!;
-                              _sentFeedback = null;
-                              _sentTimestamp = null;
-                            });
-                          },
-                          child: const Text("Edit"),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Thank you for helping us improve",
+                          style: textTheme.bodySmall?.copyWith(
+                            color: Colors.green.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -593,7 +680,7 @@ void _reorder(WidgetRef ref, BuildContext context, OrderModel order) {
 
 class _CancelledOrderCard extends ConsumerWidget {
   final OrderModel order;
-  const _CancelledOrderCard({super.key, required this.order});
+  const _CancelledOrderCard({required this.order});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -707,23 +794,59 @@ class _CancelledOrderCard extends ConsumerWidget {
               child: Divider(),
             ),
 
-            // Item Table Layout
             const Text(
               "Order Details",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
             const SizedBox(height: 8),
-            Table(
-              columnWidths: const {
-                0: IntrinsicColumnWidth(),
-                1: FlexColumnWidth(4),
-                2: IntrinsicColumnWidth(),
-                3: IntrinsicColumnWidth(),
-              },
-              children: [
-                ...order.items.map((item) => _buildCommonTableRow(item)),
-              ],
+            Column(
+              children: order.items
+                  .map((item) => _buildOrderItemCard(context, item))
+                  .toList(),
             ),
+            if (order.voucherCode != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.local_offer,
+                      color: Colors.green,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Voucher Applied: ${order.voucherCode}",
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      "- Rs. ${order.discount.toStringAsFixed(0)}",
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
@@ -782,52 +905,92 @@ class _CancelledOrderCard extends ConsumerWidget {
   }
 }
 
-TableRow _buildCommonTableRow(dynamic item) {
-  return TableRow(
-    children: [
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.asset(
-            item.image,
-            width: 45,
-            height: 45,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) => Container(
-              width: 45,
-              height: 45,
-              color: Colors.grey.shade200,
-              child: const Icon(Icons.fastfood, size: 20, color: Colors.grey),
+Widget _buildOrderItemCard(
+  BuildContext context,
+  dynamic item, {
+  bool isCompact = false,
+}) {
+  final colorScheme = context.colorScheme;
+  final textTheme = context.textTheme;
+
+  return AnimatedContainer(
+    duration: const Duration(milliseconds: 300),
+    curve: Curves.easeInOut,
+    margin: EdgeInsets.only(bottom: isCompact ? 6 : 10),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.05),
+          blurRadius: 4.0,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Padding(
+      padding: EdgeInsets.all(isCompact ? 6.0 : 8.0),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            width: isCompact ? 35 : 50,
+            height: isCompact ? 35 : 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                item.image,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.grey.shade200,
+                  child: Icon(Icons.fastfood, size: isCompact ? 16 : 20),
+                ),
+              ),
             ),
           ),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: isCompact ? 13 : 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  "Qty: ${item.quantity}",
+                  style: textTheme.bodySmall?.copyWith(
+                    fontSize: isCompact ? 10 : 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            "Rs. ${(item.price * item.quantity).toStringAsFixed(0)}",
+            style: textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.primary,
+              fontSize: isCompact ? 13 : 14,
+            ),
+          ),
+        ],
       ),
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        child: Text(
-          "${item.quantity}x",
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          item.name,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        ),
-      ),
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        child: Text(
-          "Rs. ${(item.price * item.quantity).toStringAsFixed(0)}",
-          textAlign: TextAlign.end,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-      ),
-    ],
+    ),
   );
 }
 
@@ -840,6 +1003,55 @@ class _InProgressOrderCard extends StatefulWidget {
 }
 
 class _InProgressOrderCardState extends State<_InProgressOrderCard> {
+  late Timer _timer;
+  int _secondsRemaining = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _secondsRemaining = _getInitialSeconds();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  int _getInitialSeconds() {
+    if (widget.order.subStatus == OrderSubStatus.preparing) {
+      return ((1.0 - widget.order.progress) * 15 * 60).toInt();
+    }
+    if (widget.order.subStatus == OrderSubStatus.delivered) {
+      return ((1.0 - widget.order.progress) * 8 * 60).toInt();
+    }
+    if (widget.order.subStatus == OrderSubStatus.pickup) {
+      return 5 * 60; // Mock 5 minutes for driver waiting
+    }
+    return 0;
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 0) {
+        setState(() {
+          _secondsRemaining--;
+        });
+      }
+    });
+  }
+
+  String _formatTimer(int totalSeconds) {
+    if (widget.order.subStatus == OrderSubStatus.pickup) {
+      return "Driver Waiting";
+    }
+    if (totalSeconds <= 0) return "Arriving...";
+    int minutes = totalSeconds ~/ 60;
+    int seconds = totalSeconds % 60;
+    return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -911,11 +1123,26 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     ],
                   ),
                 ),
-                Text(
-                  "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: widget.order.discount > 0 ? Colors.green : null,
+                      ),
+                    ),
+                    if (widget.order.discount > 0)
+                      Text(
+                        "Rs. ${(widget.order.totalAmount + widget.order.discount).toStringAsFixed(0)}",
+                        style: textTheme.labelSmall?.copyWith(
+                          decoration: TextDecoration.lineThrough,
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -950,23 +1177,6 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _getETA(widget.order),
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    Text(
-                      "Estimated Time",
-                      style: textTheme.bodySmall?.copyWith(fontSize: 9),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 12),
                 IconButton(
                   onPressed: () {},
                   icon: Icon(Icons.phone, color: colorScheme.primary, size: 20),
@@ -984,18 +1194,99 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
               child: Divider(),
             ),
 
-            // Item Table Layout
-            Table(
-              columnWidths: const {
-                0: IntrinsicColumnWidth(),
-                1: IntrinsicColumnWidth(),
-                2: FlexColumnWidth(4),
-                3: IntrinsicColumnWidth(),
-              },
+            // Header for items
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                ...widget.order.items.map((item) => _buildCommonTableRow(item)),
+                Text(
+                  "Order Item List",
+                  style: textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 14,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      widget.order.subStatus == OrderSubStatus.pickup
+                          ? "Driver Waiting"
+                          : "ETA: ${_formatTimer(_secondsRemaining)}",
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
+            const SizedBox(height: 12),
+
+            // Item List using Cards instead of Table for better aesthetics
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              child: Column(
+                children: widget.order.items.asMap().entries.map((entry) {
+                  final item = entry.value;
+                  return _buildOrderItemCard(
+                    context,
+                    item,
+                    isCompact: widget.order.items.length > 3,
+                  );
+                }).toList(),
+              ),
+            ),
+
+            if (widget.order.voucherCode != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.local_offer,
+                      color: Colors.green,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Voucher Applied: ${widget.order.voucherCode}",
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      "- Rs. ${widget.order.discount.toStringAsFixed(0)}",
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 16),
 
             // Progress Tracker or Live Tracking bar
@@ -1029,23 +1320,8 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
     }
     if (order.subStatus == OrderSubStatus.delivered)
       return "Order being carried...";
-    if (order.subStatus == OrderSubStatus.pickup) return "PLEASE PICK UP!";
+    if (order.subStatus == OrderSubStatus.pickup) return "Driver is Waiting";
     return "Completed";
-  }
-
-  String _getETA(OrderModel order) {
-    if (order.subStatus == OrderSubStatus.preparing) {
-      double remaining = (1.0 - order.progress) * 15; // 15 mins total max
-      return "${remaining.ceil()} mins";
-    }
-    if (order.subStatus == OrderSubStatus.delivered) {
-      double remaining = (1.0 - order.progress) * 8; // 8 mins total max
-      return "${remaining.ceil()} mins";
-    }
-    if (order.subStatus == OrderSubStatus.pickup) {
-      return "0 mins";
-    }
-    return "--";
   }
 }
 

@@ -1,25 +1,173 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
-import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:shimmer/shimmer.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 
 class CuisineSingleItem extends ConsumerWidget {
   final CuisineModel item;
   const CuisineSingleItem({super.key, required this.item});
 
+  void _showAddedNotification(BuildContext context, String itemName) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+
+    entry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: 100,
+        left: 20,
+        right: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.elasticOut,
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Opacity(
+                  opacity: value.clamp(0.0, 1.0),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 15,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "Added to Cart!",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                "$itemName has been added.",
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            entry.remove();
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (context) => const CartBottomSheet(),
+                            );
+                          },
+                          child: const Text(
+                            "VIEW",
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(entry);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (entry.mounted) entry.remove();
+    });
+  }
+
+  void _openImageSlider(
+    BuildContext context,
+    List<String> images,
+    int initialIndex,
+  ) {
+    showDialog(
+      context: context,
+      useSafeArea: false,
+      builder: (context) =>
+          _ImageSliderDialog(images: images, initialIndex: initialIndex),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
+    final textTheme = context.textTheme;
     final isFav = ref.watch(favouritesProvider.notifier).isFavourite(item);
-    ref.watch(favouritesProvider); // Rebuild when favorites change
+    ref.watch(favouritesProvider);
+
+    // Mock data if missing
+    final ingredients = item.ingredients.isEmpty
+        ? [
+            "Fresh Herbs",
+            "Signature Spices",
+            "Local Produce",
+            "Organic Olive Oil",
+            "Sea Salt",
+          ]
+        : item.ingredients;
+
+    final comments = item.comments.isEmpty
+        ? [
+            "This is absolutely the best version of this dish I've ever had! The balance of flavors is perfection.",
+            "Great portion size and it arrived surprisingly fast. Will definitely order again next time.",
+            "Simply incredible! You can tell they use authentic ingredients. High quality through and through.",
+          ]
+        : item.comments;
+
+    final mockReviewImages = [
+      'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1473093226795-af9932fe5856?q=80&w=400&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1493770348161-369560ae357d?q=80&w=400&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=400&auto=format&fit=crop',
+    ];
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -32,6 +180,24 @@ class CuisineSingleItem extends ConsumerWidget {
             pinned: true,
             stretch: true,
             backgroundColor: colorScheme.surface,
+            centerTitle: true,
+            title: LayoutBuilder(
+              builder: (context, constraints) {
+                final opacity =
+                    (constraints.maxHeight - kToolbarHeight) /
+                    (350 - kToolbarHeight);
+                return Opacity(
+                  opacity: (1.0 - opacity).clamp(0.0, 1.0),
+                  child: Text(
+                    item.name,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                );
+              },
+            ),
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
               child: CircleAvatar(
@@ -80,22 +246,36 @@ class CuisineSingleItem extends ConsumerWidget {
                 StretchMode.zoomBackground,
                 StretchMode.blurBackground,
               ],
-              background: Hero(
-                tag: item.name,
-                child: Image.asset(
-                  item.image,
-                  fit: BoxFit.cover,
-                  frameBuilder:
-                      (context, child, frame, wasSynchronouslyLoaded) {
-                        if (wasSynchronouslyLoaded) return child;
-                        return frame != null
-                            ? child
-                            : const ShimmerPlaceholder(
-                                width: double.infinity,
-                                height: 350,
-                              );
-                      },
-                ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Hero(
+                    tag: item.name,
+                    child: Image.asset(
+                      item.image,
+                      fit: BoxFit.cover,
+                      frameBuilder:
+                          (context, child, frame, wasSynchronouslyLoaded) {
+                            if (wasSynchronouslyLoaded) return child;
+                            return frame != null
+                                ? child
+                                : const ShimmerPlaceholder(
+                                    width: double.infinity,
+                                    height: 350,
+                                  );
+                          },
+                    ),
+                  ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.black54],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -117,11 +297,11 @@ class CuisineSingleItem extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           item.name,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                              ),
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ),
                       Container(
@@ -130,21 +310,24 @@ class CuisineSingleItem extends ConsumerWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade50,
+                          color: Colors.amber.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.star,
-                              color: Colors.green.shade700,
-                              size: 18,
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Colors.amber,
+                              size: 20,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               item.rating,
-                              style: TextStyle(
-                                color: Colors.green.shade700,
+                              style: const TextStyle(
+                                color: Colors.amber,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -153,7 +336,7 @@ class CuisineSingleItem extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Icon(
@@ -162,237 +345,74 @@ class CuisineSingleItem extends ConsumerWidget {
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        item.location,
-                        style: TextStyle(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Text(
+                          item.location,
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 16),
-                      Icon(Icons.flag, color: Colors.orange, size: 16),
+                      const Icon(Icons.public, color: Colors.blue, size: 16),
                       const SizedBox(width: 4),
                       Text(
                         item.country ?? '',
                         style: const TextStyle(
-                          color: Colors.orange,
+                          color: Colors.blue,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   Text(
                     item.description,
-                    style: TextStyle(
-                      fontSize: 16,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
                       color: colorScheme.onSurface.withValues(alpha: 0.7),
-                      height: 1.5,
+                      height: 1.6,
                     ),
                   ),
                   const SizedBox(height: 32),
-                  const Text(
+                  _buildSectionHeader(
+                    context,
                     "Ingredients",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    Icons.restaurant_menu_rounded,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: item.ingredients.map((ingredient) {
-                      IconData getIcon(String name) {
-                        name = name.toLowerCase();
-                        if (name.contains('rice')) return Icons.rice_bowl;
-                        if (name.contains('spices')) return Icons.set_meal;
-                        if (name.contains('oil')) return Icons.opacity;
-                        if (name.contains('vegetable'))
-                          return Icons.bakery_dining;
-                        if (name.contains('chicken')) return Icons.restaurant;
-                        if (name.contains('onion')) return Icons.circle;
-                        if (name.contains('garlic')) return Icons.bubble_chart;
-                        return Icons.check_circle_outline;
-                      }
-
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: colorScheme.primary.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              getIcon(ingredient),
-                              size: 18,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              ingredient,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: ingredients
+                        .map(
+                          (ingredient) =>
+                              _buildIngredientChip(context, ingredient),
+                        )
+                        .toList(),
                   ),
                   const SizedBox(height: 32),
-                  const Text(
+                  _buildSectionHeader(
+                    context,
                     "Reviews",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    Icons.reviews_rounded,
                   ),
-                  const SizedBox(height: 12),
-                  ...item.comments.asMap().entries.map((entry) {
+                  const SizedBox(height: 16),
+                  ...comments.asMap().entries.map((entry) {
                     final index = entry.key;
                     final comment = entry.value;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.3,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: colorScheme.primary.withValues(
-                                      alpha: 0.2,
-                                    ),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://i.pravatar.cc/150?u=$index',
-                                  imageBuilder: (context, imageProvider) =>
-                                      CircleAvatar(
-                                        radius: 28,
-                                        backgroundImage: imageProvider,
-                                      ),
-                                  placeholder: (context, url) =>
-                                      Shimmer.fromColors(
-                                        baseColor: Colors.grey[300]!,
-                                        highlightColor: Colors.grey[100]!,
-                                        child: const CircleAvatar(
-                                          radius: 28,
-                                          backgroundColor: Colors.white,
-                                        ),
-                                      ),
-                                  errorWidget: (context, url, error) =>
-                                      const CircleAvatar(
-                                        radius: 28,
-                                        child: Icon(Icons.person),
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "User ${index + 1}",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 17,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      "Feb 17, 2026 • 09:30 PM",
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: colorScheme.onSurface.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Row(
-                                children: List.generate(
-                                  5,
-                                  (i) => Icon(
-                                    Icons.star,
-                                    size: 16,
-                                    color: i < 4
-                                        ? Colors.amber
-                                        : Colors.grey.shade300,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            comment,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: colorScheme.onSurface.withValues(
-                                alpha: 0.8,
-                              ),
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          if (index % 2 == 0) // Mock some reviews with images
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: CachedNetworkImage(
-                                imageUrl:
-                                    'https://picsum.photos/seed/food$index/400/200',
-                                height: 150,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) =>
-                                    const ShimmerPlaceholder(
-                                      width: double.infinity,
-                                      height: 150,
-                                      borderRadius: 15,
-                                    ),
-                                errorWidget: (context, url, error) => Container(
-                                  height: 150,
-                                  color: Colors.grey[200],
-                                  child: const Icon(Icons.error),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+                    return _buildReviewCard(
+                      context,
+                      index,
+                      comment,
+                      index % 2 == 0 ? mockReviewImages : [],
                     );
                   }),
-                  const SizedBox(height: 100), // Space for bottom button
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
@@ -445,13 +465,7 @@ class CuisineSingleItem extends ConsumerWidget {
                           quantity: 1,
                         ),
                       );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("${item.name} added to cart!"),
-                      duration: const Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  _showAddedNotification(context, item.name);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
@@ -470,6 +484,265 @@ class CuisineSingleItem extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    IconData icon,
+  ) {
+    return Row(
+      children: [
+        Icon(icon, size: 22, color: context.colorScheme.primary),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIngredientChip(BuildContext context, String ingredient) {
+    final colorScheme = context.colorScheme;
+
+    IconData getIcon(String name) {
+      name = name.toLowerCase();
+      if (name.contains('rice')) return Icons.rice_bowl;
+      if (name.contains('spices')) return Icons.set_meal;
+      if (name.contains('oil')) return Icons.opacity;
+      if (name.contains('vegetable') || name.contains('herbs'))
+        return Icons.park_rounded;
+      if (name.contains('chicken') ||
+          name.contains('meat') ||
+          name.contains('beef'))
+        return Icons.restaurant;
+      if (name.contains('garlic') || name.contains('onion'))
+        return Icons.bubble_chart;
+      if (name.contains('cheese') || name.contains('parmesan'))
+        return Icons.bakery_dining;
+      return Icons.check_circle_outline;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(getIcon(ingredient), size: 16, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            ingredient,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(
+    BuildContext context,
+    int index,
+    String comment,
+    List<String> images,
+  ) {
+    final colorScheme = context.colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundImage: NetworkImage(
+                  'https://i.pravatar.cc/150?u=$index',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ["Alex Rivera", "Mia Thompson", "James Wilson"][index %
+                          3],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      "2 days ago",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: List.generate(
+                  5,
+                  (i) => Icon(
+                    Icons.star_rounded,
+                    size: 14,
+                    color: i < 4 ? Colors.amber : Colors.grey.shade300,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            comment,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: colorScheme.onSurface.withValues(alpha: 0.8),
+              height: 1.5,
+            ),
+          ),
+          if (images.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 70,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                itemBuilder: (context, i) => GestureDetector(
+                  onTap: () => _openImageSlider(context, images, i),
+                  child: Container(
+                    width: 70,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      image: DecorationImage(
+                        image: NetworkImage(images[i]),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ImageSliderDialog extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+  const _ImageSliderDialog({required this.images, required this.initialIndex});
+
+  @override
+  State<_ImageSliderDialog> createState() => _ImageSliderDialogState();
+}
+
+class _ImageSliderDialogState extends State<_ImageSliderDialog> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black.withValues(alpha: 0.9),
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (i) => setState(() => _currentIndex = i),
+            itemCount: widget.images.length,
+            itemBuilder: (context, i) => InteractiveViewer(
+              child: Center(
+                child: CachedNetworkImage(
+                  imageUrl: widget.images[i],
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) =>
+                      const Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            right: 10,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white, size: 30),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                widget.images.length,
+                (i) => Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentIndex == i ? Colors.white : Colors.white38,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -85,12 +85,38 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         if (_currentIndex != 0) {
           setState(() => _currentIndex = 0);
         } else {
-          context.goNamed('mainLoginScreen');
+          final shouldLogout = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Exit Restro Hub?'),
+              content: const Text(
+                'Are you sure you want to log out and exit the app?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.colorScheme.error,
+                    foregroundColor: context.colorScheme.onError,
+                  ),
+                  child: const Text('LOG OUT'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldLogout == true && context.mounted) {
+            context.goNamed('mainLoginScreen');
+          }
         }
       },
       child: Scaffold(
@@ -1234,7 +1260,7 @@ class _CuisineCardList extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SizedBox(
-      height: 250,
+      height: 220,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
@@ -1278,8 +1304,8 @@ class _CuisineCardList extends StatelessWidget {
                         fit: BoxFit.cover,
                       ),
                       Positioned(
-                        top: 10,
-                        right: 10,
+                        bottom: 10,
+                        left: 10,
                         child: CircleAvatar(
                           radius: 15,
                           backgroundColor: Colors.white.withValues(alpha: .2),

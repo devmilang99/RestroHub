@@ -67,7 +67,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Notifications',
@@ -302,28 +301,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                         ),
                                       ),
                                     ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // Action icon
-                                PopupMenuButton<String>(
-                                  onSelected: (value) {
-                                    if (value == 'delete') {
-                                      _deleteNotification(index);
-                                    }
-                                  },
-                                  itemBuilder: (_) => [
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text('Delete'),
-                                    ),
-                                  ],
-                                  child: Icon(
-                                    Icons.more_vert_rounded,
-                                    size: 18,
-                                    color: colorScheme.onSurface.withValues(
-                                      alpha: 0.3,
-                                    ),
                                   ),
                                 ),
                               ],

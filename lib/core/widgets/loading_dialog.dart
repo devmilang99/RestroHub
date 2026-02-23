@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/theme/theme_provider.dart';
 
 class LoadingDialog {
   static void show(BuildContext context, {required String message}) {
@@ -18,12 +21,24 @@ class LoadingDialog {
   }
 }
 
-class _AestheticLoadingDialog extends StatelessWidget {
+class _AestheticLoadingDialog extends ConsumerStatefulWidget {
   final String message;
+
   const _AestheticLoadingDialog({required this.message});
 
   @override
+  ConsumerState<_AestheticLoadingDialog> createState() =>
+      _AestheticLoadingDialogState();
+}
+
+class _AestheticLoadingDialogState
+    extends ConsumerState<_AestheticLoadingDialog> {
+  @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeProvider);
+
+    final isDark = themeMode == ThemeMode.dark;
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
       child: Dialog(
@@ -32,7 +47,9 @@ class _AestheticLoadingDialog extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.2),
@@ -43,12 +60,12 @@ class _AestheticLoadingDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const CircularProgressIndicator(
-                color: Colors.deepPurpleAccent,
+                color: Colors.white,
                 strokeWidth: 3,
               ),
               const SizedBox(height: 24),
               Text(
-                message,
+                widget.message,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   color: Colors.white,

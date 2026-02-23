@@ -70,9 +70,11 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withOpacity(0.3),
+                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: cs.primary.withOpacity(0.2)),
+                      border: Border.all(
+                        color: cs.primary.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -590,7 +592,10 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
-                onPressed: () => {context.push('/processCheckout')},
+                onPressed: () {
+                  Navigator.pop(context); // Close bottom sheet first
+                  context.push('/processCheckout');
+                },
                 child: const Text(
                   "Proceed to Checkout",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
