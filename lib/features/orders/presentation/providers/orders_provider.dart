@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
+import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
 
 enum OrderSubStatus {
   preparing, // Cooking, Packed, InRoute phases
@@ -67,6 +68,8 @@ class OrdersNotifier extends Notifier<List<OrderModel>> {
         _runPhase(orderId, OrderSubStatus.pickup, 15, () {
           // 4. Move to Success
           _updateOrderStatus(orderId, OrderSubStatus.success, 1.0);
+          // Add 10 points for successful order
+          ref.read(loyaltyProvider.notifier).addPoints(10);
         });
       });
     });

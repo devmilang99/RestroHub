@@ -155,11 +155,11 @@ class _LoginCardState extends ConsumerState<LoginCard>
                         const SizedBox(height: 16),
                         Text(
                           'RestroHub',
-                          style: GoogleFonts.playfairDisplay(
+                          style: GoogleFonts.poppins(
                             fontSize: 35,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            letterSpacing: 1.5,
+                            letterSpacing: 2.0,
                           ),
                         ),
                         const SizedBox(height: 8),

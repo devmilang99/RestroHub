@@ -20,6 +20,9 @@ import 'package:restro_hub/features/country/data/models/country_model.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/presentation/views/restaurant_menu_screen.dart';
 import 'package:restro_hub/core/data/mock_data.dart';
+import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
+import 'package:restro_hub/features/dashboard/logic/membership_rules.dart';
+import 'dart:math' as math;
 
 class MainDashBoard extends ConsumerStatefulWidget {
   final UserModel? user;
@@ -83,163 +86,201 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
       const OrdersScreen(),
     ];
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) async {
-        if (didPop) return;
-        if (_currentIndex != 0) {
-          setState(() => _currentIndex = 0);
-        } else {
-          final shouldLogout = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Exit Restro Hub?'),
-              content: const Text(
-                'Are you sure you want to log out and exit the app?',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('CANCEL'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.colorScheme.error,
-                    foregroundColor: context.colorScheme.onError,
-                  ),
-                  child: const Text('LOG OUT'),
-                ),
-              ],
-            ),
-          );
-
-          if (shouldLogout == true && context.mounted) {
-            context.goNamed('mainLoginScreen');
-          }
-        }
-      },
-      child: Scaffold(
-        backgroundColor: colorScheme.surface,
-        floatingActionButton: _currentIndex == 0 && _showBackToTop
-            ? FloatingActionButton(
-                mini: true,
-                onPressed: () {
-                  _scrollController.animateTo(
-                    0,
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOut,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            if (_currentIndex != 0) {
+              setState(() => _currentIndex = 0);
+            } else {
+              final shouldLogout = await showGeneralDialog<bool>(
+                context: context,
+                barrierDismissible: true,
+                barrierLabel: '',
+                transitionDuration: const Duration(milliseconds: 300),
+                pageBuilder: (context, anim1, anim2) => const SizedBox.shrink(),
+                transitionBuilder: (context, anim1, anim2, child) {
+                  return Transform.scale(
+                    scale: anim1.value,
+                    child: Opacity(
+                      opacity: anim1.value,
+                      child: AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        title: Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: context.colorScheme.error,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Exit Restro Hub',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        content: Text(
+                          'Are you sure you want to log out and exit the app?',
+                          style: GoogleFonts.poppins(),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text(
+                              'CANCEL',
+                              style: GoogleFonts.poppins(color: Colors.grey),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.colorScheme.error,
+                              foregroundColor: context.colorScheme.onError,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(
+                              'LOG OUT',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                child: const Icon(Icons.keyboard_arrow_up),
-              )
-            : null,
-        drawer: Drawer(
-          child: Column(
-            children: [
-              _PremiumDrawerHeader(user: widget.user),
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.home_outlined),
-                      title: const Text('Home'),
-                      onTap: () {
-                        context.pop();
-                      },
-                    ),
-
-                    ListTile(
-                      leading: const Icon(Icons.lock_outline),
-                      title: const Text('Change Password'),
-                      onTap: () {
-                        context.pushNamed('authenticatedPasswordScreen');
-                      },
-                    ),
-                    SwitchListTile(
-                      secondary: const Icon(Icons.dark_mode_outlined),
-                      title: const Text('Dark Mode'),
-                      value: isDarkMode,
-                      onChanged: (value) {
-                        ref.read(themeProvider.notifier).toggleTheme(value);
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.contact_support_outlined),
-                      title: const Text('Contact Us'),
-                      onTap: () {
-                        // Contact support logic
-                      },
-                    ),
-                    const Divider(),
-                    ListTile(
-                      leading: const Icon(
-                        Icons.logout,
-                        color: Colors.redAccent,
-                      ),
-                      title: const Text(
-                        'Logout',
-                        style: TextStyle(color: Colors.redAccent),
-                      ),
-                      onTap: () {
-                        context.goNamed('mainLoginScreen');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'Restro Hub v1.0.0',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: pages[_currentIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          items: <BottomNavigationBarItem>[
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                label: Text(totalItems.toString()),
-                isLabelVisible: totalItems > 0,
-                child: const Icon(Icons.shopping_cart),
-              ),
-              label: 'Cart',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge(
-                label: Text(activeOrdersCount.toString()),
-                isLabelVisible: activeOrdersCount > 0,
-                child: const Icon(Icons.food_bank_rounded),
-              ),
-              label: 'Orders',
-            ),
-          ],
-          currentIndex: _currentIndex,
-          onTap: (index) {
-            if (index == 1) {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (context) => const CartBottomSheet(),
               );
-            } else {
-              setState(() => _currentIndex = index);
+
+              if (shouldLogout == true && context.mounted) {
+                context.goNamed('mainLoginScreen');
+              }
             }
           },
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(context).colorScheme.onSurface,
+          child: Scaffold(
+            backgroundColor: colorScheme.surface,
+            floatingActionButton: _currentIndex == 0 && _showBackToTop
+                ? FloatingActionButton(
+                    mini: true,
+                    onPressed: () {
+                      _scrollController.animateTo(
+                        0,
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.easeInOut,
+                      );
+                    },
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    child: const Icon(Icons.keyboard_arrow_up),
+                  )
+                : null,
+            drawer: Drawer(
+              child: Column(
+                children: [
+                  _PremiumDrawerHeader(user: widget.user),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.lock_outline),
+                          title: const Text('Change Password'),
+                          onTap: () {
+                            context.pushNamed('authenticatedPasswordScreen');
+                          },
+                        ),
+                        SwitchListTile(
+                          secondary: const Icon(Icons.dark_mode_outlined),
+                          title: const Text('Dark Mode'),
+                          value: isDarkMode,
+                          onChanged: (value) {
+                            ref.read(themeProvider.notifier).toggleTheme(value);
+                          },
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.contact_support_outlined),
+                          title: const Text('Contact Us'),
+                          onTap: () {
+                            // Contact support logic
+                          },
+                        ),
+                        const Divider(),
+                        ListTile(
+                          leading: const Icon(
+                            Icons.logout,
+                            color: Colors.redAccent,
+                          ),
+                          title: const Text(
+                            'Logout',
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
+                          onTap: () {
+                            context.goNamed('mainLoginScreen');
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text(
+                      'Restro Hub v1.0.0',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            body: pages[_currentIndex],
+            bottomNavigationBar: BottomNavigationBar(
+              items: <BottomNavigationBarItem>[
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Badge(
+                    label: Text(totalItems.toString()),
+                    isLabelVisible: totalItems > 0,
+                    child: const Icon(Icons.shopping_cart),
+                  ),
+                  label: 'Cart',
+                ),
+                BottomNavigationBarItem(
+                  icon: Badge(
+                    label: Text(activeOrdersCount.toString()),
+                    isLabelVisible: activeOrdersCount > 0,
+                    child: const Icon(Icons.food_bank_rounded),
+                  ),
+                  label: 'Orders',
+                ),
+              ],
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                if (index == 1) {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const CartBottomSheet(),
+                  );
+                } else {
+                  setState(() => _currentIndex = index);
+                }
+              },
+              selectedItemColor: Theme.of(context).colorScheme.primary,
+              unselectedItemColor: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
         ),
       ),
     );
@@ -265,35 +306,50 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
               );
             },
           ),
-          title: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "Delivering to",
-                style: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.location_on, color: Colors.red, size: 16),
-                  const SizedBox(width: 4),
-                  Text(
-                    "Narayan Chowk",
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+          title: GestureDetector(
+            onTap: () async {
+              final newLocation = await context.pushNamed('locationPicker');
+              if (newLocation != null && context.mounted) {
+                // In a real app, update location provider
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Location updated to $newLocation')),
+                );
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Delivering to",
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
-                  Icon(Icons.keyboard_arrow_down, color: colorScheme.onSurface),
-                ],
-              ),
-            ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.location_on, color: Colors.red, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      "Narayan Chowk",
+                      style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      color: colorScheme.onSurface,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+
           centerTitle: true,
           actions: [
             IconButton(
@@ -1818,9 +1874,10 @@ class _PremiumDrawerHeader extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
+      width: double.infinity,
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 20,
-        bottom: 20,
+        top: MediaQuery.of(context).padding.top + 10,
+        bottom: 15,
         left: 20,
         right: 20,
       ),
@@ -1829,122 +1886,192 @@ class _PremiumDrawerHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            colorScheme.primary,
-            colorScheme.primary.withValues(alpha: 0.8),
-            Colors.orange.shade800,
+            const Color(0xFF1A1A2E), // Deep Midnight
+            colorScheme.primary.withValues(alpha: 0.9),
+            const Color(0xFF16213E),
           ],
         ),
-        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(40)),
+        borderRadius: const BorderRadius.only(bottomRight: Radius.circular(30)),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 10,
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 15,
             offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: Consumer(
+        builder: (context, ref, child) {
+          final points = ref.watch(loyaltyProvider);
+          final tier = MembershipRules.getTier(points);
+          final tierName = MembershipRules.getTierName(tier);
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-                child: const CircleAvatar(
-                  radius: 35,
-                  backgroundColor: Colors.white,
-                  backgroundImage: NetworkImage(
-                    'https://i.pravatar.cc/150?u=restrohub_user',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.email.split('@').first.toUpperCase() ??
-                          'GUEST USER',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    Text(
-                      user?.email ?? 'guest@restrohub.com',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.stars, color: Colors.amber, size: 14),
-                          SizedBox(width: 4),
-                          Text(
-                            'Gold Member',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 25),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _PointsGraph(collected: 750, total: 1000),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
                 children: [
-                  Text(
-                    '750',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  GestureDetector(
+                    onTap: () =>
+                        context.pushNamed('profileScreen', extra: user),
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white24, width: 2),
+                      ),
+                      child: CircleAvatar(
+                        radius: 35, // Compact size
+                        backgroundColor: Colors.white10,
+                        backgroundImage: const NetworkImage(
+                          'https://i.pravatar.cc/150?u=restrohub_user',
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.edit,
+                                  size: 12,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  Text(
-                    'Loyalty Points',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user?.email.split('@').first.toUpperCase() ??
+                              'GUEST USER',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Text(
+                          user?.email ?? 'guest@restrohub.com',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.stars_rounded,
+                                color: Colors.amber,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                tierName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 15),
+              // Loyalty Section - Vertically stacked for better modern look
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    _PointsGraph(collected: points.toDouble(), total: 2000),
+                    const SizedBox(height: 12),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '$points',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -1,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'pts',
+                              style: TextStyle(
+                                color: Colors.amber,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Text(
+                          'LOYALTY PROGRESS',
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -1979,6 +2106,22 @@ class _PointsGraphState extends State<_PointsGraph>
   }
 
   @override
+  void didUpdateWidget(_PointsGraph oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.collected != widget.collected) {
+      _animation =
+          Tween<double>(
+            begin: _animation.value,
+            end: widget.collected / widget.total,
+          ).animate(
+            CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+          );
+      _controller.reset();
+      _controller.forward();
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();
@@ -1989,40 +2132,129 @@ class _PointsGraphState extends State<_PointsGraph>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return SizedBox(
-          width: 50,
-          height: 50,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CircularProgressIndicator(
-                value: 1.0,
-                strokeWidth: 5,
-                backgroundColor: Colors.white.withValues(alpha: 0.15),
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  Colors.transparent,
-                ),
-              ),
-              CircularProgressIndicator(
-                value: _animation.value,
-                strokeWidth: 5,
-                backgroundColor: Colors.transparent,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                strokeCap: StrokeCap.round,
-              ),
-              Text(
-                '${(widget.collected / widget.total * 100).toInt()}%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+        return CustomPaint(
+          size: const Size(80, 45), // More compact arc
+          painter: _HalfArcPainter(
+            progress: _animation.value,
+            color: Colors.white,
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
+            themePrimary: Theme.of(context).colorScheme.primary,
           ),
         );
       },
     );
+  }
+}
+
+class _HalfArcPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+  final Color backgroundColor;
+  final Color themePrimary;
+
+  _HalfArcPainter({
+    required this.progress,
+    required this.color,
+    required this.backgroundColor,
+    required this.themePrimary,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height);
+    final radius = size.width / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    final bgPaint = Paint()
+      ..color = backgroundColor
+      ..strokeWidth = 8
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final progressPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [Colors.amber.shade300, Colors.white, Colors.amber.shade200],
+      ).createShader(rect)
+      ..strokeWidth = 8
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 0.5);
+
+    // Subtle glow under the arc
+    final glowPaint = Paint()
+      ..color = Colors.amber.withValues(alpha: 0.2)
+      ..strokeWidth = 12
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+
+    // Draw background arc
+    canvas.drawArc(rect, math.pi, math.pi, false, bgPaint);
+
+    if (progress > 0) {
+      // Draw glow
+      canvas.drawArc(rect, math.pi, math.pi * progress, false, glowPaint);
+      // Draw progress arc
+      canvas.drawArc(rect, math.pi, math.pi * progress, false, progressPaint);
+    }
+
+    // RESTORED: Labels at the ends of the arc
+    _drawArcLabel(canvas, center, radius, 'Gold', true);
+    _drawArcLabel(canvas, center, radius, 'Platinum', false);
+
+    // Percentage text - centered precisely
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '${(progress * 100).toInt()}%',
+        style: GoogleFonts.poppins(
+          color: Colors.white,
+          fontSize: 15,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    textPainter.paint(
+      canvas,
+      Offset(
+        center.dx - textPainter.width / 2,
+        center.dy - radius * 0.45, // Optimized position
+      ),
+    );
+  }
+
+  void _drawArcLabel(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    String text,
+    bool isLeft,
+  ) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text.toUpperCase(),
+        style: GoogleFonts.poppins(
+          color: Colors.white.withOpacity(0.9),
+          fontSize: 8,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.5,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    final x = isLeft
+        ? center.dx - radius - 2
+        : center.dx + radius - tp.width + 2;
+    final y = center.dy + 6;
+
+    tp.paint(canvas, Offset(x, y));
+  }
+
+  @override
+  bool shouldRepaint(covariant _HalfArcPainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }
 

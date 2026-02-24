@@ -17,6 +17,8 @@ import 'package:restro_hub/features/country/presentation/views/explore_country.d
 import 'package:restro_hub/features/country/presentation/views/country_list_screen.dart';
 import 'package:restro_hub/features/restaurants/presentation/views/explore_restaurants_screen.dart';
 import 'package:restro_hub/features/notifications/presentation/views/notifications_screen.dart';
+import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
+import 'package:restro_hub/features/dashboard/presentation/views/location_picker_screen.dart';
 
 class RouterService {
   static final _goRouter = GoRouter(
@@ -121,6 +123,19 @@ class RouterService {
         path: '/notificationsScreen',
         name: "notificationsScreen",
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/profileScreen',
+        name: "profileScreen",
+        builder: (context, state) {
+          final user = state.extra as UserModel?;
+          return ProfileScreen(user: user);
+        },
+      ),
+      GoRoute(
+        path: '/locationPicker',
+        name: "locationPicker",
+        builder: (context, state) => const LocationPickerScreen(),
       ),
     ],
   );

@@ -60,8 +60,8 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     } else if (Platform.isAndroid) {
       permissions.addAll([
         PermissionItem(
-          permission: Permission.photos,
-          title: 'Media Access',
+          permission: Permission.storage,
+          title: 'Storage Access',
           description:
               'Needed to access your gallery for profile pictures and food memories.',
           icon: Icons.photo_library_rounded,
