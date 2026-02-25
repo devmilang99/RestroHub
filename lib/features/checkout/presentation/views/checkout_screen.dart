@@ -30,11 +30,19 @@ class ProcessCheckOut extends ConsumerWidget {
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 280,
+            expandedHeight: 180,
             stretch: true,
+            centerTitle: true,
+            title: Text(
+              "CheckOut",
+              style: textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
             backgroundColor: colorScheme.surface,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white),
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => context.pop(),
               style: IconButton.styleFrom(backgroundColor: Colors.black26),
             ),
@@ -360,12 +368,13 @@ class ProcessCheckOut extends ConsumerWidget {
                 children: [
                   _buildSummaryRow(context, "Item Total", totalAmount),
                   _buildSummaryRow(context, "Delivery Fee", deliveryCharge),
-                  _buildSummaryRow(
-                    context,
-                    "Voucher Discount",
-                    -discount,
-                    isDiscount: true,
-                  ),
+                  if (discount > 0)
+                    _buildSummaryRow(
+                      context,
+                      "Voucher Discount",
+                      -discount,
+                      isDiscount: true,
+                    ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Divider(color: colorScheme.outlineVariant),
@@ -498,123 +507,100 @@ class ProcessCheckOut extends ConsumerWidget {
       );
     }
 
+    final bool isLargeList = cart.length > 2;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
-        children: List.generate(cart.length, (index) {
-          final item = cart[index];
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withOpacity(0.2),
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Item image thumbnail
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.asset(
-                      item.image,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: isLargeList ? 220 : double.infinity,
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: isLargeList
+                  ? const BouncingScrollPhysics()
+                  : const NeverScrollableScrollPhysics(),
+              itemCount: cart.length,
+              itemBuilder: (context, index) {
+                final item = cart[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withOpacity(0.1),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  // Item details
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.asset(
+                            item.image,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
                                 item.name,
-                                style: textTheme.bodyLarge?.copyWith(
+                                style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "x${item.quantity} • Rs. ${(item.price * item.quantity).toStringAsFixed(0)}",
+                                style: textTheme.labelMedium?.copyWith(
+                                  color: colorScheme.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.restaurant_menu_outlined,
-                              size: 14,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "Cuisine",
-                              style: textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Icon(
-                              Icons.local_fire_department_outlined,
-                              size: 14,
-                              color: Colors.orange,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "Hot",
-                              style: textTheme.labelSmall?.copyWith(
-                                color: Colors.orange,
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Quantity & Price
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          "x${item.quantity}",
-                          style: TextStyle(
-                            color: colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Rs. ${(item.price * item.quantity).toStringAsFixed(0)}",
-                        style: textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ],
+                );
+              },
+            ),
+          ),
+          if (isLargeList)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.unfold_more_rounded,
+                    size: 14,
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "Scroll for more items",
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
               ),
             ),
-          );
-        }),
+        ],
       ),
     );
   }

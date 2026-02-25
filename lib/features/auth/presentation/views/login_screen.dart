@@ -709,14 +709,7 @@ class _LoginCardState extends ConsumerState<LoginCard>
                             const SizedBox(width: 8),
                             TextButton.icon(
                               onPressed: () {
-                                // TODO: Navigate to contact screen
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Contact support: support@restrohub.com',
-                                    ),
-                                  ),
-                                );
+                                context.pushNamed('contactUsScreen');
                               },
                               icon: const Icon(
                                 Icons.contact_support_outlined,

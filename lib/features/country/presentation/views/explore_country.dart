@@ -10,6 +10,9 @@ import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
+import 'package:restro_hub/core/widgets/circle_button.dart';
+import 'package:restro_hub/core/widgets/share_bottom_sheet.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   final String? initialCountry;
@@ -21,7 +24,6 @@ class ExploreScreen extends ConsumerStatefulWidget {
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   late String _selectedCountry;
-  final bool _showOnlyOffers = false;
 
   final ScrollController _scrollController = ScrollController();
   bool _isCollapsed = false;
@@ -58,14 +60,23 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     List<CuisineModel> filteredCuisines = cuisines
         .where((e) => e.country == _selectedCountry)
         .toList();
-    if (_showOnlyOffers) {
-      filteredCuisines = filteredCuisines
-          .where((e) => e.offerPercent.isNotEmpty && e.offerPercent != "0%")
-          .toList();
-    }
+    final favCuisine = CuisineModel(
+      name: selectedCountryData.name,
+      description: "Explore cuisines from ${selectedCountryData.name}",
+      image: selectedCountryData.historicalImage,
+      rating: "5.0",
+      price: 0.0,
+      location: selectedCountryData.name,
+    );
+
+    final isFav = ref
+        .watch(favouritesProvider.notifier)
+        .isFavourite(favCuisine);
+    ref.watch(favouritesProvider);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
+
       floatingActionButton: ref.watch(cartProvider).isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () {
@@ -122,6 +133,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   ),
                 ),
               ),
+              
               flexibleSpace: FlexibleSpaceBar(
                 stretchModes: const [
                   StretchMode.zoomBackground,

@@ -14,11 +14,14 @@ class CartBottomSheet extends ConsumerStatefulWidget {
 
 class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
   final TextEditingController _voucherController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String? _appliedVoucher;
+  bool _isScrolling = false;
 
   @override
   void dispose() {
     _voucherController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -202,380 +205,450 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                IconButton(
-                  onPressed: () => context.pop(),
-                  icon: const Icon(Icons.close),
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: "Remove All",
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("Clear Cart?"),
+                            content: const Text(
+                              "This will remove all items from your cart.",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("Cancel"),
+                              ),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: colorScheme.error,
+                                ),
+                                onPressed: () {
+                                  cartNotifier.clearCart();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text("Clear All"),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      icon: Icon(
+                        Icons.delete_sweep_outlined,
+                        color: colorScheme.error,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
                 ),
               ],
             ),
             const Divider(),
             Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: cartItems.length,
-                itemBuilder: (context, index) {
-                  final item = cartItems[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10.0),
-                    child: Row(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is ScrollStartNotification) {
+                    setState(() => _isScrolling = true);
+                  } else if (notification is ScrollEndNotification) {
+                    setState(() => _isScrolling = false);
+                  }
+                  return true;
+                },
+                child: ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  shrinkWrap: true,
+                  itemCount: cartItems.length,
+                  itemBuilder: (context, index) {
+                    final item = cartItems[index];
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.asset(
+                              item.image,
+                              width: 54,
+                              height: 54,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Rs. ${item.price.toStringAsFixed(0)}",
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Premium Quantity Control
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  style: IconButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  icon: Icon(
+                                    Icons.remove,
+                                    size: 16,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  onPressed: () => cartNotifier.updateQuantity(
+                                    item.name,
+                                    item.quantity - 1,
+                                  ),
+                                ),
+                                Text(
+                                  item.quantity.toString(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  style: IconButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                  ),
+                                  icon: Icon(
+                                    Icons.add,
+                                    size: 16,
+                                    color: colorScheme.primary,
+                                  ),
+                                  onPressed: () => cartNotifier.updateQuantity(
+                                    item.name,
+                                    item.quantity + 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Premium Condensed Checkout Card with Scroll-Aware Visibility
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: _isScrolling ? 0.0 : 1.0,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                height: _isScrolling ? 0 : null,
+                curve: Curves.easeInOut,
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: .3,
+                      ),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: colorScheme.outlineVariant.withValues(alpha: .5),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.asset(
-                            item.image,
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
-                              ),
-                              Text(
-                                "Rs. ${item.price.toStringAsFixed(0)}",
-                                style: TextStyle(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        // 1. Voucher & Payment Control Row
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            IconButton(
-                              icon: Icon(
-                                Icons.remove_circle_outline,
-                                color: colorScheme.primary,
-                                size: 24,
+                            // Compact Voucher Control
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      left: 4,
+                                      bottom: 6,
+                                    ),
+                                    child: Text(
+                                      "Voucher",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w900,
+                                        color: colorScheme.primary,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    child: _appliedVoucher == null
+                                        ? GestureDetector(
+                                            onTap: () =>
+                                                _openVoucherSelection(context),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 10,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: colorScheme.primary
+                                                    .withValues(alpha: .05),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: colorScheme.primary
+                                                      .withValues(alpha: .1),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.local_offer_outlined,
+                                                    size: 16,
+                                                    color: colorScheme.primary,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    "Add Voucher",
+                                                    style: TextStyle(
+                                                      color:
+                                                          colorScheme.primary,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.withValues(
+                                                alpha: .1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.check_circle,
+                                                  size: 14,
+                                                  color: Colors.green,
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(
+                                                    _appliedVoucher!,
+                                                    style: const TextStyle(
+                                                      color: Colors.green,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 12,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    setState(
+                                                      () => _appliedVoucher =
+                                                          null,
+                                                    );
+                                                    ref
+                                                        .read(
+                                                          checkoutProvider
+                                                              .notifier,
+                                                        )
+                                                        .setVoucher(null, 0.0);
+                                                  },
+                                                  child: const Icon(
+                                                    Icons.delete,
+                                                    size: 26,
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                  ),
+                                ],
                               ),
-                              onPressed: () => cartNotifier.updateQuantity(
-                                item.name,
-                                (item.quantity) - 1,
+                            ),
+                            const SizedBox(width: 12),
+                            // Compact Payment Toggle
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 6),
+                                  child: Text(
+                                    ref.watch(checkoutProvider).paymentMethod ==
+                                            PaymentMethod.qr
+                                        ? "QR Pay"
+                                        : "Cash",
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      color: colorScheme.primary,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: colorScheme.outlineVariant
+                                          .withValues(alpha: .5),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      _CompactPaymentOption(
+                                        isSelected:
+                                            ref
+                                                .watch(checkoutProvider)
+                                                .paymentMethod ==
+                                            PaymentMethod.cod,
+                                        icon: Icons.money,
+                                        onTap: () => ref
+                                            .read(checkoutProvider.notifier)
+                                            .setPaymentMethod(
+                                              PaymentMethod.cod,
+                                            ),
+                                      ),
+                                      _CompactPaymentOption(
+                                        isSelected:
+                                            ref
+                                                .watch(checkoutProvider)
+                                                .paymentMethod ==
+                                            PaymentMethod.qr,
+                                        icon: Icons.qr_code_scanner,
+                                        onTap: () => ref
+                                            .read(checkoutProvider.notifier)
+                                            .setPaymentMethod(PaymentMethod.qr),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Divider(height: 1, thickness: 0.5),
+                        ),
+                        // 2. Condensed Summary Rows
+                        _buildCompactSummaryRow(
+                          "Subtotal",
+                          "Rs. ${cartNotifier.totalAmount.toStringAsFixed(0)}",
+                          colorScheme,
+                        ),
+                        const SizedBox(height: 6),
+                        _buildCompactSummaryRow(
+                          "Delivery Fee",
+                          "Rs. 40",
+                          colorScheme,
+                        ),
+                        if (_appliedVoucher != null) ...[
+                          const SizedBox(height: 6),
+                          _buildCompactSummaryRow(
+                            "Discount",
+                            "- Rs. 50",
+                            colorScheme,
+                            isHighlight: true,
+                          ),
+                        ],
+                        const SizedBox(height: 12),
+                        // 3. Grand Total
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              "Grand Total",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
                               ),
                             ),
                             Text(
-                              (item.quantity).toString(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.add_circle_outline,
+                              "Rs. ${(cartNotifier.totalAmount + 40 - (_appliedVoucher != null ? 50 : 0)).toStringAsFixed(0)}",
+                              style: TextStyle(
                                 color: colorScheme.primary,
-                                size: 24,
-                              ),
-                              onPressed: () => cartNotifier.updateQuantity(
-                                item.name,
-                                (item.quantity) + 1,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20,
+                                letterSpacing: -0.5,
                               ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Voucher Code Section
-            if (_appliedVoucher == null) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _voucherController,
-                      decoration: InputDecoration(
-                        hintText: 'Enter Voucher Code',
-                        hintStyle: TextStyle(
-                          color: colorScheme.onSurface.withValues(alpha: .5),
-                          fontSize: 14,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.local_offer_outlined,
-                          color: colorScheme.primary,
-                          size: 20,
-                        ),
-                        filled: true,
-                        fillColor: colorScheme.surfaceContainerHighest
-                            .withValues(alpha: .3),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(
-                            color: colorScheme.outlineVariant,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(15),
-                          borderSide: BorderSide(
-                            color: colorScheme.primary,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (_voucherController.text.isNotEmpty) {
-                        setState(() {
-                          _appliedVoucher = _voucherController.text
-                              .toUpperCase();
-                        });
-                        ref
-                            .read(checkoutProvider.notifier)
-                            .setVoucher(
-                              _appliedVoucher,
-                              50.0, // Default mock discount
-                            );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Voucher "${_appliedVoucher}" applied',
-                            ),
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    child: const Text('Apply'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () => _openVoucherSelection(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: .1),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: colorScheme.primary.withValues(alpha: .3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.list_alt_rounded,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'View Available Vouchers',
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 14,
-                        color: colorScheme.primary,
-                      ),
-                    ],
                   ),
                 ),
-              ),
-            ] else ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: .08),
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(
-                    color: colorScheme.primary.withValues(alpha: .2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: .1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.local_offer,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Applied Voucher',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: colorScheme.onSurface.withValues(
-                                alpha: .6,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            _appliedVoucher!,
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _appliedVoucher = null;
-                          _voucherController.clear();
-                        });
-                        ref
-                            .read(checkoutProvider.notifier)
-                            .setVoucher(null, 0.0);
-                        _openVoucherSelection(context);
-                      },
-                      icon: Icon(
-                        Icons.cancel,
-                        color: colorScheme.error.withValues(alpha: .7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-            Text(
-              "Select Payment Method",
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildPaymentMethodCard(
-                    context,
-                    ref,
-                    method: PaymentMethod.cod,
-                    icon: Icons.money,
-                    label: "Cash on Delivery",
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildPaymentMethodCard(
-                    context,
-                    ref,
-                    method: PaymentMethod.qr,
-                    icon: Icons.qr_code_scanner,
-                    label: "QR Payment",
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // Order Summary
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: .2,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: colorScheme.outlineVariant.withValues(alpha: .5),
-                ),
-              ),
-              child: Column(
-                children: [
-                  _buildSummaryRow(
-                    "Subtotal",
-                    "Rs. ${cartNotifier.totalAmount.toStringAsFixed(0)}",
-                    colorScheme,
-                  ),
-                  const SizedBox(height: 8),
-                  _buildSummaryRow("Delivery Fee", "Rs. 40", colorScheme),
-                  if (_appliedVoucher != null) ...[
-                    const SizedBox(height: 8),
-                    _buildSummaryRow(
-                      "Discount",
-                      "- Rs. 50", // Mock discount for now
-                      colorScheme,
-                      isDiscount: true,
-                    ),
-                  ],
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12.0),
-                    child: Divider(height: 1),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Total Amount",
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "Rs. ${(cartNotifier.totalAmount + 40 - (_appliedVoucher != null ? 50 : 0)).toStringAsFixed(0)}",
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ),
 
@@ -609,11 +682,11 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
     );
   }
 
-  Widget _buildSummaryRow(
+  Widget _buildCompactSummaryRow(
     String label,
     String value,
     ColorScheme colorScheme, {
-    bool isDiscount = false,
+    bool isHighlight = false,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -621,73 +694,53 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
         Text(
           label,
           style: TextStyle(
-            color: colorScheme.onSurface.withValues(alpha: .6),
-            fontSize: 14,
+            color: colorScheme.onSurface.withValues(alpha: .5),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
         ),
         Text(
           value,
           style: TextStyle(
-            color: isDiscount ? Colors.green : colorScheme.onSurface,
-            fontWeight: isDiscount ? FontWeight.bold : FontWeight.w500,
-            fontSize: 14,
+            color: isHighlight ? Colors.green : colorScheme.onSurface,
+            fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+            fontSize: 12,
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildPaymentMethodCard(
-    BuildContext context,
-    WidgetRef ref, {
-    required PaymentMethod method,
-    required IconData icon,
-    required String label,
-  }) {
-    final checkoutState = ref.watch(checkoutProvider);
-    final isSelected = checkoutState.paymentMethod == method;
+class _CompactPaymentOption extends StatelessWidget {
+  final bool isSelected;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CompactPaymentOption({
+    required this.isSelected,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-
-    return InkWell(
-      onTap: () {
-        ref.read(checkoutProvider.notifier).setPaymentMethod(method);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? colorScheme.primary.withValues(alpha: .1)
-              : colorScheme.surfaceContainerHighest.withValues(alpha: .3),
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: isSelected
-                ? colorScheme.primary
-                : colorScheme.outlineVariant,
-            width: isSelected ? 2 : 1,
-          ),
+          color: isSelected ? colorScheme.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-              size: 28,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+        child: Icon(
+          icon,
+          size: 20,
+          color: isSelected
+              ? colorScheme.onPrimary
+              : colorScheme.onSurface.withValues(alpha: .4),
         ),
       ),
     );

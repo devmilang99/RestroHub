@@ -86,201 +86,196 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
       const OrdersScreen(),
     ];
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: PopScope(
-          canPop: false,
-          onPopInvokedWithResult: (didPop, result) async {
-            if (didPop) return;
-            if (_currentIndex != 0) {
-              setState(() => _currentIndex = 0);
-            } else {
-              final shouldLogout = await showGeneralDialog<bool>(
-                context: context,
-                barrierDismissible: true,
-                barrierLabel: '',
-                transitionDuration: const Duration(milliseconds: 300),
-                pageBuilder: (context, anim1, anim2) => const SizedBox.shrink(),
-                transitionBuilder: (context, anim1, anim2, child) {
-                  return Transform.scale(
-                    scale: anim1.value,
-                    child: Opacity(
-                      opacity: anim1.value,
-                      child: AlertDialog(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        title: Row(
-                          children: [
-                            Icon(
-                              Icons.warning_amber_rounded,
-                              color: context.colorScheme.error,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Exit Restro Hub',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        content: Text(
-                          'Are you sure you want to log out and exit the app?',
-                          style: GoogleFonts.poppins(),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: Text(
-                              'CANCEL',
-                              style: GoogleFonts.poppins(color: Colors.grey),
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: context.colorScheme.error,
-                              foregroundColor: context.colorScheme.onError,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: Text(
-                              'LOG OUT',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        } else {
+          final shouldLogout = await showGeneralDialog<bool>(
+            context: context,
+            barrierDismissible: true,
+            barrierLabel: '',
+            transitionDuration: const Duration(milliseconds: 300),
+            pageBuilder: (context, anim1, anim2) => const SizedBox.shrink(),
+            transitionBuilder: (context, anim1, anim2, child) {
+              return Transform.scale(
+                scale: anim1.value,
+                child: Opacity(
+                  opacity: anim1.value,
+                  child: AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  );
-                },
-              );
-
-              if (shouldLogout == true && context.mounted) {
-                context.goNamed('mainLoginScreen');
-              }
-            }
-          },
-          child: Scaffold(
-            backgroundColor: colorScheme.surface,
-            floatingActionButton: _currentIndex == 0 && _showBackToTop
-                ? FloatingActionButton(
-                    mini: true,
-                    onPressed: () {
-                      _scrollController.animateTo(
-                        0,
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    backgroundColor: colorScheme.primary,
-                    foregroundColor: colorScheme.onPrimary,
-                    child: const Icon(Icons.keyboard_arrow_up),
-                  )
-                : null,
-            drawer: Drawer(
-              child: Column(
-                children: [
-                  _PremiumDrawerHeader(user: widget.user),
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.zero,
+                    title: Row(
                       children: [
-                        ListTile(
-                          leading: const Icon(Icons.lock_outline),
-                          title: const Text('Change Password'),
-                          onTap: () {
-                            context.pushNamed('authenticatedPasswordScreen');
-                          },
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: context.colorScheme.error,
                         ),
-                        SwitchListTile(
-                          secondary: const Icon(Icons.dark_mode_outlined),
-                          title: const Text('Dark Mode'),
-                          value: isDarkMode,
-                          onChanged: (value) {
-                            ref.read(themeProvider.notifier).toggleTheme(value);
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.contact_support_outlined),
-                          title: const Text('Contact Us'),
-                          onTap: () {
-                            // Contact support logic
-                          },
-                        ),
-                        const Divider(),
-                        ListTile(
-                          leading: const Icon(
-                            Icons.logout,
-                            color: Colors.redAccent,
+                        const SizedBox(width: 10),
+                        Text(
+                          'Exit Restro Hub',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
                           ),
-                          title: const Text(
-                            'Logout',
-                            style: TextStyle(color: Colors.redAccent),
-                          ),
-                          onTap: () {
-                            context.goNamed('mainLoginScreen');
-                          },
                         ),
                       ],
                     ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text(
-                      'Restro Hub v1.0.0',
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    content: Text(
+                      'Are you sure you want to log out and exit the app?',
+                      style: GoogleFonts.poppins(),
                     ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(
+                          'CANCEL',
+                          style: GoogleFonts.poppins(color: Colors.grey),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.colorScheme.error,
+                          foregroundColor: context.colorScheme.onError,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text(
+                          'LOG OUT',
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-            body: pages[_currentIndex],
-            bottomNavigationBar: BottomNavigationBar(
-              items: <BottomNavigationBarItem>[
-                const BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: 'Home',
                 ),
-                BottomNavigationBarItem(
-                  icon: Badge(
-                    label: Text(totalItems.toString()),
-                    isLabelVisible: totalItems > 0,
-                    child: const Icon(Icons.shopping_cart),
-                  ),
-                  label: 'Cart',
-                ),
-                BottomNavigationBarItem(
-                  icon: Badge(
-                    label: Text(activeOrdersCount.toString()),
-                    isLabelVisible: activeOrdersCount > 0,
-                    child: const Icon(Icons.food_bank_rounded),
-                  ),
-                  label: 'Orders',
-                ),
-              ],
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                if (index == 1) {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => const CartBottomSheet(),
+              );
+            },
+          );
+
+          if (shouldLogout == true && context.mounted) {
+            context.goNamed('mainLoginScreen');
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: colorScheme.surface,
+        floatingActionButton: _currentIndex == 0 && _showBackToTop
+            ? FloatingActionButton(
+                mini: true,
+                onPressed: () {
+                  _scrollController.animateTo(
+                    0,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
                   );
-                } else {
-                  setState(() => _currentIndex = index);
-                }
-              },
-              selectedItemColor: Theme.of(context).colorScheme.primary,
-              unselectedItemColor: Theme.of(context).colorScheme.onSurface,
-            ),
+                },
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                child: const Icon(Icons.keyboard_arrow_up),
+              )
+            : null,
+        drawer: Drawer(
+          child: Column(
+            children: [
+              _PremiumDrawerHeader(user: widget.user),
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.lock_outline),
+                      title: const Text('Change Password'),
+                      onTap: () {
+                        context.pushNamed('authenticatedPasswordScreen');
+                      },
+                    ),
+                    SwitchListTile(
+                      secondary: const Icon(Icons.dark_mode_outlined),
+                      title: const Text('Dark Mode'),
+                      value: isDarkMode,
+                      onChanged: (value) {
+                        ref.read(themeProvider.notifier).toggleTheme(value);
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.contact_support_outlined),
+                      title: const Text('Contact Us'),
+                      onTap: () {
+                        context.pushNamed('contactUsScreen');
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.logout,
+                        color: Colors.redAccent,
+                      ),
+                      title: const Text(
+                        'Logout',
+                        style: TextStyle(color: Colors.redAccent),
+                      ),
+                      onTap: () {
+                        context.goNamed('mainLoginScreen');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Restro Hub v1.0.0',
+                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+              ),
+            ],
           ),
+        ),
+        body: pages[_currentIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          items: <BottomNavigationBarItem>[
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Badge(
+                label: Text(totalItems.toString()),
+                isLabelVisible: totalItems > 0,
+                child: const Icon(Icons.shopping_cart),
+              ),
+              label: 'Cart',
+            ),
+            BottomNavigationBarItem(
+              icon: Badge(
+                label: Text(activeOrdersCount.toString()),
+                isLabelVisible: activeOrdersCount > 0,
+                child: const Icon(Icons.food_bank_rounded),
+              ),
+              label: 'Orders',
+            ),
+          ],
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            if (index == 1) {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const CartBottomSheet(),
+              );
+            } else {
+              setState(() => _currentIndex = index);
+            }
+          },
+          selectedItemColor: Theme.of(context).colorScheme.primary,
+          unselectedItemColor: Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );
@@ -2022,49 +2017,51 @@ class _PremiumDrawerHeader extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.12),
                   ),
                 ),
-                child: Column(
+                child: Row(
                   children: [
                     _PointsGraph(collected: points.toDouble(), total: 2000),
-                    const SizedBox(height: 12),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '$points',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -1,
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '$points',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -1,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Text(
-                              'pts',
-                              style: TextStyle(
-                                color: Colors.amber,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1,
+                              const SizedBox(width: 4),
+                              const Text(
+                                'pts',
+                                style: TextStyle(
+                                  color: Colors.amber,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const Text(
-                          'LOYALTY PROGRESS',
-                          style: TextStyle(
-                            color: Colors.white60,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2,
+                            ],
                           ),
-                        ),
-                      ],
+                          const Text(
+                            'LOYALTY PROGRESS',
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),

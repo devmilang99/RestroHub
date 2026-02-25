@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/core/utils/launcher_utils.dart';
 
 class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
@@ -778,7 +779,7 @@ class _CancelledOrderCard extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () => LauncherUtils.launchPhone("+9779812345678"),
                   icon: Icon(Icons.phone, color: colorScheme.primary, size: 20),
                   style: IconButton.styleFrom(
                     backgroundColor: colorScheme.primaryContainer.withValues(
@@ -918,11 +919,13 @@ Widget _buildOrderItemCard(
     curve: Curves.easeInOut,
     margin: EdgeInsets.only(bottom: isCompact ? 6 : 10),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: colorScheme.surfaceContainer,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.05),
+          color: Colors.black.withValues(
+            alpha: colorScheme.brightness == Brightness.dark ? 0.2 : 0.05,
+          ),
           blurRadius: 4.0,
           offset: const Offset(0, 2),
         ),
@@ -951,7 +954,7 @@ Widget _buildOrderItemCard(
                 item.image,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey.shade200,
+                  color: colorScheme.surfaceContainerHighest,
                   child: Icon(Icons.fastfood, size: isCompact ? 16 : 20),
                 ),
               ),
@@ -1020,16 +1023,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
   }
 
   int _getInitialSeconds() {
-    if (widget.order.subStatus == OrderSubStatus.preparing) {
-      return ((1.0 - widget.order.progress) * 15 * 60).toInt();
-    }
-    if (widget.order.subStatus == OrderSubStatus.delivered) {
-      return ((1.0 - widget.order.progress) * 8 * 60).toInt();
-    }
-    if (widget.order.subStatus == OrderSubStatus.pickup) {
-      return 5 * 60; // Mock 5 minutes for driver waiting
-    }
-    return 0;
+    return 5 * 60; // Reset ETA to 5 min as requested
   }
 
   void _startTimer() {
@@ -1178,7 +1172,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: () => LauncherUtils.launchPhone("+9779812345678"),
                   icon: Icon(Icons.phone, color: colorScheme.primary, size: 20),
                   style: IconButton.styleFrom(
                     backgroundColor: colorScheme.primaryContainer.withValues(

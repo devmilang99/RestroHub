@@ -9,6 +9,8 @@ import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
+import 'package:restro_hub/core/widgets/circle_button.dart';
+import 'package:restro_hub/core/widgets/share_bottom_sheet.dart';
 
 class CuisineSingleItem extends ConsumerWidget {
   final CuisineModel item;
@@ -200,12 +202,9 @@ class CuisineSingleItem extends ConsumerWidget {
             ),
             leading: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: CircleAvatar(
-                backgroundColor: Colors.white.withValues(alpha: 0.8),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
-                ),
+              child: CircleButton(
+                icon: Icons.arrow_back,
+                onTap: () => Navigator.pop(context),
               ),
             ),
             actions: [
@@ -213,29 +212,28 @@ class CuisineSingleItem extends ConsumerWidget {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
-                    CircleAvatar(
-                      backgroundColor: Colors.white.withValues(alpha: 0.8),
-                      child: IconButton(
-                        icon: Icon(
-                          isFav ? Icons.favorite : Icons.favorite_border,
-                          color: Colors.red,
-                        ),
-                        onPressed: () {
-                          ref
-                              .read(favouritesProvider.notifier)
-                              .toggleFavourite(item);
-                        },
-                      ),
+                    CircleButton(
+                      icon: isFav
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      iconColor: Colors.red,
+                      onTap: () {
+                        ref
+                            .read(favouritesProvider.notifier)
+                            .toggleFavourite(item);
+                      },
                     ),
                     const SizedBox(width: 8),
-                    CircleAvatar(
-                      backgroundColor: Colors.white.withValues(alpha: 0.8),
-                      child: IconButton(
-                        icon: const Icon(Icons.share, color: Colors.black),
-                        onPressed: () {
-                          // Handle share action
-                        },
-                      ),
+                    CircleButton(
+                      icon: Icons.share_rounded,
+                      onTap: () {
+                        ShareBottomSheet.show(
+                          context,
+                          title: item.name,
+                          shareLink:
+                              "restrohub://cuisine/${item.name.toLowerCase().replaceAll(' ', '_')}",
+                        );
+                      },
                     ),
                   ],
                 ),

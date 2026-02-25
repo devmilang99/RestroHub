@@ -2,7 +2,6 @@ import 'package:equatable/equatable.dart';
 import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
 
 /// Restaurant Model representing a dining establishment.
-/// Renamed from Restaurant to RestaurantModel for consistency.
 class RestaurantModel extends Equatable {
   final String name;
   final String image;
