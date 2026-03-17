@@ -514,16 +514,20 @@ class CuisineSingleItem extends ConsumerWidget {
       if (name.contains('rice')) return Icons.rice_bowl;
       if (name.contains('spices')) return Icons.set_meal;
       if (name.contains('oil')) return Icons.opacity;
-      if (name.contains('vegetable') || name.contains('herbs'))
+      if (name.contains('vegetable') || name.contains('herbs')) {
         return Icons.park_rounded;
+      }
       if (name.contains('chicken') ||
           name.contains('meat') ||
-          name.contains('beef'))
+          name.contains('beef')) {
         return Icons.restaurant;
-      if (name.contains('garlic') || name.contains('onion'))
+      }
+      if (name.contains('garlic') || name.contains('onion')) {
         return Icons.bubble_chart;
-      if (name.contains('cheese') || name.contains('parmesan'))
+      }
+      if (name.contains('cheese') || name.contains('parmesan')) {
         return Icons.bakery_dining;
+      }
       return Icons.check_circle_outline;
     }
 

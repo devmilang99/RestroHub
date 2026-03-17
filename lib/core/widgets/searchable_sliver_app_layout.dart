@@ -164,7 +164,7 @@ class _SearchableSliverAppLayoutState<T>
     final hasFilterItems =
         widget.enableFilters && (widget.filterItems?.isNotEmpty ?? false);
 
-    final List<Widget> _filterChipWidgets = hasFilterItems
+    final List<Widget> filterChipWidgets = hasFilterItems
         ? widget.filterItems!.map((f) {
             final selected = _selectedFilters.contains(f);
             return Padding(
@@ -398,7 +398,7 @@ class _SearchableSliverAppLayoutState<T>
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: SingleChildScrollView(
                                   scrollDirection: Axis.horizontal,
-                                  child: Row(children: _filterChipWidgets),
+                                  child: Row(children: filterChipWidgets),
                                 ),
                               ),
                           ],
@@ -466,8 +466,9 @@ class _SearchableSliverAppLayoutState<T>
   }
 
   void _showFilterSheet() {
-    if (!widget.enableFilters || !(widget.filterItems?.isNotEmpty ?? false))
+    if (!widget.enableFilters || !(widget.filterItems?.isNotEmpty ?? false)) {
       return;
+    }
     final colorScheme = context.colorScheme;
     showModalBottomSheet(
       context: context,

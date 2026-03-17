@@ -30,7 +30,7 @@ class GoogleAuthService {
       );
       return userCredential.user;
     } catch (error) {
-      print('Firebase Google Sign-In Error: $error');
+      debugPrint('Firebase Google Sign-In Error: $error');
       return null;
     }
   }
@@ -53,7 +53,7 @@ class GoogleAuthService {
       );
       return userCredential.user;
     } catch (error) {
-      print('Firebase Silent Google Sign-In Error: $error');
+      debugPrint('Firebase Silent Google Sign-In Error: $error');
       return null;
     }
   }
@@ -63,7 +63,7 @@ class GoogleAuthService {
       await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (error) {
-      print('Error during Google Sign-Out: $error');
+      debugPrint('Error during Google Sign-Out: $error');
     }
   }
 

@@ -795,7 +795,7 @@ class SliverCountryCards extends StatelessWidget {
                           Image.network(
                             country.historicalImage,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
+                            errorBuilder: (_, error, stackTrace) => Container(
                               color: colorScheme.primaryContainer,
                               child: Center(
                                 child: Text(
@@ -2232,7 +2232,7 @@ class _HalfArcPainter extends CustomPainter {
       text: TextSpan(
         text: text.toUpperCase(),
         style: GoogleFonts.poppins(
-          color: Colors.white.withOpacity(0.9),
+          color: Colors.white.withValues(alpha: 0.9),
           fontSize: 8,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.5,

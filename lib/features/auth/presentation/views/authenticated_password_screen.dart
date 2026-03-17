@@ -273,15 +273,14 @@ class _AuthenticatedPasswordScreenState
                                         await Future.delayed(
                                           const Duration(seconds: 2),
                                         );
-                                        if (mounted) {
-                                          LoadingDialog.hide(context);
-                                          _showAestheticDialog(
-                                            isSuccess: true,
-                                            title: 'Success!',
-                                            message:
-                                                'Your password has been changed successfully.',
-                                          );
-                                        }
+                                        if (!context.mounted) return;
+                                        LoadingDialog.hide(context);
+                                        _showAestheticDialog(
+                                          isSuccess: true,
+                                          title: 'Success!',
+                                          message:
+                                              'Your password has been changed successfully.',
+                                        );
                                       }
                                     },
                                     style: ElevatedButton.styleFrom(

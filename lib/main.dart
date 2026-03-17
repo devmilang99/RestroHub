@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'firebase_options.dart' show DefaultFirebaseOptions;
-import 'package:restro_hub/router/routerService.dart' show RouterService;
+import 'package:restro_hub/router/router_service.dart' show RouterService;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 

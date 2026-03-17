@@ -5,7 +5,6 @@ import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
-import 'dart:ui';
 
 class ProcessCheckOut extends ConsumerWidget {
   const ProcessCheckOut({super.key});
@@ -120,7 +119,7 @@ class ProcessCheckOut extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(20),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -358,7 +357,7 @@ class ProcessCheckOut extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(20),
+                    color: Colors.black.withValues(alpha: 0.08),
                     spreadRadius: 2,
                     blurRadius: 10,
                   ),
@@ -412,7 +411,7 @@ class ProcessCheckOut extends ConsumerWidget {
           color: colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withAlpha(20),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -533,7 +532,7 @@ class ProcessCheckOut extends ConsumerWidget {
                       color: colorScheme.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: colorScheme.outlineVariant.withOpacity(0.1),
+                        color: colorScheme.outlineVariant.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
@@ -587,13 +586,13 @@ class ProcessCheckOut extends ConsumerWidget {
                   Icon(
                     Icons.unfold_more_rounded,
                     size: 14,
-                    color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     "Scroll for more items",
                     style: textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       fontStyle: FontStyle.italic,
                     ),
                   ),

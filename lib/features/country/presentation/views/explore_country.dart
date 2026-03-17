@@ -11,8 +11,7 @@ import 'package:restro_hub/features/cart/presentation/providers/cart_provider.da
 import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
-import 'package:restro_hub/core/widgets/circle_button.dart';
-import 'package:restro_hub/core/widgets/share_bottom_sheet.dart';
+
 
 class ExploreScreen extends ConsumerStatefulWidget {
   final String? initialCountry;
@@ -60,18 +59,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     List<CuisineModel> filteredCuisines = cuisines
         .where((e) => e.country == _selectedCountry)
         .toList();
-    final favCuisine = CuisineModel(
-      name: selectedCountryData.name,
-      description: "Explore cuisines from ${selectedCountryData.name}",
-      image: selectedCountryData.historicalImage,
-      rating: "5.0",
-      price: 0.0,
-      location: selectedCountryData.name,
-    );
 
-    final isFav = ref
-        .watch(favouritesProvider.notifier)
-        .isFavourite(favCuisine);
     ref.watch(favouritesProvider);
 
     return Scaffold(

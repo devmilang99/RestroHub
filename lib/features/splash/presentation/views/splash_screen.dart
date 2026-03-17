@@ -5,14 +5,14 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 
-class splashScreen extends StatefulWidget {
-  const splashScreen({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
 
   @override
-  State<splashScreen> createState() => _splashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _splashScreenState extends State<splashScreen>
+class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _iconController;
   late AnimationController _pulseController;
@@ -100,6 +100,7 @@ class _splashScreenState extends State<splashScreen>
     try {
       for (var slide in _slides) {
         final imageProvider = NetworkImage(slide['image']!);
+        if (!mounted) return;
         await precacheImage(imageProvider, context);
         _preloadedImages.add(imageProvider);
       }
@@ -137,24 +138,22 @@ class _splashScreenState extends State<splashScreen>
       );
     } else {
       final allGranted = await PermissionScreen.areAllPermissionsGranted();
-      if (mounted) {
-        if (allGranted) {
-          context.goNamed('mainLoginScreen');
-        } else {
-          context.goNamed('permissionsScreen');
-        }
+      if (!mounted) return;
+      if (allGranted) {
+        context.goNamed('mainLoginScreen');
+      } else {
+        context.goNamed('permissionsScreen');
       }
     }
   }
 
   Future<void> _skipToLogin() async {
     final allGranted = await PermissionScreen.areAllPermissionsGranted();
-    if (mounted) {
-      if (allGranted) {
-        context.goNamed('mainLoginScreen');
-      } else {
-        context.goNamed('permissionsScreen');
-      }
+    if (!mounted) return;
+    if (allGranted) {
+      context.goNamed('mainLoginScreen');
+    } else {
+      context.goNamed('permissionsScreen');
     }
   }
 

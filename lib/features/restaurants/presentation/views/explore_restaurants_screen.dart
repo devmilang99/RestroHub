@@ -413,38 +413,6 @@ class _Chip extends StatelessWidget {
   }
 }
 
-class _GlassButton extends StatelessWidget {
-  final IconData icon;
-  final bool isDark;
-  final VoidCallback onTap;
-  const _GlassButton({
-    required this.icon,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white12 : Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                  ),
-                ],
-        ),
-        child: Icon(icon, size: 18),
-      ),
-    );
-  }
-}
 
 // ── Animated mesh gradient painter ───────────────────────────────────────────
 class _MeshGradientPainter extends CustomPainter {

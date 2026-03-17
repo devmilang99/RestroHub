@@ -203,7 +203,7 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: InputDecoration(
                 labelText: 'Enquiry Type',
                 prefixIcon: const Icon(Icons.category_outlined),
@@ -232,9 +232,12 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
                 ),
               ),
               validator: (value) {
-                if (value == null || value.isEmpty)
+                if (value == null || value.isEmpty) {
                   return 'Please enter your message';
-                if (value.length < 10) return 'Message too short';
+                }
+                if (value.length < 10) {
+                  return 'Message too short';
+                }
                 return null;
               },
             ),

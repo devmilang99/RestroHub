@@ -423,7 +423,8 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                                       passwordController.text,
                                                     );
 
-                                            if (user != null && mounted) {
+                                            if (!context.mounted) return;
+                                            if (user != null) {
                                               LoadingDialog.hide(context);
                                               context.goNamed(
                                                 'mainDashBoard',
@@ -436,23 +437,21 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                           } on fb.FirebaseAuthException catch (
                                             e
                                           ) {
-                                            if (mounted) {
-                                              LoadingDialog.hide(context);
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    e.message ?? 'Login failed',
-                                                  ),
-                                                  backgroundColor: Colors.red,
+                                            if (!context.mounted) return;
+                                            LoadingDialog.hide(context);
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  e.message ?? 'Login failed',
                                                 ),
-                                              );
-                                            }
+                                                backgroundColor: Colors.red,
+                                              ),
+                                            );
                                           } catch (e) {
-                                            if (mounted) {
-                                              LoadingDialog.hide(context);
-                                            }
+                                            if (!context.mounted) return;
+                                            LoadingDialog.hide(context);
                                           }
                                         }
                                       },
@@ -580,42 +579,37 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                                 await _googleAuthService
                                                     .signIn();
 
-                                            if (!mounted) return;
-
+                                            if (!context.mounted) return;
                                             if (firebaseUser != null) {
                                               LoadingDialog.hide(
                                                 scaffoldContext,
                                               );
-                                              if (mounted) {
-                                                scaffoldContext.goNamed(
-                                                  'mainDashBoard',
-                                                  extra: UserModel(
-                                                    email:
-                                                        firebaseUser.email ??
-                                                        '',
-                                                    password:
-                                                        'GOOGLE_AUTH_USER',
-                                                  ),
-                                                );
-                                              }
+                                              scaffoldContext.goNamed(
+                                                'mainDashBoard',
+                                                extra: UserModel(
+                                                  email:
+                                                      firebaseUser.email ??
+                                                      '',
+                                                  password:
+                                                      'GOOGLE_AUTH_USER',
+                                                ),
+                                              );
                                             } else {
                                               LoadingDialog.hide(
                                                 scaffoldContext,
                                               );
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(
-                                                  scaffoldContext,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Google Sign-In failed or cancelled.',
-                                                    ),
+                                              ScaffoldMessenger.of(
+                                                scaffoldContext,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Google Sign-In failed or cancelled.',
                                                   ),
-                                                );
-                                              }
+                                                ),
+                                              );
                                             }
                                           } catch (e) {
-                                            if (!mounted) return;
+                                            if (!context.mounted) return;
                                             LoadingDialog.hide(scaffoldContext);
                                             ScaffoldMessenger.of(
                                               scaffoldContext,

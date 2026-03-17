@@ -99,8 +99,8 @@ class _RegisterState extends ConsumerState<Register>
     final primaryColor = colorScheme.primary;
     final backgroundColor = colorScheme.surface;
     final textColor = colorScheme.onSurface;
-    final Color glassColor = colorScheme.surfaceContainerHighest.withOpacity(
-      .3,
+    final Color glassColor = colorScheme.surfaceContainerHighest.withValues(
+      alpha: .3,
     );
 
     return Scaffold(
@@ -268,34 +268,31 @@ class _RegisterState extends ConsumerState<Register>
                                                       passwordController.text,
                                                     );
 
+                                            if (!context.mounted) return;
                                             if (user != null) {
-                                              if (mounted) {
-                                                LoadingDialog.hide(context);
-                                                _showAestheticDialog(
-                                                  isSuccess: true,
-                                                  title: 'Welcome!',
-                                                  message:
-                                                      'Your culinary journey begins now. We\'re so happy to have you!',
-                                                );
-                                              }
+                                              LoadingDialog.hide(context);
+                                              _showAestheticDialog(
+                                                isSuccess: true,
+                                                title: 'Welcome!',
+                                                message:
+                                                    'Your culinary journey begins now. We\'re so happy to have you!',
+                                              );
                                             }
                                           } on fb.FirebaseAuthException catch (
                                             e
                                           ) {
-                                            if (mounted) {
-                                              LoadingDialog.hide(context);
-                                              _showAestheticDialog(
-                                                isSuccess: false,
-                                                title: 'Oops!',
-                                                message:
-                                                    e.message ??
-                                                    'Something went wrong with your registration. Please try again.',
-                                              );
-                                            }
+                                            if (!context.mounted) return;
+                                            LoadingDialog.hide(context);
+                                            _showAestheticDialog(
+                                              isSuccess: false,
+                                              title: 'Oops!',
+                                              message:
+                                                  e.message ??
+                                                  'Something went wrong with your registration. Please try again.',
+                                            );
                                           } catch (e) {
-                                            if (mounted) {
-                                              LoadingDialog.hide(context);
-                                            }
+                                            if (!context.mounted) return;
+                                            LoadingDialog.hide(context);
                                           }
                                         }
                                       },

@@ -280,11 +280,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                         await Future.delayed(
                                           const Duration(seconds: 2),
                                         );
-                                        if (mounted) {
-                                          LoadingDialog.hide(context);
-                                          setState(() => _currentStep = 2);
-                                          _startTimer();
-                                        }
+                                        if (!context.mounted) return;
+                                        LoadingDialog.hide(context);
+                                        setState(() => _currentStep = 2);
+                                        _startTimer();
                                       } else {
                                         _showAestheticDialog(
                                           isSuccess: false,
@@ -449,16 +448,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                         await Future.delayed(
                                           const Duration(seconds: 1),
                                         );
-                                        if (mounted) {
-                                          LoadingDialog.hide(context);
-                                          if (otp == "123456") {
-                                            setState(() => _currentStep = 3);
-                                          } else {
-                                            setState(
-                                              () => _otpErrorMessage =
-                                                  "Invalid OTP pin. Please try again.",
-                                            );
-                                          }
+                                        if (!context.mounted) return;
+                                        LoadingDialog.hide(context);
+                                        if (otp == "123456") {
+                                          setState(() => _currentStep = 3);
+                                        } else {
+                                          setState(
+                                            () => _otpErrorMessage =
+                                                "Invalid OTP pin. Please try again.",
+                                          );
                                         }
                                       } else {
                                         setState(
@@ -517,15 +515,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                         await Future.delayed(
                                           const Duration(seconds: 2),
                                         );
-                                        if (mounted) {
-                                          LoadingDialog.hide(context);
-                                          _showAestheticDialog(
-                                            isSuccess: true,
-                                            title: 'Success!',
-                                            message:
-                                                'Your password has been updated successfully. Log in with your new password.',
-                                          );
-                                        }
+                                        if (!context.mounted) return;
+                                        LoadingDialog.hide(context);
+                                        _showAestheticDialog(
+                                          isSuccess: true,
+                                          title: 'Success!',
+                                          message:
+                                              'Your password has been updated successfully. Log in with your new password.',
+                                        );
                                       } else {
                                         _showAestheticDialog(
                                           isSuccess: false,

@@ -134,7 +134,7 @@ class _OrderCard extends StatelessWidget {
 
 class _SuccessOrderCard extends ConsumerStatefulWidget {
   final OrderModel order;
-  const _SuccessOrderCard({super.key, required this.order});
+  const _SuccessOrderCard({required this.order});
 
   @override
   ConsumerState<_SuccessOrderCard> createState() => _SuccessOrderCardState();
@@ -1300,8 +1300,9 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
       if (order.progress < 0.66) return Icons.inventory_2;
       return Icons.delivery_dining;
     }
-    if (order.subStatus == OrderSubStatus.delivered)
+    if (order.subStatus == OrderSubStatus.delivered) {
       return Icons.delivery_dining;
+    }
     if (order.subStatus == OrderSubStatus.pickup) return Icons.shopping_bag;
     return Icons.check_circle;
   }
@@ -1312,8 +1313,9 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
       if (order.progress < 0.66) return "Meal is being packed...";
       return "Out for delivery...";
     }
-    if (order.subStatus == OrderSubStatus.delivered)
+    if (order.subStatus == OrderSubStatus.delivered) {
       return "Order being carried...";
+    }
     if (order.subStatus == OrderSubStatus.pickup) return "Driver is Waiting";
     return "Completed";
   }

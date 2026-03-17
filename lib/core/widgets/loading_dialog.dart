@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 
 class LoadingDialog {

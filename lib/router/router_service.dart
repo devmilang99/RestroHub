@@ -27,7 +27,7 @@ class RouterService {
       GoRoute(
         path: '/',
         name: "splash",
-        builder: (context, state) => const splashScreen(),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/permissions',
