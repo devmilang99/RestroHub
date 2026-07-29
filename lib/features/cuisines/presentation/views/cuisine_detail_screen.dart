@@ -452,7 +452,7 @@ class CuisineSingleItem extends ConsumerWidget {
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
                 Text(
-                  'Rs. ${item.price}',
+                  'Rs. ${item.price.toStringAsFixed(0)}',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -464,8 +464,8 @@ class CuisineSingleItem extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton(
-                onPressed: () {
-                  ref
+                onPressed: () async {
+                  await ref
                       .read(cartProvider.notifier)
                       .addItem(
                         CartModel(
@@ -486,42 +486,40 @@ class CuisineSingleItem extends ConsumerWidget {
                   ),
                 ),
                 child: const Text(
-                  'Buy Now',
+                  'Order',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () {
-                  ref
-                      .read(cartProvider.notifier)
-                      .addItem(
-                        CartModel(
-                          id: item.id,
-                          name: item.name,
-                          image: item.imageUrl ?? '',
-                          price: item.price,
-                          quantity: 1,
-                        ),
-                      );
-                  _showAddedNotification(context, item.name);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
+            ElevatedButton(
+              onPressed: () {
+                ref
+                    .read(cartProvider.notifier)
+                    .addItem(
+                      CartModel(
+                        id: item.id,
+                        name: item.name,
+                        image: item.imageUrl ?? '',
+                        price: item.price,
+                        quantity: 1,
+                      ),
+                    );
+                _showAddedNotification(context, item.name);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 16,
                 ),
-                child: const Text(
-                  'Add to Cart',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
+                elevation: 0,
               ),
+              child: const Icon(Icons.add_shopping_cart),
             ),
           ],
         ),

@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/widgets/responsive_center.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cart/presentation/views/cart_screen.dart';
 import 'package:restro_hub/features/cuisines/presentation/providers/cuisine_provider.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_skeletons.dart';
 import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_slivers.dart';
+import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
@@ -91,6 +94,16 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
   }
 
   Widget _buildFloatingBottomNav(ColorScheme colorScheme) {
+    final cartItems = ref.watch(cartProvider).value ?? [];
+    final activeOrders = ref
+        .watch(ordersProvider)
+        .where(
+          (o) =>
+              o.subStatus != OrderSubStatus.success &&
+              o.subStatus != OrderSubStatus.cancelled,
+        )
+        .toList();
+
     return Container(
       height: 70,
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -113,21 +126,34 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
+          showSelectedLabels: true,
+          showUnselectedLabels: true,
           selectedItemColor: colorScheme.primary,
           unselectedItemColor: Colors.grey.withValues(alpha: 0.6),
+          selectedLabelStyle: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+          unselectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
           items: [
             const BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
               label: 'Home',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart_rounded),
+            BottomNavigationBarItem(
+              icon: Badge.count(
+                count: cartItems.length,
+                isLabelVisible: cartItems.isNotEmpty,
+                child: const Icon(Icons.shopping_cart_rounded),
+              ),
               label: 'Cart',
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_long_rounded),
+            BottomNavigationBarItem(
+              icon: Badge.count(
+                count: activeOrders.length,
+                isLabelVisible: activeOrders.isNotEmpty,
+                child: const Icon(Icons.receipt_long_rounded),
+              ),
               label: 'Orders',
             ),
             BottomNavigationBarItem(
@@ -204,37 +230,56 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Icons.location_on,
-                        color: colorScheme.primary,
-                        size: 18,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.location_on,
+                                color: colorScheme.primary,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Current Location',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.keyboard_arrow_down,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                            ],
+                          ),
+                          Text(
+                            'Kathmandu, Nepal',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Current Location',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500,
+                      IconButton.filledTonal(
+                        onPressed: () =>
+                            GoRouter.of(context).pushNamed('searchScreen'),
+                        icon: const Icon(Icons.search_rounded),
+                        style: IconButton.styleFrom(
+                          backgroundColor: colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
+                          foregroundColor: colorScheme.primary,
                         ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_down,
-                        size: 18,
-                        color: Colors.grey,
                       ),
                     ],
                   ),
-                  Text(
-                    'Kathmandu, Nepal',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildSearchBar(colorScheme),
                 ],
               ),
             ),
@@ -273,13 +318,16 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           Icon(Icons.search, color: colorScheme.primary),
           const SizedBox(width: 12),
           Expanded(
-            child: TextField(
-              onChanged: (val) =>
-                  ref.read(restaurantSearchProvider.notifier).setSearch(val),
-              decoration: const InputDecoration(
-                hintText: 'Search food, restaurants...',
-                border: InputBorder.none,
-                hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+            child: GestureDetector(
+              onTap: () => GoRouter.of(context).pushNamed('searchScreen'),
+              child: const AbsorbPointer(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search food, restaurants...',
+                    border: InputBorder.none,
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                ),
               ),
             ),
           ),

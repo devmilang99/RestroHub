@@ -228,7 +228,7 @@ class ExploreItemsList extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Rs. ${item.price}',
+                        'Rs. ${item.price.toStringAsFixed(0)}',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,

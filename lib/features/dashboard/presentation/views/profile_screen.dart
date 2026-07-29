@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/dashboard/logic/membership_rules.dart';
 import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
@@ -433,6 +435,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         _buildSettingTile(
           context,
+          icon: Icons.favorite_border_rounded,
+          title: 'My Favorites',
+          subtitle: 'View your saved food items',
+          onTap: () => GoRouter.of(context).pushNamed('showFavourites'),
+        ),
+        const SizedBox(height: 12),
+        _buildSettingTile(
+          context,
           icon: Icons.sync,
           title: 'Data Synchronization',
           subtitle: 'Sync your data with the cloud',
@@ -442,8 +452,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _buildKdsTile(context, colorScheme),
+        _buildThemeTile(context, colorScheme),
         const SizedBox(height: 12),
+        _buildKdsTile(context, colorScheme),
+        const SizedBox(height: 24),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          child: Text(
+            'Support & About',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        _buildSettingTile(
+          context,
+          icon: Icons.help_outline,
+          title: 'Helpline Support',
+          subtitle: 'Get 24/7 assistance',
+          onTap: () => GoRouter.of(context).pushNamed('helplineScreen'),
+        ),
+        const SizedBox(height: 12),
+        _buildSettingTile(
+          context,
+          icon: Icons.contact_support_outlined,
+          title: 'Contact Details',
+          subtitle: 'Reach out to us directly',
+          onTap: () => GoRouter.of(context).pushNamed('contactUsScreen'),
+        ),
+        const SizedBox(height: 12),
+        _buildSettingTile(
+          context,
+          icon: Icons.policy_outlined,
+          title: 'Privacy Policy',
+          subtitle: 'Read our terms and policies',
+          onTap: () => GoRouter.of(context).pushNamed('policyScreen'),
+        ),
+        const SizedBox(height: 24),
         _buildSettingTile(
           context,
           icon: Icons.logout,
@@ -455,6 +498,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildThemeTile(BuildContext context, ColorScheme colorScheme) {
+    final themeMode = ref.watch(themeProvider);
+    final isDark = themeMode == ThemeMode.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isDark ? Icons.dark_mode : Icons.light_mode,
+              color: colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Dark Theme',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  'Switch between light and dark mode',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch.adaptive(
+            value: isDark,
+            onChanged: (val) {
+              ref.read(themeProvider.notifier).toggleTheme(isDark: val);
+            },
+          ),
+        ],
+      ),
     );
   }
 

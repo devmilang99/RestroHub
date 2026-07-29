@@ -692,7 +692,7 @@ void _reorder(WidgetRef ref, BuildContext context, OrderModel order) {
                 unawaited(cartNotifier.addItem(item));
               }
               Navigator.pop(context);
-              context.pushNamed('checkoutScreen');
+              context.pushNamed('processCheckout');
             },
             child: const Text('Proceed'),
           ),

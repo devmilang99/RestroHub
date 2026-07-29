@@ -146,36 +146,34 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
 
     if (cartItems.isEmpty) {
       return Container(
+        width: double.infinity,
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.shopping_cart_outlined,
-              size: 64,
-              color: Colors.grey,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Your cart is empty',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Add some delicious items to get started!',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => context.pop(),
-              child: const Text('Go Back'),
-            ),
-          ],
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.shopping_cart_outlined,
+                size: 64,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Your cart is empty',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Add some delicious items to get started!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -194,73 +192,6 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Review Order Items',
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Remove All',
-                      onPressed: () {
-                        unawaited(
-                          showDialog<void>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Clear Cart?'),
-                              content: const Text(
-                                'This will remove all items from your cart.',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('Cancel'),
-                                ),
-                                TextButton(
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: colorScheme.error,
-                                  ),
-                                  onPressed: () {
-                                    unawaited(cartNotifier.clearCart());
-                                    Navigator.pop(context);
-                                  },
-                                  child: const Text('Clear All'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        Icons.delete_sweep_outlined,
-                        color: colorScheme.error,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const Divider(),
             Flexible(
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
@@ -340,13 +271,17 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                     padding: EdgeInsets.zero,
                                   ),
                                   icon: Icon(
-                                    Icons.remove,
+                                    item.quantity > 1
+                                        ? Icons.remove
+                                        : Icons.delete_outline,
                                     size: 16,
-                                    color: colorScheme.onSurfaceVariant,
+                                    color: item.quantity > 1
+                                        ? colorScheme.onSurfaceVariant
+                                        : Colors.red,
                                   ),
                                   onPressed: () => unawaited(
                                     cartNotifier.updateQuantity(
-                                      item.name,
+                                      item.id ?? item.name,
                                       item.quantity - 1,
                                     ),
                                   ),
@@ -370,7 +305,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                   ),
                                   onPressed: () => unawaited(
                                     cartNotifier.updateQuantity(
-                                      item.name,
+                                      item.id ?? item.name,
                                       item.quantity + 1,
                                     ),
                                   ),

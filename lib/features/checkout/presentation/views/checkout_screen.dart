@@ -249,7 +249,7 @@ class ProcessCheckOut extends ConsumerWidget {
             );
 
             unawaited(ref.read(cartProvider.notifier).clearCart());
-            context.goNamed('mainDashBoard', extra: {'initialIndex': 3});
+            context.goNamed('mainDashBoard', extra: {'initialIndex': 2});
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,

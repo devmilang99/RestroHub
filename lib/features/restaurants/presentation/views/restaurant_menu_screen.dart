@@ -376,7 +376,7 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    r.rating.toString(),
+                                    r.rating.toStringAsFixed(1),
                                     style: GoogleFonts.poppins(
                                       color: Colors.amber.shade800,
                                       fontWeight: FontWeight.w700,
@@ -406,11 +406,6 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                               icon: Icons.access_time_filled_rounded,
                               label: '30 min',
                               color: Colors.orange,
-                            ),
-                            _MetaChip(
-                              icon: Icons.currency_rupee_rounded,
-                              label: r.priceRange,
-                              color: Colors.teal,
                             ),
                           ],
                         ),
@@ -879,32 +874,33 @@ class _MenuItemCard extends ConsumerWidget {
                             fontSize: 16,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            unawaited(
-                              ref
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () async {
+                              final cartItem = CartModel(
+                                id: item.id ?? item.name,
+                                name: item.name,
+                                image: item.imageUrl ?? '',
+                                price: item.price,
+                                quantity: 1,
+                              );
+                              await ref
                                   .read(cartProvider.notifier)
-                                  .addItem(
-                                    CartModel(
-                                      id: item.id,
-                                      name: item.name,
-                                      image: item.imageUrl ?? '',
-                                      price: item.price,
-                                      quantity: 1,
-                                    ),
-                                  ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: cs.primary.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.add_rounded,
-                              color: cs.primary,
-                              size: 18,
+                                  .addItem(cartItem);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: cs.primary.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.add_rounded,
+                                color: cs.primary,
+                                size: 20,
+                              ),
                             ),
                           ),
                         ),
@@ -1050,7 +1046,7 @@ class _ReviewCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      rating.toString(),
+                      rating.toStringAsFixed(1),
                       style: GoogleFonts.poppins(
                         color: Colors.amber.shade800,
                         fontWeight: FontWeight.bold,

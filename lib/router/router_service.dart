@@ -14,7 +14,9 @@ import 'package:restro_hub/features/country/presentation/views/country_list_scre
 import 'package:restro_hub/features/country/presentation/views/explore_country.dart';
 import 'package:restro_hub/features/cuisines/presentation/views/all_cuisine_list_screen.dart';
 import 'package:restro_hub/features/cuisines/presentation/views/cuisine_detail_screen.dart';
+import 'package:restro_hub/features/cuisines/presentation/views/search_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/contact_us_screen.dart';
+import 'package:restro_hub/features/dashboard/presentation/views/info_screens.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/location_picker_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/main_dashboard_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
@@ -262,6 +264,33 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           context: context,
           state: state,
           child: const CountryListScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/searchScreen',
+        name: 'searchScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: SearchScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/helplineScreen',
+        name: 'helplineScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: HelplineScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/policyScreen',
+        name: 'policyScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: PolicyScreen(),
         ),
       ),
     ],

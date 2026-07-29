@@ -1,31 +1,72 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
-import 'package:restro_hub/core/data/mock_data.dart';
+import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/features/cuisines/data/repositories/cuisine_repository.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
+import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cuisine_provider.g.dart';
 
-@riverpod
+@Riverpod()
 Stream<List<MenuItemModel>> cuisinesStream(Ref ref, String restaurantId) {
   return ref.watch(cuisineRepositoryProvider).watchCuisines(restaurantId);
 }
 
-@riverpod
+@Riverpod()
 Stream<List<MenuItemModel>> allCuisinesStream(Ref ref) {
-  return ref.watch(appDatabaseProvider.future).asStream().asyncExpand((
-    db,
-  ) {
+  return ref.watch(appDatabaseProvider.future).asStream().asyncExpand((db) {
     return db.select(db.cachedMenuItems).watch().asyncMap((list) async {
-      final models = await compute(_mapMenuItemRowsToModels, list);
-      return models;
+      return compute(_mapMenuItemRowsToModels, list);
     });
   });
 }
 
-/// Top-level function for background mapping
+@Riverpod()
+Future<String?> restaurantIdFromCategory(Ref ref, String categoryId) async {
+  final db = await ref.read(appDatabaseProvider.future);
+  final query = db.select(db.cachedMenuCategories)
+    ..where((t) => t.id.equals(categoryId));
+  final row = await query.getSingleOrNull();
+  return row?.restaurantId;
+}
+
+@Riverpod()
+Future<RestaurantModel?> restaurantFromId(Ref ref, String restaurantId) async {
+  final db = await ref.read(appDatabaseProvider.future);
+  final query = db.select(db.cachedRestaurants)
+    ..where((t) => t.id.equals(restaurantId));
+  final row = await query.getSingleOrNull();
+  if (row == null) return null;
+
+  return RestaurantModel(
+    id: row.id,
+    ownerId: row.ownerId,
+    name: row.name,
+    description: row.description ?? '',
+    logoUrl: row.logoUrl,
+    bannerUrl: row.bannerUrl,
+    status: RestaurantStatus.fromString(row.status),
+    rating: row.rating,
+    priceRange: row.priceRange,
+    taxPercent: row.taxPercent,
+    locationAddress: row.locationAddress,
+    latitude: row.latitude,
+    longitude: row.longitude,
+  );
+}
+
+final restaurantFromCategoryIdProvider =
+    FutureProvider.family<RestaurantModel?, String>((ref, categoryId) async {
+      final restaurantId = await ref.watch(
+        restaurantIdFromCategoryProvider(categoryId).future,
+      );
+      if (restaurantId == null) return null;
+      return ref.watch(restaurantFromIdProvider(restaurantId).future);
+    });
+
 List<MenuItemModel> _mapMenuItemRowsToModels(List<CachedMenuItem> rows) {
   return rows
       .map(

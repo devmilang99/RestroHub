@@ -6,6 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/features/cuisines/presentation/providers/cuisine_provider.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
@@ -400,7 +403,7 @@ class SliverRestaurantCards extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        r.rating.toString(),
+                                        r.rating.toStringAsFixed(1),
                                         style: GoogleFonts.poppins(
                                           color: Colors.white,
                                           fontSize: 11,
@@ -507,7 +510,7 @@ class SliverFoodCards extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: containerHeight,
+              height: containerHeight + 60, // Increased for buttons
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
@@ -519,8 +522,30 @@ class SliverFoodCards extends ConsumerWidget {
                       .isFavourite(item);
 
                   return GestureDetector(
-                    onTap: () =>
-                        context.pushNamed('cuisineSingleItem', extra: item),
+                    onTap: () async {
+                      final restaurantId = await ref.read(
+                        restaurantIdFromCategoryProvider(
+                          item.categoryId,
+                        ).future,
+                      );
+                      if (restaurantId != null) {
+                        final restaurant = await ref.read(
+                          restaurantFromIdProvider(restaurantId).future,
+                        );
+                        if (restaurant != null && context.mounted) {
+                          unawaited(
+                            Navigator.push<void>(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => RestaurantMenuScreen(
+                                  restaurant: restaurant,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    },
                     child: Container(
                       width: cardWidth,
                       margin: const EdgeInsets.only(right: 14),
@@ -612,13 +637,56 @@ class SliverFoodCards extends ConsumerWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  'Rs. ${item.price.toStringAsFixed(0)}',
-                                  style: GoogleFonts.poppins(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                  ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Rs. ${item.price.toStringAsFixed(0)}',
+                                      style: GoogleFonts.poppins(
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        final cartItem = CartModel(
+                                          id: item.id ?? item.name,
+                                          name: item.name,
+                                          image: item.imageUrl ?? '',
+                                          price: item.price,
+                                          quantity: 1,
+                                        );
+                                        ref
+                                            .read(cartProvider.notifier)
+                                            .addItem(cartItem);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              '${item.name} added to cart',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.primary,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: const Icon(
+                                          Icons.add_shopping_cart,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
