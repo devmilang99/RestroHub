@@ -1,59 +1,96 @@
-import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class GoogleAuthService {
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-  final fb.FirebaseAuth _auth = fb.FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: dotenv.maybeGet('GOOGLE_WEB_CLIENT_ID'),
+    scopes: ['email', 'profile'],
+  );
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  Future<fb.User?> signIn() async {
+  Future<User?> signIn() async {
     try {
+      final clientId = dotenv.maybeGet('GOOGLE_WEB_CLIENT_ID');
+      if (clientId == null || clientId.contains('REPLACE_WITH')) {
+        debugPrint(
+          'ERROR: GOOGLE_WEB_CLIENT_ID is missing or not configured in .env file. '
+          'Please provide your Web Client ID from Google Cloud Console.',
+        );
+        return null;
+      }
+
       // 1. Trigger Google Sign-In flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
         debugPrint('User Cancelled the Sign-In');
         return null;
       }
       // 2. Get tokens from the login
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final googleAuth = await googleUser.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
 
-      // 3. Create a credential for Firebase
-      final fb.AuthCredential credential = fb.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      if (idToken == null) {
+        debugPrint('No ID Token found.');
+        return null;
+      }
+
+      // 3. Sign in to Supabase with the tokens
+      final response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
       );
 
-      // 4. Sign in to Firebase with the tokens
-      final fb.UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
-      return userCredential.user;
-    } catch (error) {
-      debugPrint('Firebase Google Sign-In Error: $error');
+      return response.user;
+    } on PlatformException catch (error) {
+      if (error.code == 'network_error' ||
+          error.message?.contains('7') == true) {
+        debugPrint(
+          'Supabase Google Sign-In Network Error (7): '
+          'This is often caused by missing SHA-1 in Google Cloud Console '
+          'or a mismatched Client ID. Error: ${error.message}',
+        );
+      } else {
+        debugPrint(
+          'Supabase Google Sign-In Platform Error: ${error.code} - ${error.message}',
+        );
+      }
+      rethrow;
+    } on Exception catch (error) {
+      debugPrint('Supabase Google Sign-In Error: $error');
       return null;
     }
   }
 
-  Future<fb.User?> signInSilently() async {
+  Future<User?> signInSilently() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn
-          .signInSilently();
+      final googleUser = await _googleSignIn.signInSilently();
       if (googleUser == null) return null;
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-      final fb.AuthCredential credential = fb.GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+      final googleAuth = await googleUser.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) return null;
+
+      final response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
       );
 
-      final fb.UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
+      return response.user;
+    } on PlatformException catch (error) {
+      debugPrint(
+        'Supabase Silent Google Sign-In Platform Error: ${error.code} - ${error.message}',
       );
-      return userCredential.user;
-    } catch (error) {
-      debugPrint('Firebase Silent Google Sign-In Error: $error');
+      return null;
+    } on Exception catch (error) {
+      debugPrint('Supabase Silent Google Sign-In Error: $error');
       return null;
     }
   }
@@ -61,13 +98,13 @@ class GoogleAuthService {
   Future<void> signOut() async {
     try {
       await _googleSignIn.signOut();
-      await _auth.signOut();
-    } catch (error) {
+      await _supabase.auth.signOut();
+    } on Exception catch (error) {
       debugPrint('Error during Google Sign-Out: $error');
     }
   }
 
   Future<bool> isSignedIn() async {
-    return _auth.currentUser != null;
+    return _supabase.auth.currentUser != null;
   }
 }

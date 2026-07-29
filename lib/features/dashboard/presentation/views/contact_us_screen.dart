@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class ContactUsScreen extends ConsumerStatefulWidget {
   const ContactUsScreen({super.key});
@@ -35,7 +36,7 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       // Simulate submission
-      showDialog(
+      unawaited(showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
           shape: RoundedRectangleBorder(
@@ -57,7 +58,7 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
             ),
           ],
         ),
-      );
+      ));
     }
   }
 
@@ -113,7 +114,7 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
                 children: AnimationConfiguration.toStaggeredList(
                   duration: const Duration(milliseconds: 375),
                   childAnimationBuilder: (widget) => SlideAnimation(
-                    horizontalOffset: 50.0,
+                    horizontalOffset: 50,
                     child: FadeInAnimation(child: widget),
                   ),
                   children: [
@@ -324,20 +325,20 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          _FAQItem(
+          const _FAQItem(
             question: 'How to track my order?',
             answer:
                 'You can track your order in the "Orders" tab in the bottom navigation bar.',
           ),
-          _FAQItem(
+          const _FAQItem(
             question: 'What are the delivery charges?',
             answer:
                 'Delivery charges vary based on distance and order value. You can see the exact charge at checkout.',
           ),
-          _FAQItem(
+          const _FAQItem(
             question: 'How can I cancel my order?',
             answer:
-                'Orders can be cancelled within 5 minutes of placing them if the restaurant hasn\'t started preparing.',
+                "Orders can be cancelled within 5 minutes of placing them if the restaurant hasn't started preparing.",
           ),
         ],
       ),

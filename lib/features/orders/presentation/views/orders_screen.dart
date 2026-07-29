@@ -1,13 +1,16 @@
 import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:go_router/go_router.dart';
-import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
-import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/utils/launcher_utils.dart';
+import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 
 class OrdersScreen extends ConsumerWidget {
   const OrdersScreen({super.key});
@@ -27,7 +30,7 @@ class OrdersScreen extends ConsumerWidget {
           elevation: 0,
           centerTitle: false,
           title: Text(
-            "My Orders",
+            'My Orders',
             style: textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
@@ -40,17 +43,17 @@ class OrdersScreen extends ConsumerWidget {
             dividerColor: Colors.transparent,
             labelStyle: const TextStyle(fontWeight: FontWeight.bold),
             tabs: const [
-              Tab(text: "In Progress"),
-              Tab(text: "Success"),
-              Tab(text: "Cancelled"),
+              Tab(text: 'In Progress'),
+              Tab(text: 'Success'),
+              Tab(text: 'Cancelled'),
             ],
           ),
         ),
         body: const TabBarView(
           children: [
-            _OrderList(statusType: "In Progress"),
-            _OrderList(statusType: "Success"),
-            _OrderList(statusType: "Cancelled"),
+            _OrderList(statusType: 'In Progress'),
+            _OrderList(statusType: 'Success'),
+            _OrderList(statusType: 'Cancelled'),
           ],
         ),
       ),
@@ -68,10 +71,10 @@ class _OrderList extends ConsumerWidget {
 
     final colorScheme = context.colorScheme;
     final filteredOrders = orders.where((o) {
-      if (statusType == "In Progress") {
+      if (statusType == 'In Progress') {
         return o.subStatus != OrderSubStatus.success &&
             o.subStatus != OrderSubStatus.cancelled;
-      } else if (statusType == "Success") {
+      } else if (statusType == 'Success') {
         return o.subStatus == OrderSubStatus.success;
       } else {
         return o.subStatus == OrderSubStatus.cancelled;
@@ -84,9 +87,9 @@ class _OrderList extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              statusType == "In Progress"
+              statusType == 'In Progress'
                   ? Icons.restaurant_menu_outlined
-                  : (statusType == "Success"
+                  : (statusType == 'Success'
                         ? Icons.check_circle_outline
                         : Icons.cancel_outlined),
               size: 80,
@@ -94,7 +97,7 @@ class _OrderList extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              "No $statusType orders found",
+              'No $statusType orders found',
               style: context.textTheme.bodyLarge?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -104,13 +107,24 @@ class _OrderList extends ConsumerWidget {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-      itemCount: filteredOrders.length,
-      itemBuilder: (context, index) {
-        final order = filteredOrders[index];
-        return _OrderCard(order: order);
-      },
+    return AnimationLimiter(
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+        itemCount: filteredOrders.length,
+        itemBuilder: (context, index) {
+          final order = filteredOrders[index];
+          return AnimationConfiguration.staggeredList(
+            position: index,
+            duration: const Duration(milliseconds: 375),
+            child: SlideAnimation(
+              verticalOffset: 50.0,
+              child: FadeInAnimation(
+                child: _OrderCard(order: order),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -155,8 +169,9 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
 
   @override
   void dispose() {
-    _feedbackController.removeListener(_updateWordCount);
-    _feedbackController.dispose();
+    _feedbackController
+      ..removeListener(_updateWordCount)
+      ..dispose();
     super.dispose();
   }
 
@@ -191,7 +206,7 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
       _sentTimestamp = DateTime.now();
     });
 
-    // TODO: Save feedback to backend/database
+    // TODO(user): Save feedback to backend/database
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Feedback sent! ($_wordCount words)'),
@@ -231,53 +246,62 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
       ),
       color: colorScheme.surfaceContainerLowest,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: .1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.check_circle_outline,
-                        color: Colors.green,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Order #${widget.order.id}",
-                          style: textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: .1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        Text(
-                          "Delivered successfully",
-                          style: textTheme.bodySmall?.copyWith(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: const Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.green,
+                          size: 20,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Order #${widget.order.id}',
+                              style: textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Delivered successfully',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
+                      'Rs. ${widget.order.totalAmount.toStringAsFixed(0)}',
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: widget.order.discount > 0 ? Colors.green : null,
@@ -285,7 +309,7 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
                     ),
                     if (widget.order.discount > 0)
                       Text(
-                        "Rs. ${(widget.order.totalAmount + widget.order.discount).toStringAsFixed(0)}",
+                        'Rs. ${(widget.order.totalAmount + widget.order.discount).toStringAsFixed(0)}',
                         style: textTheme.labelSmall?.copyWith(
                           decoration: TextDecoration.lineThrough,
                           color: colorScheme.onSurfaceVariant,
@@ -318,12 +342,12 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Rohan Sharma",
+                        'Rohan Sharma',
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text("Delivered by", style: textTheme.bodySmall),
+                      Text('Delivered by', style: textTheme.bodySmall),
                     ],
                   ),
                 ),
@@ -361,7 +385,7 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Order Details",
+                  'Order Details',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
@@ -397,17 +421,21 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
                           size: 14,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          "Voucher Applied: ${widget.order.voucherCode}",
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            'Voucher Applied: ${widget.order.voucherCode}',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Text(
-                          "- Rs. ${widget.order.discount.toStringAsFixed(0)}",
+                          '- Rs. ${widget.order.discount.toStringAsFixed(0)}',
                           style: const TextStyle(
                             color: Colors.green,
                             fontSize: 12,
@@ -425,203 +453,196 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
               ],
             ),
             // Feedback Box or Sent Feedback Card
-            _sentFeedback == null
-                ? Container(
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
+            if (_sentFeedback == null)
+              Container(
+                height: 120,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _feedbackController,
+                        maxLines: null,
+                        expands: true,
+                        textAlignVertical: TextAlignVertical.top,
+                        decoration: const InputDecoration(
+                          hintText: 'Share your feedback...',
+                          filled: false,
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.fromLTRB(12, 12, 12, 0),
+                        ),
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _feedbackController,
-                            maxLines: null,
-                            expands: true,
-                            textAlignVertical: TextAlignVertical.top,
-                            decoration: const InputDecoration(
-                              hintText: "Share your feedback...",
-                              filled: false,
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.fromLTRB(
-                                12,
-                                12,
-                                12,
-                                0,
-                              ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          top: BorderSide(
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.3,
                             ),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.3,
-                                ),
-                                width: 1,
-                              ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '$_wordCount / 20 words',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _wordCount > 20
+                                  ? Colors.red
+                                  : colorScheme.onSurfaceVariant,
+                              fontWeight: _wordCount > 20
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Row(
                             children: [
-                              Text(
-                                '$_wordCount / 20 words',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: _wordCount > 20
-                                      ? Colors.red
-                                      : colorScheme.onSurfaceVariant,
-                                  fontWeight: _wordCount > 20
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                              Row(
-                                children: [
-                                  if (_wordCount > 20)
-                                    const Padding(
-                                      padding: EdgeInsets.only(right: 8),
-                                      child: Text(
-                                        'Limit exceeded!',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  InkWell(
-                                    onTap: _sendFeedback,
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            _wordCount > 0 && _wordCount <= 20
-                                            ? colorScheme.primary
-                                            : Colors.grey.shade300,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        Icons.send,
-                                        size: 16,
-                                        color:
-                                            _wordCount > 0 && _wordCount <= 20
-                                            ? Colors.white
-                                            : Colors.grey.shade600,
-                                      ),
+                              if (_wordCount > 20)
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 8),
+                                  child: Text(
+                                    'Limit exceeded!',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                ],
+                                ),
+                              InkWell(
+                                onTap: _sendFeedback,
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: _wordCount > 0 && _wordCount <= 20
+                                        ? colorScheme.primary
+                                        : Colors.grey.shade300,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.send,
+                                    size: 16,
+                                    color: _wordCount > 0 && _wordCount <= 20
+                                        ? Colors.white
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: Colors.green.withValues(alpha: 0.2),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.chat_bubble_rounded,
-                                color: Colors.green,
-                                size: 18,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Feedback Sent!",
-                                    style: textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green.shade800,
-                                    ),
-                                  ),
-                                  if (_sentTimestamp != null)
-                                    Text(
-                                      _formatTimestamp(_sentTimestamp!),
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: Colors.green.shade600,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _feedbackController.text = _sentFeedback!;
-                                  _sentFeedback = null;
-                                  _sentTimestamp = null;
-                                });
-                              },
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                              ),
-                              child: const Text("Edit"),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
                         Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: Colors.green.withValues(alpha: 0.1),
-                            ),
+                            color: Colors.green.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
                           ),
-                          child: Text(
-                            _sentFeedback!,
-                            style: textTheme.bodyMedium?.copyWith(
-                              fontStyle: FontStyle.italic,
-                              color: Colors.green.shade900,
-                            ),
+                          child: const Icon(
+                            Icons.chat_bubble_rounded,
+                            color: Colors.green,
+                            size: 18,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Thank you for helping us improve",
-                          style: textTheme.bodySmall?.copyWith(
-                            color: Colors.green.shade600,
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Feedback Sent!',
+                                style: textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade800,
+                                ),
+                              ),
+                              if (_sentTimestamp != null)
+                                Text(
+                                  _formatTimestamp(_sentTimestamp!),
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: Colors.green.shade600,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                            ],
                           ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _feedbackController.text = _sentFeedback!;
+                              _sentFeedback = null;
+                              _sentTimestamp = null;
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                          ),
+                          child: const Text('Edit'),
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.green.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: Text(
+                        _sentFeedback!,
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.green.shade900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Thank you for helping us improve',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: Colors.green.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             const SizedBox(height: 16),
 
@@ -631,7 +652,7 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
               child: ElevatedButton.icon(
                 onPressed: () => _reorder(ref, context, widget.order),
                 icon: const Icon(Icons.refresh, size: 20),
-                label: const Text("Order Again"),
+                label: const Text('Order Again'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.primary,
                   foregroundColor: colorScheme.onPrimary,
@@ -650,31 +671,33 @@ class _SuccessOrderCardState extends ConsumerState<_SuccessOrderCard> {
 }
 
 void _reorder(WidgetRef ref, BuildContext context, OrderModel order) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text("Order Again?"),
-      content: const Text(
-        "Proceeding will replace your current cart with these items and take you to checkout.",
+  unawaited(
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Order Again?'),
+        content: const Text(
+          'Proceeding will replace your current cart with these items and take you to checkout.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final cartNotifier = ref.read(cartProvider.notifier);
+              unawaited(cartNotifier.clearCart());
+              for (final item in order.items) {
+                unawaited(cartNotifier.addItem(item));
+              }
+              Navigator.pop(context);
+              context.pushNamed('checkoutScreen');
+            },
+            child: const Text('Proceed'),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            final cartNotifier = ref.read(cartProvider.notifier);
-            cartNotifier.clearCart();
-            for (var item in order.items) {
-              cartNotifier.addItem(item);
-            }
-            Navigator.pop(context);
-            context.pushNamed("checkoutScreen");
-          },
-          child: const Text("Proceed"),
-        ),
-      ],
     ),
   );
 }
@@ -697,50 +720,59 @@ class _CancelledOrderCard extends ConsumerWidget {
       ),
       color: colorScheme.surfaceContainerLowest,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: .1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.cancel_outlined,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Order #${order.id}",
-                          style: textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: .1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        Text(
-                          "Order cancelled",
-                          style: textTheme.bodySmall?.copyWith(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: const Icon(
+                          Icons.cancel_outlined,
+                          color: Colors.red,
+                          size: 20,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Order #${order.id}',
+                              style: textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'Order cancelled',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 16),
                 Text(
-                  "Rs. ${order.totalAmount.toStringAsFixed(0)}",
+                  'Rs. ${order.totalAmount.toStringAsFixed(0)}',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -769,17 +801,18 @@ class _CancelledOrderCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Rohan Sharma",
+                        'Rohan Sharma',
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text("Assigned Driver", style: textTheme.bodySmall),
+                      Text('Assigned Driver', style: textTheme.bodySmall),
                     ],
                   ),
                 ),
                 IconButton(
-                  onPressed: () => LauncherUtils.launchPhone("+9779812345678"),
+                  onPressed: () =>
+                      unawaited(LauncherUtils.launchPhone('+9779812345678')),
                   icon: Icon(Icons.phone, color: colorScheme.primary, size: 20),
                   style: IconButton.styleFrom(
                     backgroundColor: colorScheme.primaryContainer.withValues(
@@ -796,7 +829,7 @@ class _CancelledOrderCard extends ConsumerWidget {
             ),
 
             const Text(
-              "Order Details",
+              'Order Details',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
             const SizedBox(height: 8),
@@ -827,17 +860,21 @@ class _CancelledOrderCard extends ConsumerWidget {
                       size: 14,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      "Voucher Applied: ${order.voucherCode}",
-                      style: const TextStyle(
-                        color: Colors.green,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        'Voucher Applied: ${order.voucherCode}',
+                        style: const TextStyle(
+                          color: Colors.green,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
-                      "- Rs. ${order.discount.toStringAsFixed(0)}",
+                      '- Rs. ${order.discount.toStringAsFixed(0)}',
                       style: const TextStyle(
                         color: Colors.green,
                         fontSize: 12,
@@ -866,7 +903,7 @@ class _CancelledOrderCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Cancellation Reason",
+                    'Cancellation Reason',
                     style: TextStyle(
                       color: Colors.red.shade700,
                       fontWeight: FontWeight.bold,
@@ -875,7 +912,7 @@ class _CancelledOrderCard extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    "Restaurant busy - Unable to fulfill order",
+                    'Restaurant busy - Unable to fulfill order',
                     style: TextStyle(color: Colors.red, fontSize: 12),
                   ),
                 ],
@@ -888,7 +925,7 @@ class _CancelledOrderCard extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _reorder(ref, context, order),
                 icon: const Icon(Icons.refresh, size: 20),
-                label: const Text("Order Again"),
+                label: const Text('Order Again'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: colorScheme.primary,
                   side: BorderSide(color: colorScheme.primary),
@@ -908,7 +945,7 @@ class _CancelledOrderCard extends ConsumerWidget {
 
 Widget _buildOrderItemCard(
   BuildContext context,
-  dynamic item, {
+  CartModel item, {
   bool isCompact = false,
 }) {
   final colorScheme = context.colorScheme;
@@ -926,7 +963,7 @@ Widget _buildOrderItemCard(
           color: Colors.black.withValues(
             alpha: colorScheme.brightness == Brightness.dark ? 0.2 : 0.05,
           ),
-          blurRadius: 4.0,
+          blurRadius: 4,
           offset: const Offset(0, 2),
         ),
       ],
@@ -953,7 +990,7 @@ Widget _buildOrderItemCard(
               child: Image.asset(
                 item.image,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
+                errorBuilder: (context, error, stackTrace) => ColoredBox(
                   color: colorScheme.surfaceContainerHighest,
                   child: Icon(Icons.fastfood, size: isCompact ? 16 : 20),
                 ),
@@ -975,7 +1012,7 @@ Widget _buildOrderItemCard(
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
-                  "Qty: ${item.quantity}",
+                  'Qty: ${item.quantity}',
                   style: textTheme.bodySmall?.copyWith(
                     fontSize: isCompact ? 10 : 12,
                   ),
@@ -984,7 +1021,7 @@ Widget _buildOrderItemCard(
             ),
           ),
           Text(
-            "Rs. ${(item.price * item.quantity).toStringAsFixed(0)}",
+            'Rs. ${(item.price * item.quantity).toStringAsFixed(0)}',
             style: textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: colorScheme.primary,
@@ -1038,11 +1075,11 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
 
   String _formatTimer(int totalSeconds) {
     if (widget.order.subStatus == OrderSubStatus.pickup) {
-      return "Driver Waiting";
+      return 'Driver Waiting';
     }
-    if (totalSeconds <= 0) return "Arriving...";
-    int minutes = totalSeconds ~/ 60;
-    int seconds = totalSeconds % 60;
+    if (totalSeconds <= 0) return 'Arriving...';
+    final minutes = totalSeconds ~/ 60;
+    final seconds = totalSeconds % 60;
     return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
   }
 
@@ -1065,7 +1102,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
       ),
       color: colorScheme.surfaceContainerLowest,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1092,27 +1129,33 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Order #${widget.order.id}",
-                            style: textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Order #${widget.order.id}',
+                              style: textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text(
-                            _getStatusText(widget.order),
-                            style: textTheme.bodySmall?.copyWith(
-                              color:
-                                  widget.order.subStatus ==
-                                      OrderSubStatus.pickup
-                                  ? Colors.green
-                                  : colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                            Text(
+                              _getStatusText(widget.order),
+                              style: textTheme.bodySmall?.copyWith(
+                                color:
+                                    widget.order.subStatus ==
+                                        OrderSubStatus.pickup
+                                    ? Colors.green
+                                    : colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -1121,7 +1164,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      "Rs. ${widget.order.totalAmount.toStringAsFixed(0)}",
+                      'Rs. ${widget.order.totalAmount.toStringAsFixed(0)}',
                       style: textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: widget.order.discount > 0 ? Colors.green : null,
@@ -1129,7 +1172,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     ),
                     if (widget.order.discount > 0)
                       Text(
-                        "Rs. ${(widget.order.totalAmount + widget.order.discount).toStringAsFixed(0)}",
+                        'Rs. ${(widget.order.totalAmount + widget.order.discount).toStringAsFixed(0)}',
                         style: textTheme.labelSmall?.copyWith(
                           decoration: TextDecoration.lineThrough,
                           color: colorScheme.onSurfaceVariant,
@@ -1162,17 +1205,18 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Rohan Sharma",
+                        'Rohan Sharma',
                         style: textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text("Your Delivery Partner", style: textTheme.bodySmall),
+                      Text('Your Delivery Partner', style: textTheme.bodySmall),
                     ],
                   ),
                 ),
                 IconButton(
-                  onPressed: () => LauncherUtils.launchPhone("+9779812345678"),
+                  onPressed: () =>
+                      unawaited(LauncherUtils.launchPhone('+9779812345678')),
                   icon: Icon(Icons.phone, color: colorScheme.primary, size: 20),
                   style: IconButton.styleFrom(
                     backgroundColor: colorScheme.primaryContainer.withValues(
@@ -1193,7 +1237,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Order Item List",
+                  'Order Item List',
                   style: textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -1208,8 +1252,8 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     const SizedBox(width: 4),
                     Text(
                       widget.order.subStatus == OrderSubStatus.pickup
-                          ? "Driver Waiting"
-                          : "ETA: ${_formatTimer(_secondsRemaining)}",
+                          ? 'Driver Waiting'
+                          : 'ETA: ${_formatTimer(_secondsRemaining)}',
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -1259,7 +1303,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      "Voucher Applied: ${widget.order.voucherCode}",
+                      'Voucher Applied: ${widget.order.voucherCode}',
                       style: const TextStyle(
                         color: Colors.green,
                         fontSize: 12,
@@ -1268,7 +1312,7 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
                     ),
                     const Spacer(),
                     Text(
-                      "- Rs. ${widget.order.discount.toStringAsFixed(0)}",
+                      '- Rs. ${widget.order.discount.toStringAsFixed(0)}',
                       style: const TextStyle(
                         color: Colors.green,
                         fontSize: 12,
@@ -1309,15 +1353,15 @@ class _InProgressOrderCardState extends State<_InProgressOrderCard> {
 
   String _getStatusText(OrderModel order) {
     if (order.subStatus == OrderSubStatus.preparing) {
-      if (order.progress < 0.33) return "Cooking your meal...";
-      if (order.progress < 0.66) return "Meal is being packed...";
-      return "Out for delivery...";
+      if (order.progress < 0.33) return 'Cooking your meal...';
+      if (order.progress < 0.66) return 'Meal is being packed...';
+      return 'Out for delivery...';
     }
     if (order.subStatus == OrderSubStatus.delivered) {
-      return "Order being carried...";
+      return 'Order being carried...';
     }
-    if (order.subStatus == OrderSubStatus.pickup) return "Driver is Waiting";
-    return "Completed";
+    if (order.subStatus == OrderSubStatus.pickup) return 'Driver is Waiting';
+    return 'Completed';
   }
 }
 
@@ -1328,30 +1372,30 @@ class _OrderStepProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Stage 1: Cooking (0.0 - 0.33)
-    double cookingProgress = (progress / 0.33).clamp(0.0, 1.0);
+    final cookingProgress = (progress / 0.33).clamp(0.0, 1.0);
     // Stage 2: Packed (0.33 - 0.66)
-    double packedProgress = ((progress - 0.33) / 0.33).clamp(0.0, 1.0);
+    final packedProgress = ((progress - 0.33) / 0.33).clamp(0.0, 1.0);
     // Stage 3: In Route (0.66 - 1.0)
-    double inRouteProgress = ((progress - 0.66) / 0.34).clamp(0.0, 1.0);
+    final inRouteProgress = ((progress - 0.66) / 0.34).clamp(0.0, 1.0);
 
     return Column(
       children: [
         Row(
           children: [
             _ProgressStep(
-              label: "Cooking",
+              label: 'Cooking',
               icon: Icons.soup_kitchen,
               progress: cookingProgress,
               isCompleted: progress > 0.33,
             ),
             _ProgressStep(
-              label: "Packed",
+              label: 'Packed',
               icon: Icons.inventory_2,
               progress: packedProgress,
               isCompleted: progress > 0.66,
             ),
             _ProgressStep(
-              label: "In Route",
+              label: 'In Route',
               icon: Icons.delivery_dining,
               progress: inRouteProgress,
               isCompleted: progress >= 1.0,
@@ -1411,6 +1455,7 @@ class _ProgressStep extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 10,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
@@ -1418,6 +1463,8 @@ class _ProgressStep extends StatelessWidget {
                   ? Colors.green
                   : (isActive ? colorScheme.primary : Colors.grey.shade600),
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -1437,12 +1484,12 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
     with SingleTickerProviderStateMixin {
   int _currentLocationIndex = 0;
   final List<String> _locations = [
-    "Driver is at the Restaurant",
-    "Passing through New Road",
-    "Near Civil Mall",
-    "Approaching Narayan Chowk",
-    "Arriving at Your Location",
-    "Arrived! Driver is Waiting",
+    'Driver is at the Restaurant',
+    'Passing through New Road',
+    'Near Civil Mall',
+    'Approaching Narayan Chowk',
+    'Arriving at Your Location',
+    'Arrived! Driver is Waiting',
   ];
   late Timer _locTimer;
   late AnimationController _pulseController;
@@ -1454,7 +1501,8 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    );
+    unawaited(_pulseController.repeat(reverse: true));
 
     _pulseAnimation = Tween<double>(
       begin: 0.1,
@@ -1542,7 +1590,7 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isArrived ? "PLEASE PICK UP!" : "Order Is Being Carried",
+                      isArrived ? 'PLEASE PICK UP!' : 'Order Is Being Carried',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
@@ -1551,7 +1599,7 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
                     ),
                     Text(
                       isArrived
-                          ? "The driver is waiting for you"
+                          ? 'The driver is waiting for you'
                           : _locations[_currentLocationIndex < _locations.length
                                 ? _currentLocationIndex
                                 : _locations.length - 1],
@@ -1585,11 +1633,13 @@ class _LiveTrackingBarState extends State<_LiveTrackingBar>
   }
 
   void _openTrackingSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _DriverTrackingSheet(),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const _DriverTrackingSheet(),
+      ),
     );
   }
 }
@@ -1613,8 +1663,9 @@ class _MovingIconState extends State<_MovingIcon>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
-    )..repeat();
-    _move = Tween<double>(begin: -2.0, end: 2.0).animate(_ctrl);
+    );
+    unawaited(_ctrl.repeat());
+    _move = Tween<double>(begin: -2, end: 2).animate(_ctrl);
   }
 
   @override
@@ -1656,7 +1707,8 @@ class _BlinkingIconState extends State<_BlinkingIcon>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
-    )..repeat(reverse: true);
+    );
+    unawaited(_ctrl.repeat(reverse: true));
   }
 
   @override
@@ -1702,17 +1754,19 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
           setState(() {
             _step++;
             // Interpolate position
-            double lat =
+            final lat =
                 _restaurantLoc.latitude +
                 (_deliveryLoc.latitude - _restaurantLoc.latitude) *
                     (_step / _totalSteps);
-            double lng =
+            final lng =
                 _restaurantLoc.longitude +
                 (_deliveryLoc.longitude - _restaurantLoc.longitude) *
                     (_step / _totalSteps);
             _driverLoc = LatLng(lat, lng);
           });
-          _controller?.animateCamera(CameraUpdate.newLatLng(_driverLoc));
+          unawaited(
+            _controller?.animateCamera(CameraUpdate.newLatLng(_driverLoc)),
+          );
         }
       } else {
         _markerTimer.cancel();
@@ -1767,7 +1821,7 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
                   ),
                 ),
               },
-              // TODO: Add Google Maps API key in AndroidManifest.xml and AppDelegate.swift
+              // TODO(user): Add Google Maps API key in AndroidManifest.xml and AppDelegate.swift
             ),
             Positioned(
               top: 20,
@@ -1787,7 +1841,7 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16),
                   child: Row(
                     children: [
                       const Icon(
@@ -1802,13 +1856,13 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              "Driver is on the way",
+                              'Driver is on the way',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             Text(
                               _step == _totalSteps
-                                  ? "Arrived!"
-                                  : "Estimated time: ${(_totalSteps - _step) * 2} mins",
+                                  ? 'Arrived!'
+                                  : 'Estimated time: ${(_totalSteps - _step) * 2} mins',
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,

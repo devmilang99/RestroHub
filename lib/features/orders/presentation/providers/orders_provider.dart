@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
@@ -29,9 +31,9 @@ class OrderModel {
     required this.totalAmount,
     required this.subStatus,
     required this.timestamp,
+    required this.paymentMethod,
     this.voucherCode,
     this.discount = 0.0,
-    required this.paymentMethod,
     this.progress = 0.0,
   });
 
@@ -67,7 +69,7 @@ class OrdersNotifier extends Notifier<List<OrderModel>> {
         // 3. Pick Up - 15 seconds
         _runPhase(orderId, OrderSubStatus.pickup, 15, () {
           // 4. Move to Success
-          _updateOrderStatus(orderId, OrderSubStatus.success, 1.0);
+          _updateOrderStatus(orderId, OrderSubStatus.success, 1);
           // Add 10 points for successful order
           ref.read(loyaltyProvider.notifier).addPoints(10);
         });
@@ -79,16 +81,16 @@ class OrdersNotifier extends Notifier<List<OrderModel>> {
     String orderId,
     OrderSubStatus status,
     int durationSeconds,
-    Function onComplete,
+    VoidCallback onComplete,
   ) {
-    int elapsed = 0;
+    var elapsed = 0;
     Timer.periodic(const Duration(seconds: 1), (timer) {
       elapsed++;
-      double progress = elapsed / durationSeconds;
+      final progress = elapsed / durationSeconds;
 
       if (elapsed >= durationSeconds) {
         timer.cancel();
-        _updateOrderStatus(orderId, status, 1.0);
+        _updateOrderStatus(orderId, status, 1);
         onComplete();
       } else {
         _updateOrderStatus(orderId, status, progress);

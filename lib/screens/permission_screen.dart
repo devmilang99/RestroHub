@@ -1,27 +1,39 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:permission_handler/permission_handler.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:ui';
+
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:restro_hub/core/theme/theme_provider.dart';
 
 class PermissionScreen extends ConsumerStatefulWidget {
   const PermissionScreen({super.key});
 
   static Future<bool> areAllPermissionsGranted() async {
-    // Check key permissions
-    final permissionsToCheck = [
+    final permissionsToCheck = <Permission>[
       Permission.location,
       Permission.camera,
       if (!kIsWeb) Permission.contacts,
-      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) Permission.photos,
     ];
 
-    for (var p in permissionsToCheck) {
+    if (!kIsWeb && Platform.isAndroid) {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      if (androidInfo.version.sdkInt >= 33) {
+        permissionsToCheck.add(Permission.photos);
+      } else {
+        permissionsToCheck.add(Permission.storage);
+      }
+    } else if (!kIsWeb && Platform.isIOS) {
+      permissionsToCheck.add(Permission.photos);
+    }
+
+    for (final p in permissionsToCheck) {
       if (!await p.isGranted) return false;
     }
     return true;
@@ -33,17 +45,58 @@ class PermissionScreen extends ConsumerStatefulWidget {
 
 class _PermissionScreenState extends ConsumerState<PermissionScreen>
     with TickerProviderStateMixin {
-  late List<PermissionItem> _permissions;
+  List<PermissionItem> _permissions = [];
   int _currentIndex = 0;
   bool _isProcessing = false;
   bool _showThemeSelection = false;
+  bool _isLoading = true;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late AnimationController _bgAnimationController;
 
-  List<PermissionItem> _getPlatformSpecificPermissions() {
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeIn,
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    _bgAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    );
+    unawaited(_bgAnimationController.repeat());
+
+    unawaited(_initializePermissions());
+  }
+
+  Future<void> _initializePermissions() async {
+    final perms = await _getPlatformSpecificPermissions();
+    if (mounted) {
+      setState(() {
+        _permissions = perms;
+        _isLoading = false;
+      });
+      unawaited(_animationController.forward());
+      unawaited(_checkInitialPermissions());
+    }
+  }
+
+  Future<List<PermissionItem>> _getPlatformSpecificPermissions() async {
     final permissions = <PermissionItem>[];
 
     if (kIsWeb) {
@@ -58,16 +111,25 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
         ),
       );
     } else if (Platform.isAndroid) {
-      permissions.addAll([
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      final isAndroid13OrHigher = androidInfo.version.sdkInt >= 33;
+
+      permissions.add(
         PermissionItem(
-          permission: Permission.storage,
-          title: 'Storage Access',
+          permission: isAndroid13OrHigher
+              ? Permission.photos
+              : Permission.storage,
+          title: isAndroid13OrHigher ? 'Gallery Access' : 'Storage Access',
           description:
               'Needed to access your gallery for profile pictures and food memories.',
           icon: Icons.photo_library_rounded,
           imageUrl:
               'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
         ),
+      );
+
+      permissions.addAll([
         PermissionItem(
           permission: Permission.location,
           title: 'Smart Location',
@@ -136,38 +198,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     return permissions;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _permissions = _getPlatformSpecificPermissions();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeIn,
-    );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-
-    _bgAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 20),
-    )..repeat();
-
-    _animationController.forward();
-    _checkInitialPermissions();
-  }
-
   Future<void> _checkInitialPermissions() async {
-    List<PermissionItem> grantedOnes = [];
-    for (var item in _permissions) {
+    final grantedOnes = <PermissionItem>[];
+    for (final item in _permissions) {
       if (await item.permission.isGranted) {
         grantedOnes.add(item);
       }
@@ -175,7 +208,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
 
     if (mounted) {
       setState(() {
-        _permissions.removeWhere((p) => grantedOnes.contains(p));
+        _permissions.removeWhere(grantedOnes.contains);
         if (_permissions.isEmpty) {
           _showThemeSelection = true;
         }
@@ -200,50 +233,54 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
 
     if (status.isPermanentlyDenied) {
       if (mounted) {
-        await showDialog(
-          context: context,
-          builder: (context) => BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-            child: AlertDialog(
-              backgroundColor: isDark
-                  ? Theme.of(context).colorScheme.surface
-                  : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              title: Text(
-                'Permission Required',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-              ),
-              content: Text(
-                'The ${item.title} permission is permanently denied. Please enable it in the app settings to continue.',
-                style: GoogleFonts.poppins(),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'CANCEL',
-                    style: GoogleFonts.poppins(color: Colors.grey),
-                  ),
+        unawaited(
+          showDialog<void>(
+            context: context,
+            builder: (context) => BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+              child: AlertDialog(
+                backgroundColor: isDark
+                    ? Theme.of(context).colorScheme.surface
+                    : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                ElevatedButton(
-                  onPressed: () {
-                    openAppSettings();
-                    Navigator.pop(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                title: Text(
+                  'Permission Required',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                ),
+                content: Text(
+                  'The ${item.title} permission is permanently denied. Please enable it in the app settings to continue.',
+                  style: GoogleFonts.poppins(),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'CANCEL',
+                      style: GoogleFonts.poppins(color: Colors.grey),
                     ),
                   ),
-                  child: Text(
-                    'OPEN SETTINGS',
-                    style: GoogleFonts.poppins(color: Colors.white),
+                  ElevatedButton(
+                    onPressed: () {
+                      unawaited(openAppSettings());
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'OPEN SETTINGS',
+                      style: GoogleFonts.poppins(
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -272,7 +309,6 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
         });
         await _animationController.forward();
       } else {
-        // Transition to Theme Selection
         await _animationController.reverse();
         setState(() {
           _showThemeSelection = true;
@@ -288,50 +324,52 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
   }
 
   void _showSkipConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: AlertDialog(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: Text(
-            'Skip Permissions?',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-          ),
-          content: Text(
-            'Some features like nearby restaurants and capturing memories will be limited. You can always enable them later in settings.',
-            style: GoogleFonts.poppins(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'CANCEL',
-                style: GoogleFonts.poppins(color: Colors.grey),
-              ),
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (context) => BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.goNamed('mainLoginScreen');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            title: Text(
+              'Skip Permissions?',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+            ),
+            content: Text(
+              'Some features like nearby restaurants and capturing memories will be limited. You can always enable them later in settings.',
+              style: GoogleFonts.poppins(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'CANCEL',
+                  style: GoogleFonts.poppins(color: Colors.grey),
                 ),
               ),
-              child: Text(
-                'CONTINUE',
-                style: GoogleFonts.poppins(
-                  color: Theme.of(context).colorScheme.onPrimary,
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.goNamed('mainLoginScreen');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'CONTINUE',
+                  style: GoogleFonts.poppins(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -342,6 +380,15 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
 
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+        ),
+      );
+    }
+
     return Scaffold(
       body: Stack(
         children: [
@@ -349,7 +396,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 32.0,
+                horizontal: 32,
                 vertical: 24,
               ),
               child: Column(
@@ -373,9 +420,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                     TextButton(
                       onPressed: () => _showSkipConfirmation(context),
                       child: Text(
-                        'I\'LL DO IT LATER',
+                        "I'LL DO IT LATER",
                         style: GoogleFonts.poppins(
-                          color: isDark ? Colors.white : Colors.black38,
+                          color: Colors.white70,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.2,
                           fontSize: 12,
@@ -411,15 +458,15 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                   colors: [
                     HSLColor.fromAHSL(
                       1,
-                      (_bgAnimationController.value * 360),
+                      _bgAnimationController.value * 360,
                       0.4,
-                      0.1,
+                      0.05,
                     ).toColor(),
                     HSLColor.fromAHSL(
                       1,
                       ((_bgAnimationController.value * 360) + 180) % 360,
                       0.4,
-                      0.05,
+                      0.02,
                     ).toColor(),
                   ],
                 ),
@@ -437,7 +484,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                   image: NetworkImage(currentImageUrl),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
-                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.7),
                     BlendMode.darken,
                   ),
                 ),
@@ -446,7 +493,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           ),
         BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(color: Colors.black.withValues(alpha: 0.3)),
+          child: Container(color: Colors.black.withValues(alpha: 0.4)),
         ),
       ],
     );
@@ -469,7 +516,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                           ? _permissions.length
                           : _currentIndex)
                   ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.withValues(alpha: 0.2),
+                  : Colors.white12,
               borderRadius: BorderRadius.circular(2),
               boxShadow:
                   index <=
@@ -555,20 +602,24 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                isDark
-                    ? Colors.indigo.withValues(alpha: 0.2)
-                    : Colors.amber.withValues(alpha: 0.2),
-                isDark
-                    ? Colors.blueAccent.withValues(alpha: 0.1)
-                    : Colors.orangeAccent.withValues(alpha: 0.1),
+                if (isDark)
+                  const Color(0xFFD4AF37).withValues(alpha: 0.2)
+                else
+                  const Color(0xFF1A1C2C).withValues(alpha: 0.2),
+                if (isDark)
+                  const Color(0xFF996515).withValues(alpha: 0.1)
+                else
+                  const Color(0xFF2C3E50).withValues(alpha: 0.1),
               ],
             ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: (isDark ? Colors.indigo : Colors.amber).withValues(
-                  alpha: 0.2,
-                ),
+                color:
+                    (isDark ? const Color(0xFFD4AF37) : const Color(0xFF1A1C2C))
+                        .withValues(
+                          alpha: 0.2,
+                        ),
                 blurRadius: 30,
               ),
             ],
@@ -576,7 +627,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           child: Icon(
             isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
             size: 80,
-            color: isDark ? Colors.indigo.shade200 : Colors.amber.shade400,
+            color: isDark ? const Color(0xFFD4AF37) : const Color(0xFF1A1C2C),
           ),
         ),
         const SizedBox(height: 50),
@@ -638,8 +689,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                 children: [
                   Expanded(
                     child: GestureDetector(
-                      onTap: () =>
-                          ref.read(themeProvider.notifier).toggleTheme(false),
+                      onTap: () => ref
+                          .read(themeProvider.notifier)
+                          .toggleTheme(isDark: false),
                       child: Container(
                         height: 44,
                         color: Colors.transparent,
@@ -649,7 +701,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
-                              color: !isDark ? Colors.black87 : Colors.white60,
+                              color: !isDark
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Colors.white60,
                             ),
                           ),
                         ),
@@ -658,8 +712,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                   ),
                   Expanded(
                     child: GestureDetector(
-                      onTap: () =>
-                          ref.read(themeProvider.notifier).toggleTheme(true),
+                      onTap: () => ref
+                          .read(themeProvider.notifier)
+                          .toggleTheme(isDark: true),
                       child: Container(
                         height: 44,
                         color: Colors.transparent,
@@ -669,7 +724,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                             style: GoogleFonts.poppins(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
-                              color: isDark ? Colors.black87 : Colors.white60,
+                              color: isDark
+                                  ? Theme.of(context).colorScheme.onPrimary
+                                  : Colors.white60,
                             ),
                           ),
                         ),
@@ -696,7 +753,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
                 if (_showThemeSelection) {
                   context.goNamed('mainLoginScreen');
                 } else {
-                  _requestPermission();
+                  unawaited(_requestPermission());
                 }
               },
         style: ElevatedButton.styleFrom(

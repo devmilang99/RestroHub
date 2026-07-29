@@ -1,20 +1,23 @@
+import 'dart:async';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
-import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
-import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
-import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
-import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
-import 'package:restro_hub/features/cart/data/models/cart_model.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/widgets/circle_button.dart';
 import 'package:restro_hub/core/widgets/share_bottom_sheet.dart';
+import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
+import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
+import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 
 class CuisineSingleItem extends ConsumerWidget {
-  final CuisineModel item;
-  const CuisineSingleItem({super.key, required this.item});
+  final MenuItemModel item;
+  const CuisineSingleItem({required this.item, super.key});
 
   void _showAddedNotification(BuildContext context, String itemName) {
     final overlay = Overlay.of(context);
@@ -28,7 +31,7 @@ class CuisineSingleItem extends ConsumerWidget {
         child: Material(
           color: Colors.transparent,
           child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: 1.0),
+            tween: Tween(begin: 0, end: 1),
             duration: const Duration(milliseconds: 100),
             curve: Curves.elasticOut,
             builder: (context, value, child) {
@@ -73,7 +76,7 @@ class CuisineSingleItem extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                "Added to Cart!",
+                                'Added to Cart!',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
@@ -81,7 +84,7 @@ class CuisineSingleItem extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                "$itemName has been added.",
+                                '$itemName has been added.',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white70,
                                   fontSize: 12,
@@ -93,15 +96,17 @@ class CuisineSingleItem extends ConsumerWidget {
                         TextButton(
                           onPressed: () {
                             entry.remove();
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: Colors.transparent,
-                              builder: (context) => const CartBottomSheet(),
+                            unawaited(
+                              showModalBottomSheet<void>(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (context) => const CartBottomSheet(),
+                              ),
                             );
                           },
                           child: const Text(
-                            "VIEW",
+                            'VIEW',
                             style: TextStyle(
                               color: Colors.green,
                               fontWeight: FontWeight.bold,
@@ -120,9 +125,11 @@ class CuisineSingleItem extends ConsumerWidget {
     );
 
     overlay.insert(entry);
-    Future.delayed(const Duration(seconds: 3), () {
-      if (entry.mounted) entry.remove();
-    });
+    unawaited(
+      Future.delayed(const Duration(seconds: 3), () {
+        if (entry.mounted) entry.remove();
+      }),
+    );
   }
 
   void _openImageSlider(
@@ -130,11 +137,13 @@ class CuisineSingleItem extends ConsumerWidget {
     List<String> images,
     int initialIndex,
   ) {
-    showDialog(
-      context: context,
-      useSafeArea: false,
-      builder: (context) =>
-          _ImageSliderDialog(images: images, initialIndex: initialIndex),
+    unawaited(
+      showDialog<void>(
+        context: context,
+        useSafeArea: false,
+        builder: (context) =>
+            _ImageSliderDialog(images: images, initialIndex: initialIndex),
+      ),
     );
   }
 
@@ -146,23 +155,19 @@ class CuisineSingleItem extends ConsumerWidget {
     ref.watch(favouritesProvider);
 
     // Mock data if missing
-    final ingredients = item.ingredients.isEmpty
-        ? [
-            "Fresh Herbs",
-            "Signature Spices",
-            "Local Produce",
-            "Organic Olive Oil",
-            "Sea Salt",
-          ]
-        : item.ingredients;
+    final ingredients = [
+      'Fresh Herbs',
+      'Signature Spices',
+      'Local Produce',
+      'Organic Olive Oil',
+      'Sea Salt',
+    ];
 
-    final comments = item.comments.isEmpty
-        ? [
-            "This is absolutely the best version of this dish I've ever had! The balance of flavors is perfection.",
-            "Great portion size and it arrived surprisingly fast. Will definitely order again next time.",
-            "Simply incredible! You can tell they use authentic ingredients. High quality through and through.",
-          ]
-        : item.comments;
+    final comments = [
+      "This is absolutely the best version of this dish I've ever had! The balance of flavors is perfection.",
+      'Great portion size and it arrived surprisingly fast. Will definitely order again next time.',
+      'Simply incredible! You can tell they use authentic ingredients. High quality through and through.',
+    ];
 
     final mockReviewImages = [
       'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400&auto=format&fit=crop',
@@ -177,8 +182,7 @@ class CuisineSingleItem extends ConsumerWidget {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
-            expandedHeight: 350.0,
-            floating: false,
+            expandedHeight: 350,
             pinned: true,
             stretch: true,
             backgroundColor: colorScheme.surface,
@@ -201,7 +205,7 @@ class CuisineSingleItem extends ConsumerWidget {
               },
             ),
             leading: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(8),
               child: CircleButton(
                 icon: Icons.arrow_back,
                 onTap: () => Navigator.pop(context),
@@ -209,7 +213,7 @@ class CuisineSingleItem extends ConsumerWidget {
             ),
             actions: [
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(8),
                 child: Row(
                   children: [
                     CircleButton(
@@ -218,9 +222,11 @@ class CuisineSingleItem extends ConsumerWidget {
                           : Icons.favorite_border_rounded,
                       iconColor: Colors.red,
                       onTap: () {
-                        ref
-                            .read(favouritesProvider.notifier)
-                            .toggleFavourite(item);
+                        unawaited(
+                          ref
+                              .read(favouritesProvider.notifier)
+                              .toggleFavourite(item),
+                        );
                       },
                     ),
                     const SizedBox(width: 8),
@@ -249,20 +255,20 @@ class CuisineSingleItem extends ConsumerWidget {
                 children: [
                   Hero(
                     tag: item.name,
-                    child: Image.asset(
-                      item.image,
-                      fit: BoxFit.cover,
-                      frameBuilder:
-                          (context, child, frame, wasSynchronouslyLoaded) {
-                            if (wasSynchronouslyLoaded) return child;
-                            return frame != null
-                                ? child
-                                : const ShimmerPlaceholder(
-                                    width: double.infinity,
-                                    height: 350,
-                                  );
-                          },
-                    ),
+                    child: (item.imageUrl?.startsWith('assets') ?? false)
+                        ? Image.asset(
+                            item.imageUrl!,
+                            fit: BoxFit.cover,
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: item.imageUrl ?? '',
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) =>
+                                const ShimmerPlaceholder(
+                                  width: double.infinity,
+                                  height: 350,
+                                ),
+                          ),
                   ),
                   const DecoratedBox(
                     decoration: BoxDecoration(
@@ -279,7 +285,7 @@ class CuisineSingleItem extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: Container(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: colorScheme.surface,
                 borderRadius: const BorderRadius.vertical(
@@ -314,17 +320,17 @@ class CuisineSingleItem extends ConsumerWidget {
                             color: Colors.amber.withValues(alpha: 0.3),
                           ),
                         ),
-                        child: Row(
+                        child: const Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.star_rounded,
                               color: Colors.amber,
                               size: 20,
                             ),
-                            const SizedBox(width: 4),
+                            SizedBox(width: 4),
                             Text(
-                              item.rating,
-                              style: const TextStyle(
+                              '4.5', // Default rating
+                              style: TextStyle(
                                 color: Colors.amber,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -343,11 +349,13 @@ class CuisineSingleItem extends ConsumerWidget {
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      Expanded(
+                      const Expanded(
                         child: Text(
-                          item.location,
+                          'Various', // Location not in MenuItemModel
                           style: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
+                            color: Color(
+                              0xFF6B7280,
+                            ), // dummy colorScheme.onSurfaceVariant
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -357,11 +365,15 @@ class CuisineSingleItem extends ConsumerWidget {
                       const SizedBox(width: 16),
                       const Icon(Icons.public, color: Colors.blue, size: 16),
                       const SizedBox(width: 4),
-                      Text(
-                        item.country ?? '',
-                        style: const TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w600,
+                      const Flexible(
+                        child: Text(
+                          'Global', // country not in MenuItemModel
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -379,7 +391,7 @@ class CuisineSingleItem extends ConsumerWidget {
                   const SizedBox(height: 32),
                   _buildSectionHeader(
                     context,
-                    "Ingredients",
+                    'Ingredients',
                     Icons.restaurant_menu_rounded,
                   ),
                   const SizedBox(height: 16),
@@ -396,7 +408,7 @@ class CuisineSingleItem extends ConsumerWidget {
                   const SizedBox(height: 32),
                   _buildSectionHeader(
                     context,
-                    "Reviews",
+                    'Reviews',
                     Icons.reviews_rounded,
                   ),
                   const SizedBox(height: 16),
@@ -407,7 +419,7 @@ class CuisineSingleItem extends ConsumerWidget {
                       context,
                       index,
                       comment,
-                      index % 2 == 0 ? mockReviewImages : [],
+                      index.isEven ? mockReviewImages : [],
                     );
                   }),
                   const SizedBox(height: 100),
@@ -436,11 +448,11 @@ class CuisineSingleItem extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Total Price",
+                  'Total Price',
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),
                 Text(
-                  "Rs. ${item.price}",
+                  'Rs. ${item.price}',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -449,7 +461,37 @@ class CuisineSingleItem extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(width: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  ref
+                      .read(cartProvider.notifier)
+                      .addItem(
+                        CartModel(
+                          id: item.id,
+                          name: item.name,
+                          image: item.imageUrl ?? '',
+                          price: item.price,
+                          quantity: 1,
+                        ),
+                      );
+                  context.push('/processCheckout');
+                },
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: colorScheme.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'Buy Now',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton(
                 onPressed: () {
@@ -457,8 +499,9 @@ class CuisineSingleItem extends ConsumerWidget {
                       .read(cartProvider.notifier)
                       .addItem(
                         CartModel(
+                          id: item.id,
                           name: item.name,
-                          image: item.image,
+                          image: item.imageUrl ?? '',
                           price: item.price,
                           quantity: 1,
                         ),
@@ -475,8 +518,8 @@ class CuisineSingleItem extends ConsumerWidget {
                   elevation: 0,
                 ),
                 child: const Text(
-                  "Add to Cart",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  'Add to Cart',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -510,22 +553,24 @@ class CuisineSingleItem extends ConsumerWidget {
     final colorScheme = context.colorScheme;
 
     IconData getIcon(String name) {
-      name = name.toLowerCase();
-      if (name.contains('rice')) return Icons.rice_bowl;
-      if (name.contains('spices')) return Icons.set_meal;
-      if (name.contains('oil')) return Icons.opacity;
-      if (name.contains('vegetable') || name.contains('herbs')) {
+      final lowercaseName = name.toLowerCase();
+      if (lowercaseName.contains('rice')) return Icons.rice_bowl;
+      if (lowercaseName.contains('spices')) return Icons.set_meal;
+      if (lowercaseName.contains('oil')) return Icons.opacity;
+      if (lowercaseName.contains('vegetable') ||
+          lowercaseName.contains('herbs')) {
         return Icons.park_rounded;
       }
-      if (name.contains('chicken') ||
-          name.contains('meat') ||
-          name.contains('beef')) {
+      if (lowercaseName.contains('chicken') ||
+          lowercaseName.contains('meat') ||
+          lowercaseName.contains('beef')) {
         return Icons.restaurant;
       }
-      if (name.contains('garlic') || name.contains('onion')) {
+      if (lowercaseName.contains('garlic') || lowercaseName.contains('onion')) {
         return Icons.bubble_chart;
       }
-      if (name.contains('cheese') || name.contains('parmesan')) {
+      if (lowercaseName.contains('cheese') ||
+          lowercaseName.contains('parmesan')) {
         return Icons.bakery_dining;
       }
       return Icons.check_circle_outline;
@@ -607,7 +652,7 @@ class CuisineSingleItem extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      ["Alex Rivera", "Mia Thompson", "James Wilson"][index %
+                      ['Alex Rivera', 'Mia Thompson', 'James Wilson'][index %
                           3],
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
@@ -615,7 +660,7 @@ class CuisineSingleItem extends ConsumerWidget {
                       ),
                     ),
                     Text(
-                      "2 days ago",
+                      '2 days ago',
                       style: TextStyle(
                         fontSize: 11,
                         color: colorScheme.onSurfaceVariant,

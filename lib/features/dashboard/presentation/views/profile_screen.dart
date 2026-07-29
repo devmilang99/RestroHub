@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +9,8 @@ import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/dashboard/logic/membership_rules.dart';
 import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
+import 'package:restro_hub/features/restaurants/presentation/providers/restaurant_provider.dart';
+import 'package:restro_hub/infrastructure/sync/sync_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final UserModel? user;
@@ -36,7 +40,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(source: source);
+    final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       if (mounted) {
         _showImageOverlay(File(pickedFile.path));
@@ -45,251 +49,294 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _showImageOverlay(File file) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog.fullscreen(
-        backgroundColor: Colors.black,
-        child: Stack(
-          children: [
-            Center(
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  InteractiveViewer(
-                    minScale: 1.0,
-                    maxScale: 4.0,
-                    child: Image.file(file),
-                  ),
-                  // Visual Overlay for "fitting"
-                  IgnorePointer(
-                    child: Container(
-                      width: 280,
-                      height: 280,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            spreadRadius: 1000,
-                          ),
-                        ],
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog.fullscreen(
+          backgroundColor: Colors.black,
+          child: Stack(
+            children: [
+              Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    InteractiveViewer(
+                      minScale: 1,
+                      maxScale: 4,
+                      child: Image.file(file),
+                    ),
+                    IgnorePointer(
+                      child: Container(
+                        width: 280,
+                        height: 280,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              spreadRadius: 1000,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: MediaQuery.of(context).size.height * 0.15,
-                    child: const Text(
-                      'Pinch to Zoom & Drag',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        shadows: [Shadow(blurRadius: 10, color: Colors.black)],
+                  ],
+                ),
+              ),
+              Positioned(
+                bottom: 40,
+                left: 40,
+                right: 40,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'CANCEL',
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              bottom: 40,
-              left: 40,
-              right: 40,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'CANCEL',
-                      style: TextStyle(color: Colors.white),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _imageFile = file;
+                        });
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text('SAVE'),
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        _imageFile = file;
-                      });
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                    ),
-                    child: const Text('SAVE'),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _showImageSourceActionSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.photo_library),
-                  title: const Text('Gallery'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.gallery);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt),
-                  title: const Text('Camera'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.camera);
-                  },
-                ),
-              ],
-            ),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
           ),
-        );
-      },
+        ),
+        builder: (context) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.photo_library),
+                    title: const Text('Gallery'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      unawaited(_pickImage(ImageSource.gallery));
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt),
+                    title: const Text('Camera'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      unawaited(_pickImage(ImageSource.camera));
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final points = ref.watch(loyaltyProvider);
-    final tier = MembershipRules.getTier(points);
-    final tierName = MembershipRules.getTierName(tier);
+    final points = (ref.watch(loyaltyProvider) as num).toInt();
+    final tierName = MembershipRules.getTierName(
+      MembershipRules.getTier(points),
+    );
     final progress = MembershipRules.getNextTierProgress(points);
     final pointsToNext = MembershipRules.getPointsToNextTier(points);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Profile',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.check),
-            onPressed: () {
-              // Save profile changes
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile updated successfully!')),
-              );
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.primary, width: 4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 70,
-                    backgroundColor: Colors.white,
-                    backgroundImage: _imageFile != null
-                        ? FileImage(_imageFile!)
-                        : const NetworkImage(
-                                'https://i.pravatar.cc/150?u=restrohub_user',
-                              )
-                              as ImageProvider,
+      backgroundColor: colorScheme.surface,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colorScheme.primary, colorScheme.secondary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: GestureDetector(
-                    onTap: () => _showImageSourceActionSheet(context),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 20,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -50,
+                      top: -50,
+                      child: CircleAvatar(
+                        radius: 100,
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(height: 40),
+                          Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Colors.white,
+                                backgroundImage: _imageFile != null
+                                    ? FileImage(_imageFile!)
+                                    : const NetworkImage(
+                                            'https://i.pravatar.cc/150?u=restrohub_user',
+                                          )
+                                          as ImageProvider,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      _showImageSourceActionSheet(context),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              title: Text(
+                'Profile',
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              centerTitle: true,
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  _buildInfoCard(
+                    colorScheme,
+                    _nameController.text,
+                    widget.user?.email ?? 'guest@restrohub.com',
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Full Name',
-                prefixIcon: const Icon(Icons.person_outline),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
+                  const SizedBox(height: 20),
+                  _buildMembershipSection(
+                    context,
+                    colorScheme,
+                    points,
+                    tierName,
+                    progress,
+                    pointsToNext,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildSettingsSection(context, colorScheme),
+                  const SizedBox(height: 100),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-            TextField(
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: widget.user?.email ?? 'guest@restrohub.com',
-                prefixIcon: const Icon(Icons.email_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
-            GestureDetector(
-              onTap: () => _showPointsInfo(context),
-              child: _buildMembershipCard(
-                context,
-                colorScheme,
-                points,
-                tierName,
-                progress,
-                pointsToNext,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMembershipCard(
+  Widget _buildInfoCard(ColorScheme colorScheme, String name, String email) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildInfoRow(Icons.person_outline, 'Name', name),
+          const Divider(height: 30),
+          _buildInfoRow(Icons.email_outlined, 'Email', email),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMembershipSection(
     BuildContext context,
     ColorScheme colorScheme,
     int points,
@@ -298,20 +345,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     int pointsToNext,
   ) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.7)],
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.8),
+            colorScheme.primary,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -328,38 +377,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     tierName,
                     style: GoogleFonts.poppins(
                       color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
                   Text(
                     'Loyalty Points: $points',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
-              const Icon(Icons.stars, color: Colors.amber, size: 40),
+              const Icon(Icons.stars, color: Colors.amber, size: 48),
             ],
           ),
-          const SizedBox(height: 20),
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.white24,
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-            borderRadius: BorderRadius.circular(10),
-            minHeight: 10,
+          const SizedBox(height: 24),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 12,
+                  backgroundColor: Colors.white24,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           Text(
             pointsToNext > 0
                 ? '$pointsToNext more points to next tier'
                 : 'You are at maximum tier!',
-            style: GoogleFonts.poppins(
+            style: const TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -368,79 +420,182 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  void _showPointsInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'How to Earn Points',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+  Widget _buildSettingsSection(BuildContext context, ColorScheme colorScheme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          child: Text(
+            'Settings',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        _buildSettingTile(
+          context,
+          icon: Icons.sync,
+          title: 'Data Synchronization',
+          subtitle: 'Sync your data with the cloud',
+          trailing: TextButton(
+            onPressed: () => ref.invalidate(initialSyncProvider),
+            child: const Text('Sync Now'),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildKdsTile(context, colorScheme),
+        const SizedBox(height: 12),
+        _buildSettingTile(
+          context,
+          icon: Icons.logout,
+          title: 'Logout',
+          subtitle: 'Sign out from your account',
+          iconColor: Colors.red,
+          onTap: () {
+            // Implement logout
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSettingTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Widget? trailing,
+    Color? iconColor,
+    VoidCallback? onTap,
+  }) {
+    final cs = context.colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.1)),
+        ),
+        child: Row(
           children: [
-            _buildPointRule(
-              Icons.shopping_bag,
-              'Order Food',
-              '1 Point for every \$1 spent',
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (iconColor ?? cs.primary).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor ?? cs.primary, size: 20),
             ),
-            _buildPointRule(
-              Icons.rate_review,
-              'Rate Dishes',
-              '10 Points per review',
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
             ),
-            _buildPointRule(
-              Icons.person_add,
-              'Refer Friends',
-              '100 Points per referral',
-            ),
-            _buildPointRule(
-              Icons.celebration,
-              'First Order',
-              '50 Bonus Points',
-            ),
+            if (trailing != null) trailing,
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('GOT IT'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildPointRule(IconData icon, String title, String description) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
+  Widget _buildKdsTile(BuildContext context, ColorScheme colorScheme) {
+    final syncState = ref.watch(kdsSyncProvider);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
         children: [
-          Icon(icon, color: Colors.orange, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
-                Text(
-                  description,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                child: Icon(
+                  Icons.restaurant_menu,
+                  color: colorScheme.primary,
+                  size: 20,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Restaurant Mode (KDS)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      'Kitchen Display System mode',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: syncState.isServerRunning,
+                onChanged: (_) =>
+                    ref.read(kdsSyncProvider.notifier).toggleKdsServer(),
+              ),
+            ],
           ),
+          if (syncState.isServerRunning) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.wifi, size: 14, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Active: ${syncState.serverAddress}',
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
-
 }

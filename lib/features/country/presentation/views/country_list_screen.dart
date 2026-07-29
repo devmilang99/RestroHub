@@ -1,15 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
-import 'package:restro_hub/features/country/data/models/country_model.dart';
-import 'package:restro_hub/core/data/mock_data.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/data/mock_data.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/widgets/searchable_sliver_app_layout.dart';
-import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/features/country/data/models/country_model.dart';
 
 class CountryListScreen extends ConsumerWidget {
   const CountryListScreen({super.key});
@@ -21,19 +22,21 @@ class CountryListScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      floatingActionButton: ref.watch(cartProvider).isNotEmpty
+      floatingActionButton: (ref.watch(cartProvider).value ?? []).isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => const CartBottomSheet(),
+                unawaited(
+                  showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const CartBottomSheet(),
+                  ),
                 );
               },
               icon: Icon(Icons.shopping_cart, color: colorScheme.onPrimary),
               label: Text(
-                '${ref.watch(cartProvider).fold(0, (sum, item) => sum + (item.quantity))} items',
+                '${ref.watch(cartTotalItemsProvider)} items',
                 style: TextStyle(color: colorScheme.onPrimary),
               ),
               backgroundColor: colorScheme.primary,
@@ -47,7 +50,7 @@ class CountryListScreen extends ConsumerWidget {
               opacity: 0.05,
               child: CachedNetworkImage(
                 imageUrl:
-                    "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1500&auto=format&fit=crop",
+                    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1500&auto=format&fit=crop',
                 fit: BoxFit.cover,
                 placeholder: (context, url) =>
                     Container(color: colorScheme.surface),
@@ -59,10 +62,8 @@ class CountryListScreen extends ConsumerWidget {
           SearchableSliverAppLayout<CountryModel>(
             items: countries,
             title: null,
-            hintText: "Search countries or regions…",
-            showBackButton: true,
+            hintText: 'Search countries or regions…',
             onBackPressed: () => Navigator.pop(context),
-            enableFilters: false,
             filterItems: const ['All', 'Asia', 'Europe', 'Americas', 'Africa'],
             onFilterChanged: (selected) {
               // Handle filter changes - can expand to filter countries by region
@@ -104,15 +105,14 @@ class CountryListScreen extends ConsumerWidget {
             filterPredicate: (country, query) =>
                 country.name.toLowerCase().contains(query.toLowerCase()),
             itemBuilder: (context, country, index) {
-              final cuisineCount = cuisines
-                  .where((c) => c.country == country.name)
-                  .length;
+              const cuisineCount =
+                  0; // MenuItemModel no longer has country field directly
 
               return AnimationConfiguration.staggeredList(
                 position: index,
                 duration: const Duration(milliseconds: 600),
                 child: SlideAnimation(
-                  verticalOffset: 50.0,
+                  verticalOffset: 50,
                   child: FadeInAnimation(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 20),
@@ -159,7 +159,7 @@ class CountryListScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.all(24.0),
+                                  padding: const EdgeInsets.all(24),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -198,7 +198,7 @@ class CountryListScreen extends ConsumerWidget {
                                                   ),
                                                 ),
                                                 Text(
-                                                  "$cuisineCount+ Authentic Dishes",
+                                                  '$cuisineCount+ Authentic Dishes',
                                                   style: GoogleFonts.poppins(
                                                     color: Colors.white
                                                         .withValues(alpha: 0.8),

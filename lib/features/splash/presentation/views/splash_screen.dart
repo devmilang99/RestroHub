@@ -1,18 +1,25 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:restro_hub/screens/permission_screen.dart';
 import 'dart:async';
 import 'dart:ui';
-import 'package:google_fonts/google_fonts.dart';
 
-class SplashScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
+import 'package:restro_hub/infrastructure/sync/models/sync_status.dart';
+import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
+import 'package:restro_hub/infrastructure/sync/sync_monitor_provider.dart';
+import 'package:restro_hub/screens/permission_screen.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late AnimationController _iconController;
   late AnimationController _pulseController;
@@ -67,6 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    FlutterNativeSplash.remove();
 
     _iconController = AnimationController(
       duration: const Duration(milliseconds: 2000),
@@ -76,13 +84,14 @@ class _SplashScreenState extends State<SplashScreen>
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
-    )..repeat(reverse: true);
+    );
+    unawaited(_pulseController.repeat(reverse: true));
 
-    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _iconController, curve: Curves.elasticOut),
     );
 
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 2 * 3.14159).animate(
+    _rotationAnimation = Tween<double>(begin: 0, end: 2 * 3.14159).animate(
       CurvedAnimation(parent: _iconController, curve: Curves.easeInOut),
     );
 
@@ -90,28 +99,61 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _iconController.forward();
-    _preloadImages();
+    unawaited(_iconController.forward());
+    unawaited(_preloadImages());
   }
 
   Future<void> _preloadImages() async {
-    await Future.delayed(const Duration(milliseconds: 2000));
+    // Ensure splash is visible for at least 2 seconds for branding
+    final minDelay = Future<void>.delayed(const Duration(milliseconds: 2500));
 
     try {
-      for (var slide in _slides) {
-        final imageProvider = NetworkImage(slide['image']!);
+      final preloadingTasks = <Future<void>>[];
+
+      for (final slide in _slides) {
         if (!mounted) return;
-        await precacheImage(imageProvider, context);
-        _preloadedImages.add(imageProvider);
+
+        final imageProvider = NetworkImage(slide['image']!);
+        preloadingTasks.add(
+          precacheImage(imageProvider, context)
+              .then((_) {
+                if (mounted) _preloadedImages.add(imageProvider);
+              })
+              .timeout(
+                const Duration(seconds: 2),
+                onTimeout: () {
+                  debugPrint('Preload timeout for: ${slide['image']}');
+                },
+              )
+              .catchError((Object e) {
+                debugPrint('Failed to preload image: ${slide['image']} - $e');
+              }),
+        );
       }
 
+      await Future.wait(preloadingTasks);
+
+      // Start Data Sync after images or in parallel?
+      // Let's do it after images are somewhat ready, or just start it.
       if (mounted) {
-        setState(() {
-          _imagesLoaded = true;
-          _showLoader = false;
-        });
+        debugPrint('SPLASH: Starting data sync...');
+        await ref.read(supabaseSyncManagerProvider.notifier).syncRestaurants();
       }
-    } catch (e) {
+    } on Object catch (e) {
+      debugPrint('Global initialization error: $e');
+    } finally {
+      await minDelay;
+
+      // Wait for sync to complete if it's still running
+      var syncStatus = ref.read(globalSyncStatusProvider).status;
+      var retryCount = 0;
+      const maxRetries = 30; // 15 seconds max wait (30 * 500ms)
+      while (syncStatus == SyncStatus.syncing && retryCount < maxRetries) {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        syncStatus = ref.read(globalSyncStatusProvider).status;
+        retryCount++;
+      }
+
       if (mounted) {
         setState(() {
           _imagesLoaded = true;
@@ -131,12 +173,20 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _nextSlide() async {
     if (_currentPage < _slides.length - 1) {
-      _pageController.animateToPage(
-        _currentPage + 1,
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOutCubic,
+      unawaited(
+        _pageController.animateToPage(
+          _currentPage + 1,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+        ),
       );
     } else {
+      final user = ref.read(authRepositoryProvider).currentUser;
+      if (user != null) {
+        context.goNamed('mainDashBoard');
+        return;
+      }
+
       final allGranted = await PermissionScreen.areAllPermissionsGranted();
       if (!mounted) return;
       if (allGranted) {
@@ -148,6 +198,12 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _skipToLogin() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      context.goNamed('mainDashBoard');
+      return;
+    }
+
     final allGranted = await PermissionScreen.areAllPermissionsGranted();
     if (!mounted) return;
     if (allGranted) {
@@ -199,88 +255,89 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedBuilder(
-                animation: Listenable.merge([
-                  _iconController,
-                  _pulseController,
-                ]),
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Transform.scale(
-                          scale: _pulseAnimation.value,
-                          child: Container(
-                            width: 180,
-                            height: 180,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: primaryColor.withValues(alpha: 0.2),
-                                width: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(100),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([
+                    _iconController,
+                    _pulseController,
+                  ]),
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _scaleAnimation.value,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Transform.scale(
+                            scale: _pulseAnimation.value,
                             child: Container(
-                              width: 140,
-                              height: 140,
+                              width: 180,
+                              height: 180,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.white.withValues(alpha: 0.1),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  width: 1.5,
+                                  color: primaryColor.withValues(alpha: 0.2),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                        Transform.rotate(
-                          angle: _rotationAnimation.value,
-                          child: Container(
-                            width: 110,
-                            height: 110,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  primaryColor,
-                                  primaryColor.withValues(alpha: 0.7),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(100),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                width: 140,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Transform.rotate(
+                            angle: _rotationAnimation.value,
+                            child: Container(
+                              width: 110,
+                              height: 110,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    primaryColor,
+                                    primaryColor.withValues(alpha: 0.7),
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: primaryColor.withValues(alpha: 0.6),
+                                    blurRadius: 40,
+                                    spreadRadius: 5,
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 20,
+                                    offset: const Offset(10, 10),
+                                  ),
                                 ],
                               ),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: primaryColor.withValues(alpha: 0.6),
-                                  blurRadius: 40,
-                                  spreadRadius: 5,
-                                ),
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(10, 10),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.restaurant_menu,
-                              size: 55,
-                              color: Colors.black,
+                              child: const Icon(
+                                Icons.restaurant_menu,
+                                size: 55,
+                                color: Colors.black,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 50),
               Text(
@@ -314,33 +371,51 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
               const SizedBox(height: 80),
-              if (!_imagesLoaded)
-                Column(
-                  children: [
-                    SizedBox(
-                      width: 30,
-                      height: 30,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          primaryColor.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Preparing your experience...',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.4),
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
+              _buildLoadingStatus(),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingStatus() {
+    final syncStatus = ref.watch(globalSyncStatusProvider);
+    final isSyncing = syncStatus.status == SyncStatus.syncing;
+
+    return Column(
+      children: [
+        SizedBox(
+          width: 30,
+          height: 30,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              primaryColor.withValues(alpha: 0.8),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          isSyncing
+              ? 'Syncing data, please wait...'
+              : 'Preparing your experience...',
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.white.withValues(alpha: 0.4),
+            letterSpacing: 1.5,
+          ),
+        ),
+        if (syncStatus.status == SyncStatus.error) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Sync failed. Using local data.',
+            style: GoogleFonts.poppins(
+              fontSize: 10,
+              color: Colors.red.withValues(alpha: 0.6),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -461,37 +536,38 @@ class _SplashScreenState extends State<SplashScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        _imagesLoaded && index < _preloadedImages.length
-            ? Image(image: _preloadedImages[index], fit: BoxFit.cover)
-            : Image.network(
-                slide['image']!,
-                fit: BoxFit.cover,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    color: const Color(0xFF1A1A1A),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: primaryColor,
-                        value: loadingProgress.expectedTotalBytes != null
-                            ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                            : null,
-                      ),
-                    ),
-                  );
-                },
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFF1A1A1A),
-                    child: Icon(
-                      Icons.restaurant,
-                      size: 100,
-                      color: primaryColor.withValues(alpha: .3),
-                    ),
-                  );
-                },
-              ),
+        if (_imagesLoaded && index < _preloadedImages.length)
+          Image(image: _preloadedImages[index], fit: BoxFit.cover)
+        else
+          Image.network(
+            slide['image']!,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return ColoredBox(
+                color: const Color(0xFF1A1A1A),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: primaryColor,
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                        : null,
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return ColoredBox(
+                color: const Color(0xFF1A1A1A),
+                child: Icon(
+                  Icons.restaurant,
+                  size: 100,
+                  color: primaryColor.withValues(alpha: .3),
+                ),
+              );
+            },
+          ),
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

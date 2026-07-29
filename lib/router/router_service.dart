@@ -1,150 +1,269 @@
+import 'package:animations/animations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:restro_hub/features/auth/data/models/user_model.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
+import 'package:restro_hub/features/auth/presentation/views/authenticated_password_screen.dart';
+import 'package:restro_hub/features/auth/presentation/views/forgot_password_screen.dart';
 import 'package:restro_hub/features/auth/presentation/views/google_login_button.dart';
+import 'package:restro_hub/features/auth/presentation/views/login_screen.dart';
+import 'package:restro_hub/features/auth/presentation/views/register_screen.dart';
 import 'package:restro_hub/features/checkout/presentation/views/checkout_screen.dart';
+import 'package:restro_hub/features/country/presentation/views/country_list_screen.dart';
+import 'package:restro_hub/features/country/presentation/views/explore_country.dart';
 import 'package:restro_hub/features/cuisines/presentation/views/all_cuisine_list_screen.dart';
 import 'package:restro_hub/features/cuisines/presentation/views/cuisine_detail_screen.dart';
-import 'package:restro_hub/features/favourites/presentation/views/favourites_screen.dart';
-import 'package:restro_hub/features/auth/presentation/views/forgot_password_screen.dart';
-import 'package:restro_hub/features/auth/presentation/views/login_screen.dart';
-import 'package:restro_hub/features/auth/data/models/user_model.dart';
-import 'package:restro_hub/features/auth/presentation/views/register_screen.dart';
+import 'package:restro_hub/features/dashboard/presentation/views/contact_us_screen.dart';
+import 'package:restro_hub/features/dashboard/presentation/views/location_picker_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/main_dashboard_screen.dart';
-import 'package:restro_hub/features/cuisines/data/models/cuisine_model.dart';
+import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
+import 'package:restro_hub/features/favourites/presentation/views/favourites_screen.dart';
+import 'package:restro_hub/features/notifications/presentation/views/notifications_screen.dart';
+import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
+import 'package:restro_hub/features/restaurants/presentation/views/explore_restaurants_screen.dart';
 import 'package:restro_hub/features/splash/presentation/views/splash_screen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
-import 'package:restro_hub/features/auth/presentation/views/authenticated_password_screen.dart';
-import 'package:restro_hub/features/country/presentation/views/explore_country.dart';
-import 'package:restro_hub/features/country/presentation/views/country_list_screen.dart';
-import 'package:restro_hub/features/restaurants/presentation/views/explore_restaurants_screen.dart';
-import 'package:restro_hub/features/notifications/presentation/views/notifications_screen.dart';
-import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
-import 'package:restro_hub/features/dashboard/presentation/views/location_picker_screen.dart';
-import 'package:restro_hub/features/dashboard/presentation/views/contact_us_screen.dart';
 
-class RouterService {
-  static final _goRouter = GoRouter(
+final goRouterProvider = Provider<GoRouter>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+
+  Page<dynamic> _buildPageWithTransition({
+    required BuildContext context,
+    required GoRouterState state,
+    required Widget child,
+    SharedAxisTransitionType transitionType =
+        SharedAxisTransitionType.horizontal,
+  }) {
+    return CustomTransitionPage(
+      key: state.pageKey,
+      child: child,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return SharedAxisTransition(
+          animation: animation,
+          secondaryAnimation: secondaryAnimation,
+          transitionType: transitionType,
+          child: child,
+        );
+      },
+    );
+  }
+
+  return GoRouter(
+    initialLocation: '/',
+    debugLogDiagnostics: true,
+    redirect: (context, state) {
+      final user = authRepository.currentUser;
+      final isLoggingIn =
+          state.matchedLocation == '/mainLoginScreen' ||
+          state.matchedLocation == '/splash' ||
+          state.matchedLocation == '/permissions';
+
+      if (user != null && isLoggingIn) {
+        return '/mainDashBoard';
+      }
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/',
-        name: "splash",
+        name: 'splash',
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/permissions',
-        name: "permissionsScreen",
-        builder: (context, state) => const PermissionScreen(),
+        name: 'permissionsScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const PermissionScreen(),
+        ),
       ),
       GoRoute(
         path: '/mainLoginScreen',
-        name: "mainLoginScreen",
-        builder: (context, state) => const MainLoginScreen(),
+        name: 'mainLoginScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const MainLoginScreen(),
+        ),
       ),
       GoRoute(
         path: '/mainDashBoard',
-        name: "mainDashBoard",
-        builder: (context, state) {
-          final user = state.extra as UserModel?;
-          return MainDashBoard(user: user);
-        },
-      ),
+        name: 'mainDashBoard',
+        pageBuilder: (context, state) {
+          UserModel? user;
+          var initialIndex = 0;
 
-      GoRoute(
-        path: '/registerScreen',
-        name: "registerScreen",
-        builder: (context, state) => const Register(),
-      ),
+          if (state.extra is UserModel) {
+            user = state.extra! as UserModel;
+          } else if (state.extra is Map<String, dynamic>) {
+            final extra = state.extra! as Map<String, dynamic>;
+            user = extra['user'] as UserModel?;
+            initialIndex = extra['initialIndex'] as int? ?? 0;
+          } else {
+            user = authRepository.currentUser;
+          }
 
-      GoRoute(
-        path: '/forgotPasswordScreen',
-        name: "forgotPasswordScreen",
-        builder: (context, state) => const ForgotPasswordScreen(),
-      ),
-      GoRoute(
-        path: '/googleLoginScreen',
-        name: "googleLoginScreen",
-        builder: (context, state) => const GoogleLoginDemo(),
-      ),
-
-      GoRoute(
-        path: '/allCouisineList',
-        name: "allCouisineList",
-        builder: (context, state) {
-          final extras = state.extra as Map<String, dynamic>;
-          return AllCousineList(
-            title: extras['title'] as String,
-            items: extras['items'] as List<CuisineModel>,
+          return _buildPageWithTransition(
+            context: context,
+            state: state,
+            child: MainDashBoard(user: user, initialIndex: initialIndex),
+            transitionType: SharedAxisTransitionType.scaled,
           );
         },
       ),
-
       GoRoute(
-        path: '/cuisineSingleItem',
-        name: "cuisineSingleItem",
-        builder: (context, state) {
-          final item = state.extra as CuisineModel;
-          return CuisineSingleItem(item: item);
-        },
-      ),
-
-      GoRoute(
-        path: '/processCheckout',
-        name: "processCheckout",
-        builder: (context, state) => const ProcessCheckOut(),
-      ),
-
-      GoRoute(
-        path: '/showFavourites',
-        name: "showFavourites",
-        builder: (context, state) => const ShowFavourites(),
+        path: '/registerScreen',
+        name: 'registerScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const Register(),
+        ),
       ),
       GoRoute(
-        path: '/authenticatedPasswordScreen',
-        name: "authenticatedPasswordScreen",
-        builder: (context, state) => const AuthenticatedPasswordScreen(),
-      ),
-      GoRoute(
-        path: '/exploreScreen',
-        name: "exploreScreen",
-        builder: (context, state) {
-          final initialCountry = state.extra as String?;
-          return ExploreScreen(initialCountry: initialCountry);
-        },
-      ),
-      GoRoute(
-        path: '/countryListScreen',
-        name: "countryListScreen",
-        builder: (context, state) => const CountryListScreen(),
+        path: '/forgotPasswordScreen',
+        name: 'forgotPasswordScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const ForgotPasswordScreen(),
+        ),
       ),
       GoRoute(
         path: '/exploreRestaurantsScreen',
-        name: "exploreRestaurantsScreen",
-        builder: (context, state) => const ExploreRestaurantsScreen(),
+        name: 'exploreRestaurantsScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const ExploreRestaurantsScreen(),
+        ),
       ),
       GoRoute(
         path: '/notificationsScreen',
-        name: "notificationsScreen",
-        builder: (context, state) => const NotificationsScreen(),
+        name: 'notificationsScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const NotificationsScreen(),
+        ),
       ),
       GoRoute(
         path: '/profileScreen',
-        name: "profileScreen",
-        builder: (context, state) {
+        name: 'profileScreen',
+        pageBuilder: (context, state) {
           final user = state.extra as UserModel?;
-          return ProfileScreen(user: user);
+          return _buildPageWithTransition(
+            context: context,
+            state: state,
+            child: ProfileScreen(user: user),
+          );
         },
       ),
       GoRoute(
         path: '/locationPicker',
-        name: "locationPicker",
-        builder: (context, state) => const LocationPickerScreen(),
+        name: 'locationPicker',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const LocationPickerScreen(),
+        ),
       ),
       GoRoute(
         path: '/contactUsScreen',
-        name: "contactUsScreen",
-        builder: (context, state) => const ContactUsScreen(),
+        name: 'contactUsScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const ContactUsScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/googleLoginScreen',
+        name: 'googleLoginScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const GoogleLoginDemo(),
+        ),
+      ),
+      GoRoute(
+        path: '/allCuisineList',
+        name: 'allCuisineList',
+        pageBuilder: (context, state) {
+          final extras = state.extra! as Map<String, dynamic>;
+          return _buildPageWithTransition(
+            context: context,
+            state: state,
+            child: AllCousineList(
+              title: extras['title'] as String,
+              items: extras['items'] as List<MenuItemModel>,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/cuisineSingleItem',
+        name: 'cuisineSingleItem',
+        pageBuilder: (context, state) {
+          final item = state.extra! as MenuItemModel;
+          return _buildPageWithTransition(
+            context: context,
+            state: state,
+            child: CuisineSingleItem(item: item),
+            transitionType: SharedAxisTransitionType.scaled,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/processCheckout',
+        name: 'processCheckout',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const ProcessCheckOut(),
+        ),
+      ),
+      GoRoute(
+        path: '/showFavourites',
+        name: 'showFavourites',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const ShowFavourites(),
+        ),
+      ),
+      GoRoute(
+        path: '/authenticatedPasswordScreen',
+        name: 'authenticatedPasswordScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const AuthenticatedPasswordScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/exploreScreen',
+        name: 'exploreScreen',
+        pageBuilder: (context, state) {
+          final initialCountry = state.extra as String?;
+          return _buildPageWithTransition(
+            context: context,
+            state: state,
+            child: ExploreScreen(initialCountry: initialCountry),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/countryListScreen',
+        name: 'countryListScreen',
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const CountryListScreen(),
+        ),
       ),
     ],
   );
-
-  static GoRouter get goRouter => _goRouter;
-}
+});

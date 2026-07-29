@@ -1,15 +1,18 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:go_router/go_router.dart';
-import 'package:restro_hub/features/auth/data/models/user_model.dart';
-import 'package:restro_hub/features/auth/data/datasources/google_auth_datasource.dart';
-import 'package:restro_hub/features/auth/data/datasources/firebase_auth_datasource.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/providers/error_service.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/auth/data/datasources/google_auth_datasource.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 class MainLoginScreen extends ConsumerStatefulWidget {
   const MainLoginScreen({super.key});
@@ -40,16 +43,14 @@ class _LoginCardState extends ConsumerState<LoginCard>
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final GoogleAuthService _googleAuthService = GoogleAuthService();
-  final FirebaseAuthService _firebaseAuthService = FirebaseAuthService();
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
   String _getBackgroundImageUrl() {
     if (kIsWeb) {
-      // Web-optimized image for desktop/tablet viewing
       return 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=1600&q=80';
     } else {
-      // Mobile-optimized image
       return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80';
     }
   }
@@ -61,14 +62,14 @@ class _LoginCardState extends ConsumerState<LoginCard>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
           CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
         );
-    _animationController.forward();
+    unawaited(_animationController.forward());
   }
 
   @override
@@ -89,7 +90,6 @@ class _LoginCardState extends ConsumerState<LoginCard>
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Overlay
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
@@ -98,7 +98,6 @@ class _LoginCardState extends ConsumerState<LoginCard>
               ),
             ),
           ),
-          // Dark Overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -111,11 +110,10 @@ class _LoginCardState extends ConsumerState<LoginCard>
               ),
             ),
           ),
-
           SafeArea(
             child: SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: SlideTransition(
@@ -129,599 +127,189 @@ class _LoginCardState extends ConsumerState<LoginCard>
                               onPressed: () {
                                 ref
                                     .read(themeProvider.notifier)
-                                    .toggleTheme(!isDark);
+                                    .toggleTheme(isDark: !isDark);
                               },
                               icon: Icon(
                                 isDark ? Icons.light_mode : Icons.dark_mode,
                                 color: Colors.white,
                               ),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.black.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        const SizedBox(height: 40),
-
-                        // Logo and Title
-                        Icon(
-                          Icons.restaurant_menu,
-                          size: 80,
-                          color: primaryColor,
+                        const SizedBox(height: 50),
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: primaryColor.withValues(alpha: 0.5),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.restaurant_menu,
+                            size: 60,
+                            color: primaryColor,
+                          ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 24),
                         Text(
-                          'RestroHub',
-                          style: GoogleFonts.poppins(
-                            fontSize: 35,
+                          'Restro Hub',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 42,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            letterSpacing: 2.0,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Delicious food, delivered to you',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.white70,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-
-                        const SizedBox(height: 40),
-
-                        // Login Form Card
-                        Container(
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.black.withValues(alpha: 0.8)
-                                : Colors.white.withValues(alpha: 0.95),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: isDark ? Colors.white10 : Colors.white24,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                        const SizedBox(height: 60),
+                        Form(
+                          key: loginFormKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome Back',
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Form(
-                              key: loginFormKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                              const SizedBox(height: 32),
+                              _buildTextField(
+                                controller: emailController,
+                                hint: 'Email Address',
+                                icon: Icons.email_outlined,
+                                colorScheme: colorScheme,
+                              ),
+                              const SizedBox(height: 20),
+                              _buildTextField(
+                                controller: passwordController,
+                                hint: 'Password',
+                                icon: Icons.lock_outline,
+                                isPassword: true,
+                                colorScheme: colorScheme,
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    'Welcome',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.grey.shade800,
-                                    ),
-                                    textAlign: TextAlign.center,
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                        value: rememberMe,
+                                        onChanged: (v) {
+                                          setState(() => rememberMe = v!);
+                                        },
+                                        activeColor: primaryColor,
+                                      ),
+                                      const Text(
+                                        'Remember me',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Sign in to continue',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      color: isDark
-                                          ? Colors.white70
-                                          : Colors.grey.shade600,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-
-                                  const SizedBox(height: 32),
-
-                                  // Email Field
-                                  TextFormField(
-                                    controller: emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    style: GoogleFonts.poppins(
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87,
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your email';
-                                      } else if (!value.contains('@')) {
-                                        return 'Not a valid email address';
-                                      }
-                                      return null;
+                                  TextButton(
+                                    onPressed: () {
+                                      context.pushNamed('forgotPasswordScreen');
                                     },
-                                    decoration: InputDecoration(
-                                      labelText: 'Email',
-                                      labelStyle: GoogleFonts.poppins(
-                                        color: isDark
-                                            ? Colors.white60
-                                            : Colors.grey.shade600,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.email_outlined,
+                                    child: Text(
+                                      'Forgot Password?',
+                                      style: TextStyle(
                                         color: primaryColor,
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: isDark
-                                              ? Colors.white10
-                                              : Colors.grey.shade300,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: primaryColor,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      filled: true,
-                                      fillColor: isDark
-                                          ? Colors.white.withValues(alpha: 0.05)
-                                          : Colors.grey.shade50,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  // Password Field
-                                  TextFormField(
-                                    controller: passwordController,
-                                    keyboardType: TextInputType.visiblePassword,
-                                    obscureText: visibility,
-                                    style: GoogleFonts.poppins(
-                                      color: isDark
-                                          ? Colors.white
-                                          : Colors.black87,
-                                    ),
-                                    validator: (value) {
-                                      if (value == null || value.isEmpty) {
-                                        return 'Please enter your password';
-                                      } else if (value.length < 6) {
-                                        return 'Password must be at least 6 characters long';
-                                      }
-                                      return null;
-                                    },
-                                    decoration: InputDecoration(
-                                      labelText: 'Password',
-                                      labelStyle: GoogleFonts.poppins(
-                                        color: isDark
-                                            ? Colors.white60
-                                            : Colors.grey.shade600,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.lock_outline,
-                                        color: primaryColor,
-                                      ),
-                                      suffixIcon: IconButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            visibility = !visibility;
-                                          });
-                                        },
-                                        icon: Icon(
-                                          visibility
-                                              ? Icons.visibility_off
-                                              : Icons.visibility,
-                                          color: isDark
-                                              ? Colors.white60
-                                              : Colors.grey.shade600,
-                                        ),
-                                      ),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: isDark
-                                              ? Colors.white10
-                                              : Colors.grey.shade300,
-                                        ),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(
-                                          color: primaryColor,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      filled: true,
-                                      fillColor: isDark
-                                          ? Colors.white.withValues(alpha: 0.05)
-                                          : Colors.grey.shade50,
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 12),
-
-                                  // Remember Me & Forgot Password
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          SizedBox(
-                                            height: 24,
-                                            width: 24,
-                                            child: Checkbox(
-                                              value: rememberMe,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  rememberMe = value!;
-                                                });
-                                              },
-                                              activeColor: primaryColor,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Remember Me',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 13,
-                                              color: isDark
-                                                  ? Colors.white70
-                                                  : Colors.grey.shade700,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          context.pushNamed(
-                                            'forgotPasswordScreen',
-                                          );
-                                        },
-                                        child: Text(
-                                          'Forgot Password?',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 13,
-                                            color: primaryColor,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  // Login Button
-                                  SizedBox(
-                                    height: 54,
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        if (loginFormKey.currentState!
-                                            .validate()) {
-                                          LoadingDialog.show(
-                                            context,
-                                            message: 'Signing in...',
-                                          );
-                                          try {
-                                            final user =
-                                                await _firebaseAuthService
-                                                    .signInWithEmailAndPassword(
-                                                      emailController.text
-                                                          .trim(),
-                                                      passwordController.text,
-                                                    );
-
-                                            if (!context.mounted) return;
-                                            if (user != null) {
-                                              LoadingDialog.hide(context);
-                                              context.goNamed(
-                                                'mainDashBoard',
-                                                extra: UserModel(
-                                                  email: user.email ?? '',
-                                                  password: 'FIREBASE_AUTH',
-                                                ),
-                                              );
-                                            }
-                                          } on fb.FirebaseAuthException catch (
-                                            e
-                                          ) {
-                                            if (!context.mounted) return;
-                                            LoadingDialog.hide(context);
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  e.message ?? 'Login failed',
-                                                ),
-                                                backgroundColor: Colors.red,
-                                              ),
-                                            );
-                                          } catch (e) {
-                                            if (!context.mounted) return;
-                                            LoadingDialog.hide(context);
-                                          }
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: primaryColor,
-                                        foregroundColor: colorScheme.onPrimary,
-                                        elevation: 0,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(Icons.login, size: 20),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Login',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  // Register Button
-                                  SizedBox(
-                                    height: 54,
-                                    child: OutlinedButton(
-                                      onPressed: () {
-                                        context.pushNamed('registerScreen');
-                                      },
-                                      style: OutlinedButton.styleFrom(
-                                        foregroundColor: primaryColor,
-                                        side: BorderSide(
-                                          color: primaryColor,
-                                          width: 2,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(
-                                            Icons.person_add,
-                                            size: 20,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Create Account',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  // Divider
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Divider(
-                                          color: isDark
-                                              ? Colors.white10
-                                              : Colors.grey.shade300,
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                        ),
-                                        child: Text(
-                                          'OR',
-                                          style: GoogleFonts.poppins(
-                                            color: isDark
-                                                ? Colors.white60
-                                                : Colors.grey.shade600,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Divider(
-                                          color: isDark
-                                              ? Colors.white10
-                                              : Colors.grey.shade300,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  // Social Login
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      InkWell(
-                                        onTap: () async {
-                                          final scaffoldContext = context;
-                                          LoadingDialog.show(
-                                            scaffoldContext,
-                                            message: 'Connecting to Google...',
-                                          );
-                                          try {
-                                            final fb.User? firebaseUser =
-                                                await _googleAuthService
-                                                    .signIn();
-
-                                            if (!context.mounted) return;
-                                            if (firebaseUser != null) {
-                                              LoadingDialog.hide(
-                                                scaffoldContext,
-                                              );
-                                              scaffoldContext.goNamed(
-                                                'mainDashBoard',
-                                                extra: UserModel(
-                                                  email:
-                                                      firebaseUser.email ??
-                                                      '',
-                                                  password:
-                                                      'GOOGLE_AUTH_USER',
-                                                ),
-                                              );
-                                            } else {
-                                              LoadingDialog.hide(
-                                                scaffoldContext,
-                                              );
-                                              ScaffoldMessenger.of(
-                                                scaffoldContext,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'Google Sign-In failed or cancelled.',
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            if (!context.mounted) return;
-                                            LoadingDialog.hide(scaffoldContext);
-                                            ScaffoldMessenger.of(
-                                              scaffoldContext,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Error: ${e.toString()}',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: isDark
-                                                  ? Colors.white12
-                                                  : Colors.grey.shade300,
-                                              width: 2,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Image.network(
-                                                'https://www.google.com/favicon.ico',
-                                                width: 24,
-                                                height: 24,
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Text(
-                                                'Continue with Google',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: isDark
-                                                      ? Colors.white
-                                                      : Colors.grey.shade700,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
                                   ),
                                 ],
                               ),
-                            ),
+                              const SizedBox(height: 40),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 56,
+                                child: ElevatedButton(
+                                  onPressed: () => unawaited(_handleLogin(ref)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    foregroundColor: Colors.black,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'SIGN IN',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () =>
+                                          unawaited(_handleGoogleLogin(ref)),
+                                      icon: const Icon(
+                                        Icons.login,
+                                        color: Colors.white,
+                                      ),
+                                      label: const Text(
+                                        'GOOGLE',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        side: const BorderSide(
+                                          color: Colors.white24,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 32),
+                              Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      "Don't have an account? ",
+                                      style: TextStyle(color: Colors.white70),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        context.pushNamed('registerScreen');
+                                      },
+                                      child: Text(
+                                        'Sign Up',
+                                        style: TextStyle(
+                                          color: primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-
-                        const SizedBox(height: 24),
-
-                        // Help and Contact Buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            TextButton.icon(
-                              onPressed: () {
-                                // TODO: Navigate to help screen
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Help section coming soon!'),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(
-                                Icons.help_outline,
-                                color: Colors.white70,
-                                size: 20,
-                              ),
-                              label: Text(
-                                'Help',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Container(
-                              height: 20,
-                              width: 1,
-                              color: Colors.white30,
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton.icon(
-                              onPressed: () {
-                                context.pushNamed('contactUsScreen');
-                              },
-                              icon: const Icon(
-                                Icons.contact_support_outlined,
-                                color: Colors.white70,
-                                size: 20,
-                              ),
-                              label: Text(
-                                'Contact Us',
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white70,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 24),
                       ],
                     ),
                   ),
@@ -732,5 +320,125 @@ class _LoginCardState extends ConsumerState<LoginCard>
         ],
       ),
     );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+    required ColorScheme colorScheme,
+    bool isPassword = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isPassword && visibility,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(color: Colors.white38),
+          prefixIcon: Icon(icon, color: colorScheme.primary, size: 20),
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    visibility ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.white38,
+                  ),
+                  onPressed: () => setState(() => visibility = !visibility),
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.all(20),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleLogin(WidgetRef ref) async {
+    final email = emailController.text.trim();
+    final password = passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ref
+          .read(errorServiceProvider.notifier)
+          .showError(
+            message: 'Please fill in all fields',
+            type: ErrorType.auth,
+          );
+      return;
+    }
+
+    LoadingDialog.show(context, message: 'Logging in...');
+    try {
+      final user = await ref
+          .read(authRepositoryProvider)
+          .signIn(email, password);
+
+      if (mounted) {
+        LoadingDialog.hide(context);
+        if (user != null) {
+          context.goNamed('mainDashBoard');
+        }
+      }
+    } on sb.AuthException catch (e) {
+      if (mounted) {
+        LoadingDialog.hide(context);
+        ref
+            .read(errorServiceProvider.notifier)
+            .showError(message: e.message, type: ErrorType.auth);
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        LoadingDialog.hide(context);
+        ref
+            .read(errorServiceProvider.notifier)
+            .showError(
+              message: 'An unexpected error occurred',
+            );
+      }
+    }
+  }
+
+  Future<void> _handleGoogleLogin(WidgetRef ref) async {
+    LoadingDialog.show(context, message: 'Signing in with Google...');
+    try {
+      final user = await _googleAuthService.signIn();
+      if (mounted) {
+        LoadingDialog.hide(context);
+        if (user != null) {
+          context.goNamed('mainDashBoard', extra: user);
+        }
+      }
+    } on sb.AuthException catch (e) {
+      if (mounted) {
+        LoadingDialog.hide(context);
+        ref
+            .read(errorServiceProvider.notifier)
+            .showError(message: e.message, type: ErrorType.auth);
+      }
+    } on PlatformException catch (e) {
+      if (mounted) {
+        LoadingDialog.hide(context);
+        var message = 'Google Sign-In failed';
+        if (e.code == 'network_error' || e.message?.contains('7') == true) {
+          message =
+              'Network error or configuration mismatch (SHA-1). Please check your connection and app setup.';
+        }
+        ref
+            .read(errorServiceProvider.notifier)
+            .showError(message: message, type: ErrorType.auth);
+      }
+    } on Object catch (_) {
+      if (mounted) {
+        LoadingDialog.hide(context);
+        ref
+            .read(errorServiceProvider.notifier)
+            .showError(message: 'Google Sign-In failed', type: ErrorType.auth);
+      }
+    }
   }
 }

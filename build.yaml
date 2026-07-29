@@ -1,0 +1,22 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # store_query_source removed as it's unsupported in current drift_dev version
+          generate_manager: true
+      riverpod_generator:
+        options:
+          allow_all_imports: true
+    sources:
+      include:
+        - lib/**
+        - pubspec.yaml
+      exclude:
+        - test/**
+        - android/**
+        - ios/**
+        - web/**
+        - windows/**
+        - .dart_tool/**
+        - .git/**

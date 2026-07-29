@@ -1,70 +1,115 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:restro_hub/core/data/database/app_database.dart';
+import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 
-class CartNotifier extends Notifier<List<CartModel>> {
+class CartNotifier extends AsyncNotifier<List<CartModel>> {
   @override
-  List<CartModel> build() => [];
-
-  void addItem(CartModel item) {
-    final existingIndex = state.indexWhere((i) => i.name == item.name);
-    if (existingIndex != -1) {
-      final existingItem = state[existingIndex];
-      state = [
-        ...state.sublist(0, existingIndex),
-        existingItem.copyWith(
-          quantity: (existingItem.quantity) + (item.quantity),
-        ),
-        ...state.sublist(existingIndex + 1),
-      ];
-    } else {
-      state = [...state, item];
-    }
+  FutureOr<List<CartModel>> build() async {
+    final db = await ref.watch(appDatabaseProvider.future);
+    final items = await db.select(db.cachedCartItems).get();
+    return items.map(_mapToModel).toList();
   }
 
-  void updateQuantity(String name, int quantity) {
-    if (quantity <= 0) {
-      removeItem(name);
-      return;
-    }
-    state = [
-      for (final item in state)
-        if (item.name == name) item.copyWith(quantity: quantity) else item,
-    ];
-  }
-
-  void removeItem(String name) {
-    state = state.where((item) => item.name != name).toList();
-  }
-
-  void clearCart() {
-    state = [];
-  }
-
-  double get totalAmount {
-    return state.fold(
-      0.0,
-      (sum, item) => sum + (item.price * item.quantity),
+  CartModel _mapToModel(CachedCartItem row) {
+    return CartModel(
+      id: row.menuItemId,
+      name: row.name,
+      image: row.imageUrl ?? '',
+      price: row.price,
+      quantity: row.quantity,
     );
   }
 
-  int get totalItems {
-    return state.fold(0, (sum, item) => sum + item.quantity);
+  Future<void> addItem(CartModel item) async {
+    final db = await ref.read(appDatabaseProvider.future);
+    // Use ID if available, otherwise name. For Supabase data, ID is preferred.
+    final id = item.id ?? item.name;
+
+    final existing = await (db.select(
+      db.cachedCartItems,
+    )..where((t) => t.menuItemId.equals(id))).getSingleOrNull();
+
+    if (existing != null) {
+      await (db.update(
+        db.cachedCartItems,
+      )..where((t) => t.menuItemId.equals(id))).write(
+        CachedCartItemsCompanion(quantity: Value(existing.quantity + 1)),
+      );
+    } else {
+      await db
+          .into(db.cachedCartItems)
+          .insert(
+            CachedCartItemsCompanion.insert(
+              menuItemId: id,
+              name: item.name,
+              price: item.price,
+              imageUrl: Value(item.image),
+              quantity: Value(item.quantity),
+            ),
+            mode: InsertMode.insertOrReplace,
+          );
+    }
+
+    state = await AsyncValue.guard(() async {
+      final items = await db.select(db.cachedCartItems).get();
+      return items.map(_mapToModel).toList();
+    });
+  }
+
+  Future<void> updateQuantity(String id, int quantity) async {
+    final db = await ref.read(appDatabaseProvider.future);
+    if (quantity <= 0) {
+      await (db.delete(
+        db.cachedCartItems,
+      )..where((t) => t.menuItemId.equals(id))).go();
+    } else {
+      await (db.update(db.cachedCartItems)
+            ..where((t) => t.menuItemId.equals(id)))
+          .write(CachedCartItemsCompanion(quantity: Value(quantity)));
+    }
+
+    state = await AsyncValue.guard(() async {
+      final items = await db.select(db.cachedCartItems).get();
+      return items.map(_mapToModel).toList();
+    });
+  }
+
+  Future<void> removeItem(String id) async {
+    final db = await ref.read(appDatabaseProvider.future);
+    await (db.delete(
+      db.cachedCartItems,
+    )..where((t) => t.menuItemId.equals(id))).go();
+
+    state = await AsyncValue.guard(() async {
+      final items = await db.select(db.cachedCartItems).get();
+      return items.map(_mapToModel).toList();
+    });
+  }
+
+  Future<void> clearCart() async {
+    final db = await ref.read(appDatabaseProvider.future);
+    await db.delete(db.cachedCartItems).go();
+    state = const AsyncValue.data([]);
   }
 }
 
-final cartProvider = NotifierProvider<CartNotifier, List<CartModel>>(() {
+final cartProvider = AsyncNotifierProvider<CartNotifier, List<CartModel>>(() {
   return CartNotifier();
 });
 
 final cartTotalItemsProvider = Provider<int>((ref) {
-  final cart = ref.watch(cartProvider);
-  return cart.fold(0, (sum, item) => sum + item.quantity);
+  final cart = ref.watch(cartProvider).value ?? [];
+  return cart.fold<int>(0, (sum, item) => sum + item.quantity);
 });
 
 final cartTotalAmountProvider = Provider<double>((ref) {
-  final cart = ref.watch(cartProvider);
-  return cart.fold(
-    0.0,
+  final cart = ref.watch(cartProvider).value ?? [];
+  return cart.fold<double>(
+    0,
     (sum, item) => sum + (item.price * (item.quantity)),
   );
 });

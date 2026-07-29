@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 
 class LocationPickerScreen extends StatefulWidget {
@@ -12,13 +12,13 @@ class LocationPickerScreen extends StatefulWidget {
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   LatLng _selectedLocation = const LatLng(28.2096, 83.9856); // Default: Pokhara
-  String _address = "Narayan Chowk";
+  String _address = 'Narayan Chowk';
 
   void _onMapTapped(LatLng position) {
     setState(() {
       _selectedLocation = position;
       _address =
-          "Picked Location (${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)})";
+          'Picked Location (${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)})';
     });
   }
 

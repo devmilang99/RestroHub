@@ -33,32 +33,46 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  drift: ^2.31.0
-  sqlite3_flutter_libs: ^0.5.41
-  path_provider: ^2.1.5
-  path: ^1.9.1
-  dio: ^5.9.1
-  equatable: ^2.0.8
-  go_router: ^17.1.0
-  flutter_riverpod: any
-  riverpod_annotation: any
-  json_annotation: any
-  google_sign_in: ^6.2.1
-  flutter_local_notifications: ^19.5.0
-  firebase_messaging: ^16.1.0
-  firebase_core: ^4.3.0
-  firebase_auth: ^6.1.4
+  bonsoir: any
+  animations: ^2.0.11
+  flutter_native_splash: ^2.4.0
   cached_network_image: ^3.4.1
-  google_fonts: ^6.2.1
-  permission_handler: ^11.3.1
-  google_maps_flutter: ^2.14.2
-  shimmer: ^3.0.0
+  connectivity_plus: ^6.1.0
+  cupertino_icons: ^1.0.8
+  device_info_plus: ^11.0.0
+  dio: ^5.9.1
+  drift: ^2.31.0
+  equatable: ^2.0.8
+  flutter_dotenv: ^6.0.1
+  flutter_local_notifications: ^22.2.0
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^3.1.0
   flutter_staggered_animations: ^1.1.1
+  go_router: ^17.1.0
+  google_fonts: ^8.2.0
+  google_generative_ai: ^0.4.5
+  google_maps_flutter: ^2.14.2
+  google_sign_in: ^6.2.1
   image_picker: ^1.2.1
+  intl: any
+  json_annotation: any
+  logger: ^2.4.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
+  permission_handler: ^12.0.3
+  riverpod_annotation: ^4.0.0
+  shelf: any
+  shelf_web_socket: any
+  shimmer: ^3.0.0
+  sqlite3_flutter_libs: ^0.5.0
+  supabase_flutter: ^2.6.0
   url_launcher: ^6.3.2
+  web_socket_channel: any
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -66,27 +80,29 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^6.0.0
-  drift_dev: ^2.31.0
   build_runner: any
-  riverpod_generator: any
-  riverpod_lint: any
   custom_lint: any
+  drift_dev: ^2.31.0
+  flutter_lints: ^6.0.0
   json_serializable: any
+  mocktail: ^1.0.4
+  pigeon: any
+  riverpod_generator: ^4.0.0+1
+  riverpod_lint: ^3.1.0
+  shared_preferences: any
+  very_good_analysis: ^10.2.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
+  generate: true
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - .env
     - assets/
     - assets/splashScreen/
     - assets/permission/
@@ -116,3 +132,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_native_splash:
+  color: "#000000"
+  image: assets/splashScreen/splash_icon.png
+  android_12:
+    color: "#000000"
+    image: assets/splashScreen/splash_icon.png
+  fullscreen: true

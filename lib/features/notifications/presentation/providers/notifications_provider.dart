@@ -1,5 +1,5 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/features/notifications/data/models/notification_model.dart';
 
 class NotificationsNotifier extends Notifier<List<MockNotification>> {
@@ -10,7 +10,6 @@ class NotificationsNotifier extends Notifier<List<MockNotification>> {
       icon: '🎁',
       timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
       accentColor: const Color(0xFFFF6B6B),
-      isRead: false,
     ),
     MockNotification(
       title: '✅ Order Confirmed',
@@ -18,7 +17,6 @@ class NotificationsNotifier extends Notifier<List<MockNotification>> {
       icon: '🍜',
       timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
       accentColor: const Color(0xFF51CF66),
-      isRead: false,
     ),
     MockNotification(
       title: '🚗 Order Out for Delivery',

@@ -1,5 +1,7 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
 class ShimmerPlaceholder extends StatefulWidget {
@@ -9,9 +11,9 @@ class ShimmerPlaceholder extends StatefulWidget {
   final bool showText;
 
   const ShimmerPlaceholder({
-    super.key,
     required this.width,
     required this.height,
+    super.key,
     this.borderRadius = 0,
     this.showText = true,
   });
@@ -46,14 +48,21 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder> {
 
   @override
   Widget build(BuildContext context) {
-    String dots = "." * _dotCount;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final dots = '.' * _dotCount;
+
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
     return Stack(
       alignment: Alignment.center,
       children: [
         Shimmer.fromColors(
-          baseColor: Colors.grey[400]!, // Stronger base
-          highlightColor: Colors.white, // Stronger highlight
-          period: const Duration(milliseconds: 1000),
+          baseColor: baseColor,
+          highlightColor: highlightColor,
+          period: const Duration(milliseconds: 1500),
           child: Container(
             width: widget.width,
             height: widget.height,
@@ -65,9 +74,9 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder> {
         ),
         if (widget.showText && widget.height > 60)
           Text(
-            "Loading$dots",
-            style: TextStyle(
-              color: Colors.black.withValues(alpha: 0.4),
+            'Loading$dots',
+            style: GoogleFonts.poppins(
+              color: colorScheme.onSurface.withValues(alpha: 0.3),
               fontWeight: FontWeight.w600,
               fontSize: 14,
             ),

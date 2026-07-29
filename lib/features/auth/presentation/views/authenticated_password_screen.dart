@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:restro_hub/core/widgets/loading_dialog.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'dart:async';
 import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/widgets/loading_dialog.dart';
 
 class AuthenticatedPasswordScreen extends ConsumerStatefulWidget {
   const AuthenticatedPasswordScreen({super.key});
@@ -52,7 +54,7 @@ class _AuthenticatedPasswordScreenState
           ),
         );
 
-    _animationController.forward();
+    unawaited(_animationController.forward());
   }
 
   @override
@@ -69,19 +71,21 @@ class _AuthenticatedPasswordScreenState
     required String title,
     required String message,
   }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _AestheticDialog(
-        isSuccess: isSuccess,
-        title: title,
-        message: message,
-        onConfirm: () {
-          Navigator.pop(context);
-          if (isSuccess) {
-            context.pop(); // Go back to original screen
-          }
-        },
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => _AestheticDialog(
+          isSuccess: isSuccess,
+          title: title,
+          message: message,
+          onConfirm: () {
+            Navigator.pop(context);
+            if (isSuccess) {
+              context.pop(); // Go back to original screen
+            }
+          },
+        ),
       ),
     );
   }
@@ -92,7 +96,7 @@ class _AuthenticatedPasswordScreenState
     final primaryColor = colorScheme.primary;
     final backgroundColor = colorScheme.surface;
     final textColor = colorScheme.onSurface;
-    final Color glassColor = colorScheme.surfaceContainerHighest.withValues(
+    final glassColor = colorScheme.surfaceContainerHighest.withValues(
       alpha: .3,
     );
 
@@ -180,7 +184,6 @@ class _AuthenticatedPasswordScreenState
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
                                 color: textColor.withValues(alpha: .1),
-                                width: 1,
                               ),
                             ),
                             child: Column(
@@ -269,8 +272,7 @@ class _AuthenticatedPasswordScreenState
                                           context,
                                           message: 'Updating password...',
                                         );
-                                        // Simulate API call
-                                        await Future.delayed(
+                                        await Future<void>.delayed(
                                           const Duration(seconds: 2),
                                         );
                                         if (!context.mounted) return;
@@ -328,7 +330,7 @@ class _AuthenticatedPasswordScreenState
     bool isVisible = false,
     VoidCallback? onVisibilityToggle,
   }) {
-    final Color textColor = isDark ? Colors.white : Colors.black;
+    final textColor = isDark ? Colors.white : Colors.black;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return TextFormField(
@@ -396,7 +398,7 @@ class _AestheticDialogState extends State<_AestheticDialog>
       parent: _controller,
       curve: Curves.elasticOut,
     );
-    _controller.forward();
+    unawaited(_controller.forward());
   }
 
   @override
@@ -502,7 +504,7 @@ class _AnimatedStatusIconState extends State<_AnimatedStatusIcon>
       duration: const Duration(milliseconds: 1000),
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.bounceOut);
-    _controller.repeat(reverse: true);
+    unawaited(_controller.repeat(reverse: true));
   }
 
   @override
@@ -516,7 +518,7 @@ class _AnimatedStatusIconState extends State<_AnimatedStatusIcon>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final double glowSize = 10 + (15 * _animation.value);
+        final glowSize = 10 + (15 * _animation.value);
         return Container(
           width: 90,
           height: 90,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/features/notifications/presentation/providers/notifications_provider.dart';
 
@@ -121,7 +121,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     ],
                   ),
                 );
-                if (confirmed == true) {
+                if (confirmed ?? false) {
                   _clearAll();
                 }
               },
@@ -201,7 +201,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                                   alpha: 0.3,
                                 )
                               : notification.accentColor.withValues(alpha: 0.3),
-                          width: 1,
                         ),
                       ),
                       child: Material(

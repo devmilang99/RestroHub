@@ -1,7 +1,8 @@
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoyaltyNotifier extends StateNotifier<int> {
-  LoyaltyNotifier() : super(750); // Mock initial points
+class LoyaltyNotifier extends Notifier<int> {
+  @override
+  int build() => 750;
 
   void addPoints(int amount) {
     state += amount;
@@ -12,6 +13,6 @@ class LoyaltyNotifier extends StateNotifier<int> {
   }
 }
 
-final loyaltyProvider = StateNotifierProvider<LoyaltyNotifier, int>((ref) {
+final loyaltyProvider = NotifierProvider<LoyaltyNotifier, int>(() {
   return LoyaltyNotifier();
 });

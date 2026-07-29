@@ -1,14 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'firebase_options.dart' show DefaultFirebaseOptions;
-import 'package:restro_hub/router/router_service.dart' show RouterService;
-import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/theme/app_theme.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
+import 'package:restro_hub/core/widgets/connectivity_banner.dart';
+import 'package:restro_hub/core/widgets/error_listener_wrapper.dart';
+import 'package:restro_hub/infrastructure/supabase/supabase_service.dart';
+import 'package:restro_hub/infrastructure/sync/sync_coordinator.dart';
+import 'package:restro_hub/l10n/generated/app_localizations.dart';
+import 'package:restro_hub/router/router_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  await dotenv.load();
+
+  try {
+    await SupabaseService.initialize();
+  } catch (e) {
+    debugPrint(
+      'Supabase initialization failed: $e. App will continue in offline mode.',
+    );
+  }
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -17,30 +34,36 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
+    // Initialize global listeners
+    ref.read(syncCoordinatorProvider);
 
-    return MaterialApp.router(
-      routerConfig: RouterService.goRouter,
-      title: 'Restro Hub',
-      themeMode: themeMode,
-      theme: ThemeData(
-        useMaterial3: true,
-        textTheme: GoogleFonts.poppinsTextTheme(),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 23, 161, 30),
-          brightness: Brightness.light,
-        ),
-        appBarTheme: const AppBarTheme(centerTitle: true),
+    final themeMode = ref.watch(themeProvider);
+    final router = ref.watch(goRouterProvider);
+
+    return ErrorListenerWrapper(
+      child: MaterialApp.router(
+        routerConfig: router,
+        title: 'Restro Hub',
+        themeMode: themeMode,
+        builder: (context, child) {
+          return Column(
+            children: [
+              const ConnectivityBanner(),
+              if (child != null) Expanded(child: child),
+            ],
+          );
+        },
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('en', '')],
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        debugShowCheckedModeBanner: false,
       ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-      ),
-      debugShowCheckedModeBanner: false,
     );
   }
 }

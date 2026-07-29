@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
@@ -26,13 +28,22 @@ class SearchableSliverAppLayout<T> extends StatefulWidget {
   final List<Widget>? actions;
   final EdgeInsetsGeometry? padding;
   final ScrollPhysics? physics;
+  final VoidCallback? onLoadMore;
+  final bool isLoadingMore;
+  final bool isLoading;
+  final Widget? skeleton;
+  final ValueChanged<String>? onSearchChanged;
+
+  // Adaptive properties
+  final bool isGrid;
+  final SliverGridDelegate? gridDelegate;
 
   const SearchableSliverAppLayout({
-    super.key,
     required this.items,
     required this.filterPredicate,
     required this.itemBuilder,
     required this.title,
+    super.key,
     this.enableFilters = false,
     this.filterItems,
     this.onFilterChanged,
@@ -47,6 +58,13 @@ class SearchableSliverAppLayout<T> extends StatefulWidget {
     this.actions,
     this.padding,
     this.physics,
+    this.onLoadMore,
+    this.isLoadingMore = false,
+    this.isLoading = false,
+    this.skeleton,
+    this.onSearchChanged,
+    this.isGrid = false,
+    this.gridDelegate,
   }) : assert(
          !enableFilters || (filterItems != null),
          'filterItems is required when enableFilters is true',
@@ -61,7 +79,7 @@ class _SearchableSliverAppLayoutState<T>
     extends State<SearchableSliverAppLayout<T>> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
-  String _query = "";
+  String _query = '';
   final ScrollController _scrollController = ScrollController();
   final Set<String> _selectedFilters = <String>{};
   bool _isCollapsed = false;
@@ -70,7 +88,7 @@ class _SearchableSliverAppLayoutState<T>
   double get _collapseTarget => widget.expandedHeight;
 
   double get _headerHeight {
-    if (!widget.enableFilters) return 70.0;
+    if (!widget.enableFilters) return 70;
     final hasFilterContent =
         widget.filterBar != null ||
         widget.customFilterBuilder != null ||
@@ -88,13 +106,14 @@ class _SearchableSliverAppLayoutState<T>
       final max = _scrollController.position.maxScrollExtent;
       final target = to.clamp(0.0, max);
 
-      // Prevent redundant animations if we are already close to the target
       if ((_scrollController.offset - target).abs() < 1.0) return;
 
-      _scrollController.animateTo(
-        target,
-        duration: Duration(milliseconds: duration),
-        curve: curve,
+      unawaited(
+        _scrollController.animateTo(
+          target,
+          duration: Duration(milliseconds: duration),
+          curve: curve,
+        ),
       );
     }
   }
@@ -102,40 +121,53 @@ class _SearchableSliverAppLayoutState<T>
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _query = _searchController.text;
-      });
-    });
-    // When search gains focus, collapse the expanded app bar completely
+    _searchController.addListener(_onSearchChanged);
     _searchFocus.addListener(() {
       final hasFocus = _searchFocus.hasFocus;
       if (hasFocus) {
         if (_scrollController.hasClients) {
-          _safeAnimateTo(_collapseTarget, duration: 300);
+          _safeAnimateTo(_collapseTarget);
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _safeAnimateTo(_collapseTarget, duration: 300);
+            _safeAnimateTo(_collapseTarget);
           });
         }
       } else {
-        // When search loses focus and user is near top, re-expand app bar
         if (_scrollController.hasClients && _scrollController.offset < 30) {
-          _safeAnimateTo(0, duration: 300);
+          _safeAnimateTo(0);
         }
       }
     });
 
-    // scroll listener: track collapsed state and re-expand when near top
     _scrollController.addListener(() {
       final collapsed = _scrollController.offset >= (_collapseTarget - 2.0);
       if (collapsed != _isCollapsed) {
         setState(() => _isCollapsed = collapsed);
       }
 
-      // show back-to-top button when scrolled well past the collapsed header
       final showTop = _scrollController.offset > (_collapseTarget + 100);
       if (showTop != _showBackToTop) setState(() => _showBackToTop = showTop);
+
+      // Infinite scroll logic
+      if (widget.onLoadMore != null && !widget.isLoadingMore) {
+        final pos = _scrollController.position;
+        if (pos.pixels > pos.maxScrollExtent * 0.85) {
+          widget.onLoadMore!();
+        }
+      }
+    });
+  }
+
+  Timer? _debounce;
+  void _onSearchChanged() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        setState(() {
+          _query = _searchController.text;
+        });
+        widget.onSearchChanged?.call(_query);
+      }
     });
   }
 
@@ -146,6 +178,7 @@ class _SearchableSliverAppLayoutState<T>
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
     _scrollController.dispose();
@@ -164,11 +197,11 @@ class _SearchableSliverAppLayoutState<T>
     final hasFilterItems =
         widget.enableFilters && (widget.filterItems?.isNotEmpty ?? false);
 
-    final List<Widget> filterChipWidgets = hasFilterItems
+    final filterChipWidgets = hasFilterItems
         ? widget.filterItems!.map((f) {
             final selected = _selectedFilters.contains(f);
             return Padding(
-              padding: const EdgeInsets.only(right: 8.0),
+              padding: const EdgeInsets.only(right: 8),
               child: ChoiceChip(
                 label: Text(f),
                 selected: selected,
@@ -187,6 +220,10 @@ class _SearchableSliverAppLayoutState<T>
           }).toList()
         : const <Widget>[];
     final headerHeight = _headerHeight;
+
+    final effectivePadding =
+        widget.padding ??
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
 
     return SafeArea(
       child: Stack(
@@ -208,19 +245,13 @@ class _SearchableSliverAppLayoutState<T>
               controller: _scrollController,
               physics: widget.physics ?? const BouncingScrollPhysics(),
               slivers: [
-                // ── App Bar (Expandable, Collapsible) ──
                 SliverAppBar(
                   expandedHeight: widget.expandedHeight,
                   collapsedHeight: kToolbarHeight,
-                  toolbarHeight: kToolbarHeight,
-                  pinned: false,
-                  floating: false,
-                  snap: false,
                   elevation: 0,
                   backgroundColor: colorScheme.surface,
                   actions: widget.actions,
                   flexibleSpace: FlexibleSpaceBar(
-                    collapseMode: CollapseMode.parallax,
                     background:
                         widget.background ??
                         Container(
@@ -267,182 +298,102 @@ class _SearchableSliverAppLayoutState<T>
                         ),
                   ),
                 ),
-
-                // ── Pinned Search Bar with Back & Filter ──
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _SearchHeaderDelegate(
                     height: headerHeight,
-                    child: Container(
-                      color: colorScheme.surface,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          // Back Button + Search + Filter Icon in one row
-                          Row(
-                            children: [
-                              // Back Button: only visible when header is fully collapsed
-                              if (widget.showBackButton && _isCollapsed)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8.0),
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.arrow_back,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                    onPressed:
-                                        widget.onBackPressed ??
-                                        () => Navigator.pop(context),
-                                  ),
-                                ),
-                              // Search Field
-                              Expanded(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? colorScheme.surfaceContainerHighest
-                                              .withValues(alpha: 0.3)
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                        blurRadius: 15,
-                                        offset: const Offset(0, 5),
-                                      ),
-                                    ],
-                                  ),
-                                  child: TextField(
-                                    controller: _searchController,
-                                    focusNode: _searchFocus,
-                                    style: GoogleFonts.poppins(fontSize: 14),
-                                    decoration: InputDecoration(
-                                      hintText: widget.hintText,
-                                      hintStyle: GoogleFonts.poppins(
-                                        color: colorScheme.onSurfaceVariant,
-                                        fontSize: 14,
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.search,
-                                        color: colorScheme.primary,
-                                      ),
-                                      suffixIcon: _query.isNotEmpty
-                                          ? IconButton(
-                                              icon: const Icon(
-                                                Icons.clear,
-                                                size: 18,
-                                              ),
-                                              onPressed: _clearSearch,
-                                            )
-                                          : null,
-                                      border: InputBorder.none,
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 14,
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Filter Icon
-                              if (widget.enableFilters)
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 8.0),
-                                  child: IconButton(
-                                    icon: Icon(
-                                      Icons.tune,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                    onPressed: _showFilterSheet,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          // Filter Chips or Custom Filter Builder (Gated by enableFilters)
-                          if (widget.enableFilters) ...[
-                            if (widget.filterBar != null)
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: widget.filterBar!,
-                                ),
-                              )
-                            else if (widget.customFilterBuilder != null)
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: widget.customFilterBuilder!(
-                                    context,
-                                    _selectedFilters,
-                                    (selected) {
-                                      setState(() {
-                                        _selectedFilters.clear();
-                                        _selectedFilters.addAll(selected);
-                                      });
-                                      widget.onFilterChanged?.call(
-                                        _selectedFilters,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              )
-                            else if (hasFilterItems)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: SingleChildScrollView(
-                                  scrollDirection: Axis.horizontal,
-                                  child: Row(children: filterChipWidgets),
-                                ),
-                              ),
-                          ],
-                        ],
-                      ),
+                    child: _SearchHeaderContent(
+                      isCollapsed: _isCollapsed,
+                      showBackButton: widget.showBackButton,
+                      onBackPressed: widget.onBackPressed,
+                      searchController: _searchController,
+                      searchFocus: _searchFocus,
+                      hintText: widget.hintText,
+                      query: _query,
+                      clearSearch: _clearSearch,
+                      enableFilters: widget.enableFilters,
+                      showFilterSheet: _showFilterSheet,
+                      filterBar: widget.filterBar,
+                      customFilterBuilder: widget.customFilterBuilder,
+                      selectedFilters: _selectedFilters,
+                      filterItems: widget.filterItems,
+                      onFilterChanged: (selected) {
+                        setState(() {
+                          _selectedFilters
+                            ..clear()
+                            ..addAll(selected);
+                        });
+                        widget.onFilterChanged?.call(_selectedFilters);
+                      },
                     ),
                   ),
                 ),
 
-                // ── List Content ──
+                // ── Adaptive Content (List or Grid) ──
                 SliverPadding(
-                  padding:
-                      widget.padding ??
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  sliver: filteredItems.isEmpty
+                  padding: effectivePadding,
+                  sliver: widget.isLoading && widget.skeleton != null
+                      ? widget.skeleton!
+                      : filteredItems.isEmpty
                       ? SliverFillRemaining(
                           hasScrollBody: false,
                           child: Center(
                             child: Text(
-                              "No results found",
+                              'No results found',
                               style: GoogleFonts.poppins(
                                 color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
                         )
-                      : SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (context, index) => widget.itemBuilder(
-                              context,
-                              filteredItems[index],
-                              index,
-                            ),
-                            childCount: filteredItems.length,
+                      : (widget.isGrid
+                            ? SliverGrid(
+                                gridDelegate:
+                                    widget.gridDelegate ??
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      childAspectRatio: 0.8,
+                                      mainAxisSpacing: 16,
+                                      crossAxisSpacing: 16,
+                                    ),
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) => widget.itemBuilder(
+                                    context,
+                                    filteredItems[index],
+                                    index,
+                                  ),
+                                  childCount: filteredItems.length,
+                                ),
+                              )
+                            : SliverList(
+                                delegate: SliverChildBuilderDelegate(
+                                  (context, index) => widget.itemBuilder(
+                                    context,
+                                    filteredItems[index],
+                                    index,
+                                  ),
+                                  childCount: filteredItems.length,
+                                ),
+                              )),
+                ),
+                if (widget.isLoadingMore)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32),
+                      child: Center(
+                        child: CircularProgressIndicator.adaptive(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(
+                            colorScheme.primary,
                           ),
                         ),
-                ),
-
-                // ── Bottom Spacing ──
+                      ),
+                    ),
+                  ),
                 const SliverToBoxAdapter(child: SizedBox(height: 50)),
               ],
             ),
           ),
-          // Floating "back to top" button
           if (_showBackToTop)
             Positioned(
               right: 16,
@@ -451,7 +402,7 @@ class _SearchableSliverAppLayoutState<T>
                 mini: true,
                 onPressed: () {
                   _searchFocus.unfocus();
-                  _safeAnimateTo(0, duration: 400, curve: Curves.easeInOut);
+                  _safeAnimateTo(0, duration: 400);
                   setState(() {
                     _showBackToTop = false;
                   });
@@ -470,93 +421,270 @@ class _SearchableSliverAppLayoutState<T>
       return;
     }
     final colorScheme = context.colorScheme;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final tempSelected = Set<String>.from(_selectedFilters);
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          final tempSelected = Set<String>.from(_selectedFilters);
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              return Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "Filters",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Filters',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      TextButton(
+                        TextButton(
+                          onPressed: () {
+                            setModalState(tempSelected.clear);
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      children: widget.filterItems!.map((f) {
+                        final isSelected = tempSelected.contains(f);
+                        return ChoiceChip(
+                          label: Text(f),
+                          selected: isSelected,
+                          onSelected: (val) {
+                            setModalState(() {
+                              if (val) {
+                                tempSelected.add(f);
+                              } else {
+                                tempSelected.remove(f);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
                         onPressed: () {
-                          setModalState(() => tempSelected.clear());
+                          setState(() {
+                            _selectedFilters
+                              ..clear()
+                              ..addAll(tempSelected);
+                          });
+                          widget.onFilterChanged?.call(_selectedFilters);
+                          Navigator.pop(context);
                         },
-                        child: const Text("Reset"),
+                        child: const Text('Apply Filters'),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SearchHeaderContent extends StatelessWidget {
+  final bool isCollapsed;
+  final bool showBackButton;
+  final VoidCallback? onBackPressed;
+  final TextEditingController searchController;
+  final FocusNode searchFocus;
+  final String hintText;
+  final String query;
+  final VoidCallback clearSearch;
+  final bool enableFilters;
+  final VoidCallback showFilterSheet;
+  final Widget? filterBar;
+  final Widget Function(
+    BuildContext context,
+    Set<String> selected,
+    ValueChanged<Set<String>> onChanged,
+  )?
+  customFilterBuilder;
+  final Set<String> selectedFilters;
+  final List<String>? filterItems;
+  final ValueChanged<Set<String>> onFilterChanged;
+
+  const _SearchHeaderContent({
+    required this.isCollapsed,
+    required this.showBackButton,
+    required this.onBackPressed,
+    required this.searchController,
+    required this.searchFocus,
+    required this.hintText,
+    required this.query,
+    required this.clearSearch,
+    required this.enableFilters,
+    required this.showFilterSheet,
+    required this.filterBar,
+    required this.customFilterBuilder,
+    required this.selectedFilters,
+    required this.filterItems,
+    required this.onFilterChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final hasFilterItems = enableFilters && (filterItems?.isNotEmpty ?? false);
+
+    final filterChipWidgets = hasFilterItems
+        ? filterItems!.map((f) {
+            final selected = selectedFilters.contains(f);
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Text(f),
+                selected: selected,
+                onSelected: (val) {
+                  final newSelected = Set<String>.from(selectedFilters);
+                  if (val) {
+                    newSelected.add(f);
+                  } else {
+                    newSelected.remove(f);
+                  }
+                  onFilterChanged(newSelected);
+                },
+              ),
+            );
+          }).toList()
+        : const <Widget>[];
+
+    return Container(
+      color: colorScheme.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              if (showBackButton && isCollapsed)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: IconButton(
+                    icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+                    onPressed: onBackPressed ?? () => Navigator.pop(context),
+                  ),
+                ),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.3,
+                          )
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    children: widget.filterItems!.map((f) {
-                      final isSelected = tempSelected.contains(f);
-                      return ChoiceChip(
-                        label: Text(f),
-                        selected: isSelected,
-                        onSelected: (val) {
-                          setModalState(() {
-                            if (val) {
-                              tempSelected.add(f);
-                            } else {
-                              tempSelected.remove(f);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
+                  child: TextField(
+                    key: const ValueKey('search_textfield'),
+                    controller: searchController,
+                    focusNode: searchFocus,
+                    style: GoogleFonts.poppins(fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: hintText,
+                      hintStyle: GoogleFonts.poppins(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 14,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _selectedFilters
-                            ..clear()
-                            ..addAll(tempSelected);
-                        });
-                        widget.onFilterChanged?.call(_selectedFilters);
-                        Navigator.pop(context);
-                      },
-                      child: const Text("Apply Filters"),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: colorScheme.primary,
+                      ),
+                      suffixIcon: query.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: clearSearch,
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
-            );
-          },
-        );
-      },
+              if (enableFilters)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: IconButton(
+                    icon: Icon(Icons.tune, color: colorScheme.onSurface),
+                    onPressed: showFilterSheet,
+                  ),
+                ),
+            ],
+          ),
+          if (enableFilters) ...[
+            if (filterBar != null)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: filterBar,
+                ),
+              )
+            else if (customFilterBuilder != null)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: customFilterBuilder!(
+                    context,
+                    selectedFilters,
+                    onFilterChanged,
+                  ),
+                ),
+              )
+            else if (hasFilterItems)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(children: filterChipWidgets),
+                ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -584,6 +712,7 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_SearchHeaderDelegate oldDelegate) {
+    // Optimization: Check for equality to prevent unnecessary semantics updates
     return oldDelegate.height != height || oldDelegate.child != child;
   }
 }

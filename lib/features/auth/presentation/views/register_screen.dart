@@ -1,16 +1,18 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:restro_hub/features/auth/data/models/register_model.dart';
-import 'package:restro_hub/features/auth/data/datasources/firebase_auth_datasource.dart';
-import 'package:restro_hub/features/auth/utils/registration_validator.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/providers/error_service.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/auth/data/datasources/supabase_auth_datasource.dart';
+import 'package:restro_hub/features/auth/data/models/register_model.dart';
+import 'package:restro_hub/features/auth/utils/registration_validator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 class Register extends ConsumerStatefulWidget {
   const Register({super.key});
@@ -26,7 +28,7 @@ class _RegisterState extends ConsumerState<Register>
   final TextEditingController addressController = TextEditingController();
   final TextEditingController phoneNumberController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final FirebaseAuthService _authService = FirebaseAuthService();
+  final SupabaseAuthService _authService = SupabaseAuthService();
 
   late AnimationController _formAnimationController;
   late Animation<double> _formFadeAnimation;
@@ -53,7 +55,7 @@ class _RegisterState extends ConsumerState<Register>
           ),
         );
 
-    _formAnimationController.forward();
+    unawaited(_formAnimationController.forward());
   }
 
   @override
@@ -72,19 +74,21 @@ class _RegisterState extends ConsumerState<Register>
     required String title,
     required String message,
   }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _AestheticDialog(
-        isSuccess: isSuccess,
-        title: title,
-        message: message,
-        onConfirm: () {
-          Navigator.pop(context);
-          if (isSuccess) {
-            context.goNamed('mainLoginScreen');
-          }
-        },
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => _AestheticDialog(
+          isSuccess: isSuccess,
+          title: title,
+          message: message,
+          onConfirm: () {
+            Navigator.pop(context);
+            if (isSuccess) {
+              context.goNamed('mainLoginScreen');
+            }
+          },
+        ),
       ),
     );
   }
@@ -99,7 +103,7 @@ class _RegisterState extends ConsumerState<Register>
     final primaryColor = colorScheme.primary;
     final backgroundColor = colorScheme.surface;
     final textColor = colorScheme.onSurface;
-    final Color glassColor = colorScheme.surfaceContainerHighest.withValues(
+    final glassColor = colorScheme.surfaceContainerHighest.withValues(
       alpha: .3,
     );
 
@@ -189,7 +193,6 @@ class _RegisterState extends ConsumerState<Register>
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
                                   color: textColor.withValues(alpha: .1),
-                                  width: 1,
                                 ),
                               ),
                               child: Column(
@@ -232,7 +235,7 @@ class _RegisterState extends ConsumerState<Register>
                                     icon: Icons.phone_outlined,
                                     isDark: themeMode == ThemeMode.dark,
                                     keyboardType: TextInputType.phone,
-                                    prefixText: "+977 ",
+                                    prefixText: '+977 ',
                                     validator:
                                         RegistrationValidator.validatePhone,
                                   ),
@@ -260,13 +263,11 @@ class _RegisterState extends ConsumerState<Register>
                                             message: 'Creating your account...',
                                           );
                                           try {
-                                            final fb.User? user =
-                                                await _authService
-                                                    .signUpWithEmailAndPassword(
-                                                      emailController.text
-                                                          .trim(),
-                                                      passwordController.text,
-                                                    );
+                                            final user = await _authService
+                                                .signUpWithEmailAndPassword(
+                                                  emailController.text.trim(),
+                                                  passwordController.text,
+                                                );
 
                                             if (!context.mounted) return;
                                             if (user != null) {
@@ -275,24 +276,25 @@ class _RegisterState extends ConsumerState<Register>
                                                 isSuccess: true,
                                                 title: 'Welcome!',
                                                 message:
-                                                    'Your culinary journey begins now. We\'re so happy to have you!',
+                                                    "Your culinary journey begins now. We're so happy to have you!",
                                               );
                                             }
-                                          } on fb.FirebaseAuthException catch (
-                                            e
-                                          ) {
+                                          } on sb.AuthException catch (e) {
                                             if (!context.mounted) return;
                                             LoadingDialog.hide(context);
-                                            _showAestheticDialog(
-                                              isSuccess: false,
-                                              title: 'Oops!',
-                                              message:
-                                                  e.message ??
-                                                  'Something went wrong with your registration. Please try again.',
-                                            );
-                                          } catch (e) {
+                                            ref
+                                                .read(
+                                                  errorServiceProvider.notifier,
+                                                )
+                                                .handleException(e);
+                                          } on Exception catch (e) {
                                             if (!context.mounted) return;
                                             LoadingDialog.hide(context);
+                                            ref
+                                                .read(
+                                                  errorServiceProvider.notifier,
+                                                )
+                                                .handleException(e);
                                           }
                                         }
                                       },
@@ -348,7 +350,7 @@ class _RegisterState extends ConsumerState<Register>
     String? prefixText,
     String? Function(String?)? validator,
   }) {
-    final Color textColor = isDark ? Colors.white : Colors.black;
+    final textColor = isDark ? Colors.white : Colors.black;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return TextFormField(
@@ -372,7 +374,7 @@ class _RegisterState extends ConsumerState<Register>
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+          borderSide: const BorderSide(color: Colors.redAccent),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -419,7 +421,7 @@ class _AestheticDialogState extends State<_AestheticDialog>
       parent: _controller,
       curve: Curves.elasticOut,
     );
-    _controller.forward();
+    unawaited(_controller.forward());
   }
 
   @override
@@ -518,7 +520,7 @@ class _AnimatedStatusIconState extends State<_AnimatedStatusIcon>
       duration: const Duration(milliseconds: 1000),
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.bounceOut);
-    _controller.repeat(reverse: true); // Make it pulse
+    unawaited(_controller.repeat(reverse: true)); // Make it pulse
   }
 
   @override
@@ -532,7 +534,7 @@ class _AnimatedStatusIconState extends State<_AnimatedStatusIcon>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final double glowSize = 10 + (15 * _animation.value);
+        final glowSize = 10 + (15 * _animation.value);
         return Container(
           width: 90,
           height: 90,

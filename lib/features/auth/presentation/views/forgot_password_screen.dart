@@ -1,12 +1,13 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
-import 'dart:ui';
-import 'dart:async';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -37,7 +38,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isOtpVisible = true;
-  String _otpErrorMessage = "";
+  String _otpErrorMessage = '';
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -68,14 +69,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
           ),
         );
 
-    _animationController.forward();
+    unawaited(_animationController.forward());
   }
 
   void _startTimer() {
     setState(() {
       _canResend = false;
       _start = 180;
-      _otpErrorMessage = "";
+      _otpErrorMessage = '';
     });
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -91,27 +92,29 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
       }
     });
 
-    // Simulate automatic OTP reception (e.g. from SMS/Firebase) after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _currentStep == 2) {
-        final mockOtp = "123456";
-        for (int i = 0; i < 6; i++) {
-          otpControllers[i].text = mockOtp[i];
+    // Simulate automatic OTP reception after 3 seconds
+    unawaited(
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && _currentStep == 2) {
+          const mockOtp = '123456';
+          for (var i = 0; i < 6; i++) {
+            otpControllers[i].text = mockOtp[i];
+          }
+          setState(() {
+            _otpErrorMessage = 'OTP detected automatically!';
+          });
         }
-        setState(() {
-          _otpErrorMessage = "OTP detected automatically!";
-        });
-      }
-    });
+      }),
+    );
   }
 
   @override
   void dispose() {
     identifierController.dispose();
-    for (var controller in otpControllers) {
+    for (final controller in otpControllers) {
       controller.dispose();
     }
-    for (var node in otpFocusNodes) {
+    for (final node in otpFocusNodes) {
       node.dispose();
     }
     newPasswordController.dispose();
@@ -127,21 +130,23 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     required String message,
     VoidCallback? onConfirmCustom,
   }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _AestheticDialog(
-        isSuccess: isSuccess,
-        title: title,
-        message: message,
-        onConfirm: () {
-          Navigator.pop(context);
-          if (onConfirmCustom != null) {
-            onConfirmCustom();
-          } else if (isSuccess && _currentStep == 3) {
-            context.goNamed('mainLoginScreen');
-          }
-        },
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => _AestheticDialog(
+          isSuccess: isSuccess,
+          title: title,
+          message: message,
+          onConfirm: () {
+            Navigator.pop(context);
+            if (onConfirmCustom != null) {
+              onConfirmCustom();
+            } else if (isSuccess && _currentStep == 3) {
+              context.goNamed('mainLoginScreen');
+            }
+          },
+        ),
       ),
     );
   }
@@ -151,10 +156,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     final themeMode = ref.watch(themeProvider);
     final isDark = themeMode == ThemeMode.dark;
     final colorScheme = context.colorScheme;
-    final Color primaryColor = colorScheme.primary;
-    final Color backgroundColor = colorScheme.surface;
-    final Color textColor = colorScheme.onSurface;
-    final Color glassColor = colorScheme.surfaceContainerHighest.withValues(
+    final primaryColor = colorScheme.primary;
+    final backgroundColor = colorScheme.surface;
+    final textColor = colorScheme.onSurface;
+    final glassColor = colorScheme.surfaceContainerHighest.withValues(
       alpha: .3,
     );
 
@@ -253,7 +258,6 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                               borderRadius: BorderRadius.circular(24),
                               border: Border.all(
                                 color: textColor.withValues(alpha: .1),
-                                width: 1,
                               ),
                             ),
                             child: Column(
@@ -277,13 +281,17 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                           context,
                                           message: 'Sending OTP...',
                                         );
-                                        await Future.delayed(
-                                          const Duration(seconds: 2),
+                                        unawaited(
+                                          Future.delayed(
+                                            const Duration(seconds: 2),
+                                            () {
+                                              if (!context.mounted) return;
+                                              LoadingDialog.hide(context);
+                                              setState(() => _currentStep = 2);
+                                              _startTimer();
+                                            },
+                                          ),
                                         );
-                                        if (!context.mounted) return;
-                                        LoadingDialog.hide(context);
-                                        setState(() => _currentStep = 2);
-                                        _startTimer();
                                       } else {
                                         _showAestheticDialog(
                                           isSuccess: false,
@@ -300,7 +308,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                         MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        "6-Digit OTP",
+                                        '6-Digit OTP',
                                         style: GoogleFonts.poppins(
                                           color: textColor,
                                           fontWeight: FontWeight.w600,
@@ -341,7 +349,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                             fontWeight: FontWeight.bold,
                                           ),
                                           decoration: InputDecoration(
-                                            counterText: "",
+                                            counterText: '',
                                             enabledBorder: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(10),
@@ -409,7 +417,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                       style: GoogleFonts.poppins(
                                         color:
                                             _otpErrorMessage.contains(
-                                              "automatic",
+                                              'automatic',
                                             )
                                             ? Colors.green
                                             : Colors.redAccent,
@@ -420,9 +428,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                   ],
                                   if (_canResend)
                                     TextButton(
-                                      onPressed: () {
-                                        _startTimer();
-                                      },
+                                      onPressed: _startTimer,
                                       child: Text(
                                         'RESEND CODE',
                                         style: GoogleFonts.poppins(
@@ -437,7 +443,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                     context: context,
                                     label: 'VERIFY OTP',
                                     onPressed: () async {
-                                      String otp = otpControllers
+                                      final otp = otpControllers
                                           .map((e) => e.text)
                                           .join();
                                       if (otp.length == 6) {
@@ -445,23 +451,29 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                           context,
                                           message: 'Verifying OTP...',
                                         );
-                                        await Future.delayed(
-                                          const Duration(seconds: 1),
+                                        unawaited(
+                                          Future.delayed(
+                                            const Duration(seconds: 1),
+                                            () {
+                                              if (!context.mounted) return;
+                                              LoadingDialog.hide(context);
+                                              if (otp == '123456') {
+                                                setState(
+                                                  () => _currentStep = 3,
+                                                );
+                                              } else {
+                                                setState(
+                                                  () => _otpErrorMessage =
+                                                      'Invalid OTP pin. Please try again.',
+                                                );
+                                              }
+                                            },
+                                          ),
                                         );
-                                        if (!context.mounted) return;
-                                        LoadingDialog.hide(context);
-                                        if (otp == "123456") {
-                                          setState(() => _currentStep = 3);
-                                        } else {
-                                          setState(
-                                            () => _otpErrorMessage =
-                                                "Invalid OTP pin. Please try again.",
-                                          );
-                                        }
                                       } else {
                                         setState(
                                           () => _otpErrorMessage =
-                                              "Please enter all 6 digits.",
+                                              'Please enter all 6 digits.',
                                         );
                                       }
                                     },
@@ -512,16 +524,20 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                                           context,
                                           message: 'Resetting password...',
                                         );
-                                        await Future.delayed(
-                                          const Duration(seconds: 2),
-                                        );
-                                        if (!context.mounted) return;
-                                        LoadingDialog.hide(context);
-                                        _showAestheticDialog(
-                                          isSuccess: true,
-                                          title: 'Success!',
-                                          message:
-                                              'Your password has been updated successfully. Log in with your new password.',
+                                        unawaited(
+                                          Future.delayed(
+                                            const Duration(seconds: 2),
+                                            () {
+                                              if (!context.mounted) return;
+                                              LoadingDialog.hide(context);
+                                              _showAestheticDialog(
+                                                isSuccess: true,
+                                                title: 'Success!',
+                                                message:
+                                                    'Your password has been updated successfully. Log in with your new password.',
+                                              );
+                                            },
+                                          ),
                                         );
                                       } else {
                                         _showAestheticDialog(
@@ -593,7 +609,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     bool isVisible = false,
     VoidCallback? onVisibilityToggle,
   }) {
-    final Color textColor = isDark ? Colors.white : Colors.black;
+    final textColor = isDark ? Colors.white : Colors.black;
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return TextFormField(
@@ -661,7 +677,7 @@ class _AestheticDialogState extends State<_AestheticDialog>
       parent: _controller,
       curve: Curves.elasticOut,
     );
-    _controller.forward();
+    unawaited(_controller.forward());
   }
 
   @override
@@ -760,7 +776,7 @@ class _AnimatedStatusIconState extends State<_AnimatedStatusIcon>
       duration: const Duration(milliseconds: 1000),
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.bounceOut);
-    _controller.repeat(reverse: true);
+    unawaited(_controller.repeat(reverse: true));
   }
 
   @override
@@ -774,7 +790,7 @@ class _AnimatedStatusIconState extends State<_AnimatedStatusIcon>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
-        final double glowSize = 10 + (15 * _animation.value);
+        final glowSize = 10 + (15 * _animation.value);
         return Container(
           width: 90,
           height: 90,

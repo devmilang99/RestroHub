@@ -1,16 +1,18 @@
+import 'dart:async';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 
 class LoadingDialog {
   static void show(BuildContext context, {required String message}) {
-    showDialog(
+    unawaited(showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (context) => _AestheticLoadingDialog(message: message),
-    );
+    ));
   }
 
   static void hide(BuildContext context) {

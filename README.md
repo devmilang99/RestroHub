@@ -45,9 +45,9 @@
 | Framework | Flutter |
 | Language | Dart |
 | State Management | *(Riverpod)* |
-| Backend / API | *(e.g. REST API / Firebase)* |
-| Database | *(e.g. SQLite / Firestore)* |
-| Authentication | *(e.g. JWT / Firebase Auth)* |
+| Backend / API | Supabase / REST API |
+| Database | SQLite (Drift) |
+| Authentication | Supabase Auth |
 | Maps & Location | *(e.g. Google Maps SDK)* |
 | Payment | *(e.g. eSewa / Khalti / Stripe)* |
 
@@ -59,7 +59,7 @@
 - Flutter SDK `>=3.0.0`
 - Dart `>=3.0.0`
 - VS Code
-- A running backend server or Firebase project
+- A running backend server (Supabase)
 
 ## 📸 Screenshots
 ![SplashScreen](https://github.com/user-attachments/assets/8c5fd279-5966-45c1-8346-8d4e76f1f50b)

@@ -8,10 +8,8 @@ class CircleButton extends StatelessWidget {
   final double iconSize;
 
   const CircleButton({
-    super.key,
-    required this.icon,
+    required this.icon, required this.onTap, super.key,
     this.iconColor,
-    required this.onTap,
     this.size = 36,
     this.iconSize = 17,
   });

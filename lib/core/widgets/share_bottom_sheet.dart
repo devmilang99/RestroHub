@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,9 +10,9 @@ class ShareBottomSheet extends StatelessWidget {
   final String shareLink;
 
   const ShareBottomSheet({
-    super.key,
     required this.title,
     required this.shareLink,
+    super.key,
   });
 
   static void show(
@@ -18,12 +20,14 @@ class ShareBottomSheet extends StatelessWidget {
     required String title,
     required String shareLink,
   }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) =>
-          ShareBottomSheet(title: title, shareLink: shareLink),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) =>
+            ShareBottomSheet(title: title, shareLink: shareLink),
+      ),
     );
   }
 
@@ -51,7 +55,7 @@ class ShareBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            "Share with friends",
+            'Share with friends',
             style: GoogleFonts.playfairDisplay(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -60,7 +64,7 @@ class ShareBottomSheet extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "Help others discover this amazing place",
+            'Help others discover this amazing place',
             style: GoogleFonts.poppins(
               fontSize: 14,
               color: colorScheme.onSurfaceVariant,
@@ -76,27 +80,27 @@ class ShareBottomSheet extends StatelessWidget {
             children: [
               _ShareOption(
                 icon: Icons.facebook,
-                label: "Facebook",
+                label: 'Facebook',
                 color: const Color(0xFF1877F2),
-                onTap: () => _handleShare(context, "Facebook"),
+                onTap: () => _handleShare(context, 'Facebook'),
               ),
               _ShareOption(
                 icon: Icons.chat_bubble_rounded,
-                label: "WhatsApp",
+                label: 'WhatsApp',
                 color: const Color(0xFF25D366),
-                onTap: () => _handleShare(context, "WhatsApp"),
+                onTap: () => _handleShare(context, 'WhatsApp'),
               ),
               _ShareOption(
                 icon: Icons.message_rounded,
-                label: "Message",
+                label: 'Message',
                 color: Colors.blue,
-                onTap: () => _handleShare(context, "Message"),
+                onTap: () => _handleShare(context, 'Message'),
               ),
               _ShareOption(
                 icon: Icons.alternate_email_rounded,
-                label: "Email",
+                label: 'Email',
                 color: Colors.redAccent,
-                onTap: () => _handleShare(context, "Email"),
+                onTap: () => _handleShare(context, 'Email'),
               ),
             ],
           ),
@@ -126,10 +130,12 @@ class ShareBottomSheet extends StatelessWidget {
                 const SizedBox(width: 12),
                 TextButton(
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: shareLink));
+                    unawaited(
+                      Clipboard.setData(ClipboardData(text: shareLink)),
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("Link copied to clipboard"),
+                        content: Text('Link copied to clipboard'),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
@@ -142,7 +148,7 @@ class ShareBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text("Copy Link"),
+                  child: const Text('Copy Link'),
                 ),
               ],
             ),
@@ -157,7 +163,7 @@ class ShareBottomSheet extends StatelessWidget {
     // In a real app, use share_plus
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("Sharing to $platform..."),
+        content: Text('Sharing to $platform...'),
         behavior: SnackBarBehavior.floating,
       ),
     );

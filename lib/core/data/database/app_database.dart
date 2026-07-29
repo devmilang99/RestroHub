@@ -1,0 +1,234 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:restro_hub/core/utils/logger.dart';
+
+part 'app_database.g.dart';
+
+class StringListConverter extends TypeConverter<List<String>, String> {
+  const StringListConverter();
+  @override
+  List<String> fromSql(String fromDb) {
+    return (json.decode(fromDb) as List).map((e) => e.toString()).toList();
+  }
+
+  @override
+  String toSql(List<String> value) {
+    return json.encode(value);
+  }
+}
+
+class CachedRestaurants extends Table {
+  TextColumn get id => text()();
+  TextColumn get ownerId => text().nullable()();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  TextColumn get logoUrl => text().nullable()();
+  TextColumn get bannerUrl => text().nullable()();
+  TextColumn get phone => text().nullable()();
+  TextColumn get email => text().nullable()();
+  TextColumn get website => text().nullable()();
+  TextColumn get status => text().withDefault(const Constant('closed'))();
+  RealColumn get rating => real().withDefault(const Constant(0))();
+  TextColumn get priceRange => text().withDefault(const Constant(r'$$'))();
+  RealColumn get taxPercent => real().withDefault(const Constant(0))();
+  TextColumn get locationAddress => text().nullable()();
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
+  DateTimeColumn get lastUpdated =>
+      dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class CachedMenuCategories extends Table {
+  TextColumn get id => text()();
+  TextColumn get restaurantId =>
+      text().references(CachedRestaurants, #id, onDelete: KeyAction.cascade)();
+  TextColumn get name => text()();
+  IntColumn get priority => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class CachedMenuItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get categoryId => text().references(
+    CachedMenuCategories,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
+  TextColumn get name => text()();
+  TextColumn get description => text().nullable()();
+  RealColumn get price => real()();
+  TextColumn get imageUrl => text().nullable()();
+  BoolColumn get isAvailable => boolean().withDefault(const Constant(true))();
+  IntColumn get calories => integer().nullable()();
+  TextColumn get dietaryFlags => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class CachedUserAddresses extends Table {
+  TextColumn get id => text()();
+  TextColumn get label => text().withDefault(const Constant('Home'))();
+  TextColumn get addressLine1 => text()();
+  TextColumn get addressLine2 => text().nullable()();
+  TextColumn get city => text()();
+  TextColumn get state => text().nullable()();
+  TextColumn get postalCode => text().nullable()();
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
+  BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class CachedOrders extends Table {
+  TextColumn get id => text()();
+  TextColumn get restaurantId => text()();
+  TextColumn get status => text()();
+  TextColumn get paymentStatus => text()();
+  RealColumn get subtotal => real()();
+  RealColumn get deliveryFee => real()();
+  RealColumn get taxAmount => real()();
+  RealColumn get discountAmount => real()();
+  RealColumn get totalAmount => real()();
+  DateTimeColumn get createdAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class CachedOrderItems extends Table {
+  TextColumn get id => text()();
+  TextColumn get orderId => text().references(CachedOrders, #id)();
+  TextColumn get menuItemId => text().nullable()();
+  TextColumn get name => text()();
+  IntColumn get quantity => integer()();
+  RealColumn get unitPrice => real()();
+  RealColumn get totalPrice => real()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class CachedFavourites extends Table {
+  TextColumn get id => text()(); // Either restaurantId or menuItemId
+  TextColumn get type => text()(); // 'restaurant' or 'menu_item'
+  DateTimeColumn get addedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class CachedCartItems extends Table {
+  TextColumn get menuItemId => text()();
+  TextColumn get name => text()();
+  TextColumn get imageUrl => text().nullable()();
+  RealColumn get price => real()();
+  IntColumn get quantity => integer().withDefault(const Constant(1))();
+
+  @override
+  Set<Column> get primaryKey => {menuItemId};
+}
+
+class SyncMetadata extends Table {
+  TextColumn get tableIdentifier => text()();
+  DateTimeColumn get lastSync => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {tableIdentifier};
+}
+
+@DriftDatabase(
+  tables: [
+    CachedRestaurants,
+    CachedMenuCategories,
+    CachedMenuItems,
+    CachedUserAddresses,
+    CachedOrders,
+    CachedOrderItems,
+    CachedFavourites,
+    CachedCartItems,
+    SyncMetadata,
+  ],
+)
+class AppDatabase extends _$AppDatabase {
+  AppDatabase(super.e);
+
+  @override
+  int get schemaVersion => 5;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      logInfo('Database onCreate: Creating all tables.');
+      await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      logInfo('Database onUpgrade: Upgrading from $from to $to.');
+      if (from < 2) {
+        logInfo('Database onUpgrade: Adding v2 tables.');
+        await m.createTable(cachedRestaurants);
+        await m.createTable(cachedFavourites);
+        await m.createTable(cachedCartItems);
+        await m.createTable(syncMetadata);
+      }
+      if (from < 3) {
+        logInfo('Database onUpgrade: Adding v3 tables.');
+        // Recreate tables with proper schema
+        await m.drop(cachedRestaurants);
+        await m.createTable(cachedRestaurants);
+        await m.createTable(cachedMenuCategories);
+        await m.createTable(cachedMenuItems);
+        await m.createTable(cachedUserAddresses);
+        await m.createTable(cachedOrders);
+        await m.createTable(cachedOrderItems);
+      }
+      if (from < 4) {
+        logInfo('Database onUpgrade: Adding v4 tables with CASCADE.');
+        await m.drop(cachedMenuItems);
+        await m.drop(cachedMenuCategories);
+        await m.createTable(cachedMenuCategories);
+        await m.createTable(cachedMenuItems);
+      }
+      if (from < 5) {
+        logInfo('Database onUpgrade: Refreshing restaurant tables for v5.');
+        // Complete refresh to ensure all columns match Supabase
+        await m.drop(cachedMenuItems);
+        await m.drop(cachedMenuCategories);
+        await m.drop(cachedRestaurants);
+        await m.createTable(cachedRestaurants);
+        await m.createTable(cachedMenuCategories);
+        await m.createTable(cachedMenuItems);
+      }
+    },
+  );
+
+  static QueryExecutor openConnection() {
+    return LazyDatabase(() async {
+      final dbFolder = await getApplicationDocumentsDirectory();
+      final file = File(p.join(dbFolder.path, 'restro_hub_v2.sqlite'));
+
+      return NativeDatabase.createInBackground(
+        file,
+        logStatements: kDebugMode,
+        setup: (db) {
+          db.execute('PRAGMA foreign_keys = ON');
+        },
+      );
+    });
+  }
+}

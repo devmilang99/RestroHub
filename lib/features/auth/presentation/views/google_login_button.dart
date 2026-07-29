@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:restro_hub/features/auth/data/datasources/google_auth_datasource.dart';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class GoogleLoginDemo extends StatefulWidget {
   const GoogleLoginDemo({super.key});
@@ -12,14 +12,14 @@ class GoogleLoginDemo extends StatefulWidget {
 
 class _GoogleLoginDemoState extends State<GoogleLoginDemo> {
   final GoogleAuthService _authService = GoogleAuthService();
-  fb.User? _user;
+  User? _user;
   String? _error;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _checkExistingSession();
+    unawaited(_checkExistingSession());
   }
 
   Future<void> _checkExistingSession() async {
@@ -66,17 +66,20 @@ class _GoogleLoginDemoState extends State<GoogleLoginDemo> {
   }
 
   Widget _buildUserInfo() {
+    final avatarUrl = _user!.userMetadata?['avatar_url'] as String?;
+    final fullName = _user!.userMetadata?['full_name'] as String?;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (_user!.photoURL != null)
+        if (avatarUrl != null)
           CircleAvatar(
             radius: 40,
-            backgroundImage: NetworkImage(_user!.photoURL!),
+            backgroundImage: NetworkImage(avatarUrl),
           ),
         const SizedBox(height: 16),
         Text(
-          'Welcome, ${_user!.displayName ?? 'User'}',
+          'Welcome, ${fullName ?? 'User'}',
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         Text(_user!.email ?? 'No email'),
@@ -96,7 +99,7 @@ class _GoogleLoginDemoState extends State<GoogleLoginDemo> {
       children: [
         if (_error != null)
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: Text(_error!, style: const TextStyle(color: Colors.red)),
           ),
         ElevatedButton.icon(

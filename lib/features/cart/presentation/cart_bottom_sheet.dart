@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
 
 class CartBottomSheet extends ConsumerStatefulWidget {
@@ -33,104 +36,110 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
     ];
     final cs = context.colorScheme;
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.local_offer_outlined, color: cs.primary),
-            const SizedBox(width: 12),
-            const Text('Available Vouchers'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(vouchers.length, (index) {
-              final v = vouchers[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: InkWell(
-                  onTap: () {
-                    setState(() {
-                      _appliedVoucher = v['code'] as String;
-                      _voucherController.text = _appliedVoucher!;
-                    });
-                    ref
-                        .read(checkoutProvider.notifier)
-                        .setVoucher(
-                          _appliedVoucher,
-                          index == 1 ? 50.0 : 20.0, // Mock discount values
-                        );
-                    Navigator.pop(dialogContext);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Voucher "${v['code']}" applied'),
-                        duration: const Duration(seconds: 2),
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.local_offer_outlined, color: cs.primary),
+              const SizedBox(width: 12),
+              const Text('Available Vouchers'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(vouchers.length, (index) {
+                final v = vouchers[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _appliedVoucher = v['code'];
+                        _voucherController.text = _appliedVoucher!;
+                      });
+                      ref
+                          .read(checkoutProvider.notifier)
+                          .setVoucher(
+                            _appliedVoucher,
+                            index == 1 ? 50.0 : 20.0, // Mock discount values
+                          );
+                      Navigator.pop(dialogContext);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Voucher "${v['code']}" applied'),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest.withValues(
+                          alpha: 0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: cs.primary.withValues(alpha: 0.2),
+                        ),
                       ),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: cs.primary.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                v['code']!,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  v['code']!,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                v['label']!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: cs.onSurfaceVariant,
+                                const SizedBox(height: 4),
+                                Text(
+                                  v['label']!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: cs.onSurfaceVariant,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        Icon(
-                          Icons.check_circle_outline,
-                          color: cs.primary,
-                          size: 20,
-                        ),
-                      ],
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: cs.primary,
+                            size: 20,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
         ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final cartItems = ref.watch(cartProvider);
+    final cartItems = ref.watch(cartProvider).value ?? [];
     final cartNotifier = ref.read(cartProvider.notifier);
     final colorScheme = context.colorScheme;
     final textTheme = context.textTheme;
@@ -152,19 +161,19 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
             ),
             const SizedBox(height: 16),
             const Text(
-              "Your cart is empty",
+              'Your cart is empty',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
-              "Add some delicious items to get started!",
+              'Add some delicious items to get started!',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.pop(),
-              child: const Text("Go Back"),
+              child: const Text('Go Back'),
             ),
           ],
         ),
@@ -200,7 +209,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Review Order Items",
+                  'Review Order Items',
                   style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -208,31 +217,33 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                 Row(
                   children: [
                     IconButton(
-                      tooltip: "Remove All",
+                      tooltip: 'Remove All',
                       onPressed: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text("Clear Cart?"),
-                            content: const Text(
-                              "This will remove all items from your cart.",
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("Cancel"),
+                        unawaited(
+                          showDialog<void>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Clear Cart?'),
+                              content: const Text(
+                                'This will remove all items from your cart.',
                               ),
-                              TextButton(
-                                style: TextButton.styleFrom(
-                                  foregroundColor: colorScheme.error,
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
                                 ),
-                                onPressed: () {
-                                  cartNotifier.clearCart();
-                                  Navigator.pop(context);
-                                },
-                                child: const Text("Clear All"),
-                              ),
-                            ],
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: colorScheme.error,
+                                  ),
+                                  onPressed: () {
+                                    unawaited(cartNotifier.clearCart());
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text('Clear All'),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -281,14 +292,11 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                       ),
                       child: Row(
                         children: [
-                          ClipRRect(
+                          AppImage(
+                            imagePath: item.image,
+                            width: 54,
+                            height: 54,
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.asset(
-                              item.image,
-                              width: 54,
-                              height: 54,
-                              fit: BoxFit.cover,
-                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -306,7 +314,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  "Rs. ${item.price.toStringAsFixed(0)}",
+                                  'Rs. ${item.price.toStringAsFixed(0)}',
                                   style: TextStyle(
                                     color: colorScheme.primary,
                                     fontWeight: FontWeight.w600,
@@ -336,9 +344,11 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                     size: 16,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
-                                  onPressed: () => cartNotifier.updateQuantity(
-                                    item.name,
-                                    item.quantity - 1,
+                                  onPressed: () => unawaited(
+                                    cartNotifier.updateQuantity(
+                                      item.name,
+                                      item.quantity - 1,
+                                    ),
                                   ),
                                 ),
                                 Text(
@@ -358,9 +368,11 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                     size: 16,
                                     color: colorScheme.primary,
                                   ),
-                                  onPressed: () => cartNotifier.updateQuantity(
-                                    item.name,
-                                    item.quantity + 1,
+                                  onPressed: () => unawaited(
+                                    cartNotifier.updateQuantity(
+                                      item.name,
+                                      item.quantity + 1,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -421,7 +433,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                       bottom: 6,
                                     ),
                                     child: Text(
-                                      "Voucher",
+                                      'Voucher',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w900,
@@ -461,7 +473,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                                   ),
                                                   const SizedBox(width: 8),
                                                   Text(
-                                                    "Add Voucher",
+                                                    'Add Voucher',
                                                     style: TextStyle(
                                                       color:
                                                           colorScheme.primary,
@@ -519,7 +531,7 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                                                           checkoutProvider
                                                               .notifier,
                                                         )
-                                                        .setVoucher(null, 0.0);
+                                                        .setVoucher(null, 0);
                                                   },
                                                   child: const Icon(
                                                     Icons.delete,
@@ -537,15 +549,14 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                             const SizedBox(width: 12),
                             // Compact Payment Toggle
                             Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 6),
                                   child: Text(
                                     ref.watch(checkoutProvider).paymentMethod ==
                                             PaymentMethod.qr
-                                        ? "QR Pay"
-                                        : "Cash",
+                                        ? 'QR Pay'
+                                        : 'Cash',
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w900,
@@ -603,21 +614,21 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                         ),
                         // 2. Condensed Summary Rows
                         _buildCompactSummaryRow(
-                          "Subtotal",
-                          "Rs. ${cartNotifier.totalAmount.toStringAsFixed(0)}",
+                          'Subtotal',
+                          'Rs. ${ref.watch(cartTotalAmountProvider).toStringAsFixed(0)}',
                           colorScheme,
                         ),
                         const SizedBox(height: 6),
                         _buildCompactSummaryRow(
-                          "Delivery Fee",
-                          "Rs. 40",
+                          'Delivery Fee',
+                          'Rs. 40',
                           colorScheme,
                         ),
                         if (_appliedVoucher != null) ...[
                           const SizedBox(height: 6),
                           _buildCompactSummaryRow(
-                            "Discount",
-                            "- Rs. 50",
+                            'Discount',
+                            '- Rs. 50',
                             colorScheme,
                             isHighlight: true,
                           ),
@@ -628,14 +639,14 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              "Grand Total",
+                              'Grand Total',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
                             Text(
-                              "Rs. ${(cartNotifier.totalAmount + 40 - (_appliedVoucher != null ? 50 : 0)).toStringAsFixed(0)}",
+                              'Rs. ${(ref.watch(cartTotalAmountProvider) + 40 - (_appliedVoucher != null ? 50 : 0)).toStringAsFixed(0)}',
                               style: TextStyle(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.w900,
@@ -667,10 +678,10 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                 ),
                 onPressed: () {
                   Navigator.pop(context); // Close bottom sheet first
-                  context.push('/processCheckout');
+                  unawaited(context.push('/processCheckout'));
                 },
                 child: const Text(
-                  "Proceed to Checkout",
+                  'Proceed to Checkout',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -691,14 +702,19 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: colorScheme.onSurface.withValues(alpha: .5),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: .5),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           value,
           style: TextStyle(
