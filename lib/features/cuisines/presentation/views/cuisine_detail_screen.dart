@@ -465,18 +465,16 @@ class CuisineSingleItem extends ConsumerWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: () async {
-                  await ref
-                      .read(cartProvider.notifier)
-                      .addItem(
-                        CartModel(
-                          id: item.id,
-                          name: item.name,
-                          image: item.imageUrl ?? '',
-                          price: item.price,
-                          quantity: 1,
-                        ),
-                      );
-                  context.push('/processCheckout');
+                  await ref.read(cartProvider.notifier).addItem(
+                    CartModel(
+                      id: item.id,
+                      name: item.name,
+                      image: item.imageUrl ?? '',
+                      price: item.price,
+                      quantity: 1,
+                    ),
+                  );
+                  unawaited(context.push('/processCheckout'));
                 },
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -493,18 +491,16 @@ class CuisineSingleItem extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
             ElevatedButton(
-              onPressed: () {
-                ref
-                    .read(cartProvider.notifier)
-                    .addItem(
-                      CartModel(
-                        id: item.id,
-                        name: item.name,
-                        image: item.imageUrl ?? '',
-                        price: item.price,
-                        quantity: 1,
-                      ),
-                    );
+              onPressed: () async {
+                await ref.read(cartProvider.notifier).addItem(
+                  CartModel(
+                    id: item.id,
+                    name: item.name,
+                    image: item.imageUrl ?? '',
+                    price: item.price,
+                    quantity: 1,
+                  ),
+                );
                 _showAddedNotification(context, item.name);
               },
               style: ElevatedButton.styleFrom(

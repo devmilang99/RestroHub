@@ -301,48 +301,6 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
       ),
     );
   }
-
-  Widget _buildSearchBar(ColorScheme colorScheme) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          Icon(Icons.search, color: colorScheme.primary),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => GoRouter.of(context).pushNamed('searchScreen'),
-              child: const AbsorbPointer(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search food, restaurants...',
-                    border: InputBorder.none,
-                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colorScheme.primary,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.tune, color: Colors.white, size: 18),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class DashboardSlivers extends StatelessWidget {

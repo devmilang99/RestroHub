@@ -214,8 +214,10 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                     ],
                                   ),
                                   TextButton(
-                                    onPressed: () {
-                                      context.pushNamed('forgotPasswordScreen');
+                                    onPressed: () async {
+                                      await context.pushNamed(
+                                        'forgotPasswordScreen',
+                                      );
                                     },
                                     child: Text(
                                       'Forgot Password?',
@@ -233,7 +235,9 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                 width: double.infinity,
                                 height: 56,
                                 child: ElevatedButton(
-                                  onPressed: () => unawaited(_handleLogin(ref)),
+                                  onPressed: () async {
+                                    await _handleLogin(ref);
+                                  },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primaryColor,
                                     foregroundColor: Colors.black,
@@ -255,8 +259,9 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                 children: [
                                   Expanded(
                                     child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          unawaited(_handleGoogleLogin(ref)),
+                                      onPressed: () async {
+                                        await _handleGoogleLogin(ref);
+                                      },
                                       icon: const Icon(
                                         Icons.login,
                                         color: Colors.white,
@@ -292,8 +297,10 @@ class _LoginCardState extends ConsumerState<LoginCard>
                                       style: TextStyle(color: Colors.white70),
                                     ),
                                     GestureDetector(
-                                      onTap: () {
-                                        context.pushNamed('registerScreen');
+                                      onTap: () async {
+                                        await context.pushNamed(
+                                          'registerScreen',
+                                        );
                                       },
                                       child: Text(
                                         'Sign Up',

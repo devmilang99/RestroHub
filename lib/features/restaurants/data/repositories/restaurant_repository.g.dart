@@ -55,4 +55,4 @@ final class RestaurantRepositoryProvider
 }
 
 String _$restaurantRepositoryHash() =>
-    r'4298f68a748871ab8ed8fa7f94d47157e075be9c';
+    r'b2102967fbc82ec49b94e43cd5c8160b7784969e';

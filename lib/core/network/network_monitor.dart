@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:restro_hub/core/utils/logger.dart';
 
@@ -14,7 +15,7 @@ class NetworkMonitor {
     try {
       final results = await _connectivity.checkConnectivity();
       return _mapConnectivityResult(results);
-    } catch (e) {
+    } on Exception catch (e) {
       logError('Failed to check connectivity', e);
       return NetworkStatus.offline;
     }
@@ -38,6 +39,6 @@ class NetworkMonitor {
   }
 
   void dispose() {
-    _controller.close();
+    unawaited(_controller.close());
   }
 }

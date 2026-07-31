@@ -188,37 +188,11 @@ class _SearchableSliverAppLayoutState<T>
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final filteredItems = widget.items
         .where((item) => widget.filterPredicate(item, _query))
         .toList();
 
-    final hasFilterItems =
-        widget.enableFilters && (widget.filterItems?.isNotEmpty ?? false);
-
-    final filterChipWidgets = hasFilterItems
-        ? widget.filterItems!.map((f) {
-            final selected = _selectedFilters.contains(f);
-            return Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(
-                label: Text(f),
-                selected: selected,
-                onSelected: (val) {
-                  setState(() {
-                    if (val) {
-                      _selectedFilters.add(f);
-                    } else {
-                      _selectedFilters.remove(f);
-                    }
-                  });
-                  widget.onFilterChanged?.call(_selectedFilters);
-                },
-              ),
-            );
-          }).toList()
-        : const <Widget>[];
     final headerHeight = _headerHeight;
 
     final effectivePadding =

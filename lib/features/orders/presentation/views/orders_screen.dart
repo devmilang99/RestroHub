@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/utils/launcher_utils.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
@@ -117,7 +116,7 @@ class _OrderList extends ConsumerWidget {
             position: index,
             duration: const Duration(milliseconds: 375),
             child: SlideAnimation(
-              verticalOffset: 50.0,
+              verticalOffset: 50,
               child: FadeInAnimation(
                 child: _OrderCard(order: order),
               ),
@@ -1734,14 +1733,16 @@ class _DriverTrackingSheet extends StatefulWidget {
 }
 
 class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
-  GoogleMapController? _controller;
   late Timer _markerTimer;
 
   // Mock coordinates for Nepal (Kathmandu area)
-  static const LatLng _restaurantLoc = LatLng(27.700769, 85.300140);
-  static const LatLng _deliveryLoc = LatLng(27.7172, 85.3240); // Destination
+  final double _restaurantLat = 27.700769;
+  final double _restaurantLng = 85.300140;
+  final double _deliveryLat = 27.7172;
+  final double _deliveryLng = 85.3240;
 
-  LatLng _driverLoc = _restaurantLoc;
+  double _driverLat = 27.700769;
+  double _driverLng = 85.300140;
   int _step = 0;
   final int _totalSteps = 10;
 
@@ -1754,19 +1755,13 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
           setState(() {
             _step++;
             // Interpolate position
-            final lat =
-                _restaurantLoc.latitude +
-                (_deliveryLoc.latitude - _restaurantLoc.latitude) *
-                    (_step / _totalSteps);
-            final lng =
-                _restaurantLoc.longitude +
-                (_deliveryLoc.longitude - _restaurantLoc.longitude) *
-                    (_step / _totalSteps);
-            _driverLoc = LatLng(lat, lng);
+            _driverLat =
+                _restaurantLat +
+                (_deliveryLat - _restaurantLat) * (_step / _totalSteps);
+            _driverLng =
+                _restaurantLng +
+                (_deliveryLng - _restaurantLng) * (_step / _totalSteps);
           });
-          unawaited(
-            _controller?.animateCamera(CameraUpdate.newLatLng(_driverLoc)),
-          );
         }
       } else {
         _markerTimer.cancel();
@@ -1792,36 +1787,34 @@ class _DriverTrackingSheetState extends State<_DriverTrackingSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
         child: Stack(
           children: [
-            GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: _driverLoc,
-                zoom: 15,
+            Container(
+              color: Colors.grey[100],
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.delivery_dining,
+                      size: 100,
+                      color: Colors.grey[300],
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Live Tracking Map Disabled',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Driver Location: ${_driverLat.toStringAsFixed(4)}, ${_driverLng.toStringAsFixed(4)}',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
-              onMapCreated: (controller) => _controller = controller,
-              markers: {
-                Marker(
-                  markerId: const MarkerId('restaurant'),
-                  position: _restaurantLoc,
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueOrange,
-                  ),
-                ),
-                Marker(
-                  markerId: const MarkerId('delivery'),
-                  position: _deliveryLoc,
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueAzure,
-                  ),
-                ),
-                Marker(
-                  markerId: const MarkerId('driver'),
-                  position: _driverLoc,
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    BitmapDescriptor.hueRed,
-                  ),
-                ),
-              },
-              // TODO(user): Add Google Maps API key in AndroidManifest.xml and AppDelegate.swift
             ),
             Positioned(
               top: 20,

@@ -42,7 +42,7 @@ final class SupabaseSyncManagerProvider
 }
 
 String _$supabaseSyncManagerHash() =>
-    r'19fa5bb4af7f182abf684b79828a5cba26d7f41a';
+    r'69dc34ebdf523b0c56e9d26b6e8053ba8b08071a';
 
 abstract class _$SupabaseSyncManager extends $Notifier<void> {
   void build();

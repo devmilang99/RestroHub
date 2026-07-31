@@ -742,7 +742,6 @@ class _MenuItemCard extends ConsumerWidget {
     required this.isFirst,
     required this.isDark,
     required this.colorScheme,
-    super.key,
   });
 
   @override

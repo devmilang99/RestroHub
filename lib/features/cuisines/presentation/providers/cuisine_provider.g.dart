@@ -125,7 +125,7 @@ final class AllCuisinesStreamProvider
   }
 }
 
-String _$allCuisinesStreamHash() => r'eb226f42cd718562dc3fa383ad280b5c9513bb0b';
+String _$allCuisinesStreamHash() => r'9c1b002e48b6fc06df264d6ca806119850226fce';
 
 @ProviderFor(restaurantIdFromCategory)
 final restaurantIdFromCategoryProvider = RestaurantIdFromCategoryFamily._();
@@ -178,7 +178,7 @@ final class RestaurantIdFromCategoryProvider
 }
 
 String _$restaurantIdFromCategoryHash() =>
-    r'60a252878a09b3ddc6c25ac804e26ed53174bd1f';
+    r'52cec679e2801c0ce6b59f9867bcd3f32d580d5b';
 
 final class RestaurantIdFromCategoryFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<String?>, String> {
@@ -253,7 +253,7 @@ final class RestaurantFromIdProvider
   }
 }
 
-String _$restaurantFromIdHash() => r'a2e8e649ba69c588b7b8225dbf75f095350e1bf5';
+String _$restaurantFromIdHash() => r'22290a2ea3d5e6ed3ba24a5e05f2e754d671737f';
 
 final class RestaurantFromIdFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<RestaurantModel?>, String> {
@@ -271,4 +271,81 @@ final class RestaurantFromIdFamily extends $Family
 
   @override
   String toString() => r'restaurantFromIdProvider';
+}
+
+@ProviderFor(restaurantFromCategoryId)
+final restaurantFromCategoryIdProvider = RestaurantFromCategoryIdFamily._();
+
+final class RestaurantFromCategoryIdProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<RestaurantModel?>,
+          RestaurantModel?,
+          FutureOr<RestaurantModel?>
+        >
+    with $FutureModifier<RestaurantModel?>, $FutureProvider<RestaurantModel?> {
+  RestaurantFromCategoryIdProvider._({
+    required RestaurantFromCategoryIdFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'restaurantFromCategoryIdProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$restaurantFromCategoryIdHash();
+
+  @override
+  String toString() {
+    return r'restaurantFromCategoryIdProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<RestaurantModel?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<RestaurantModel?> create(Ref ref) {
+    final argument = this.argument as String;
+    return restaurantFromCategoryId(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is RestaurantFromCategoryIdProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$restaurantFromCategoryIdHash() =>
+    r'2c7b747e4a562d865ba029e61127b79ed1178d42';
+
+final class RestaurantFromCategoryIdFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<RestaurantModel?>, String> {
+  RestaurantFromCategoryIdFamily._()
+    : super(
+        retry: null,
+        name: r'restaurantFromCategoryIdProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  RestaurantFromCategoryIdProvider call(String categoryId) =>
+      RestaurantFromCategoryIdProvider._(argument: categoryId, from: this);
+
+  @override
+  String toString() => r'restaurantFromCategoryIdProvider';
 }

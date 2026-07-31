@@ -86,7 +86,7 @@ class _FavouritesList extends ConsumerWidget {
             position: index,
             duration: const Duration(milliseconds: 375),
             child: SlideAnimation(
-              verticalOffset: 50.0,
+              verticalOffset: 50,
               child: FadeInAnimation(
                 child: _FavouriteCard(
                   item: filtered[index],

@@ -7,7 +7,6 @@ class HelplineScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -64,8 +63,8 @@ class HelplineScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     required String subtitle,
-    String? trailing,
     required Color color,
+    String? trailing,
     VoidCallback? onTap,
   }) {
     return InkWell(

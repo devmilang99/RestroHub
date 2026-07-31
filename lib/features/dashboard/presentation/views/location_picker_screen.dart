@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 
 class LocationPickerScreen extends StatefulWidget {
@@ -11,16 +10,10 @@ class LocationPickerScreen extends StatefulWidget {
 }
 
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
-  LatLng _selectedLocation = const LatLng(28.2096, 83.9856); // Default: Pokhara
+  // Mock location for Pokhara
+  final double _lat = 28.2096;
+  final double _lng = 83.9856;
   String _address = 'Narayan Chowk';
-
-  void _onMapTapped(LatLng position) {
-    setState(() {
-      _selectedLocation = position;
-      _address =
-          'Picked Location (${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)})';
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,19 +37,33 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       body: Stack(
         children: [
           SizedBox.expand(
-            child: GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: _selectedLocation,
-                zoom: 15,
-              ),
-              onMapCreated: (controller) {},
-              onTap: _onMapTapped,
-              markers: {
-                Marker(
-                  markerId: const MarkerId('selected'),
-                  position: _selectedLocation,
+            child: Container(
+              color: Colors.grey[200],
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.map, size: 100, color: Colors.grey[400]),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Map View (Disabled)',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Location: $_lat, $_lng',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                  ],
                 ),
-              },
+              ),
             ),
           ),
           Positioned(

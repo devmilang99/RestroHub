@@ -104,6 +104,7 @@ class FilteredRestaurants extends _$FilteredRestaurants {
     if (_isLoadingMore || !_hasMore) return;
 
     _isLoadingMore = true;
+    // ignore: invalid_use_of_internal_member
     state = AsyncValue<List<RestaurantModel>>.loading().copyWithPrevious(state);
 
     try {
@@ -112,7 +113,7 @@ class FilteredRestaurants extends _$FilteredRestaurants {
 
       final currentItems = state.value ?? [];
       state = AsyncValue.data([...currentItems, ...newItems]);
-    } catch (e, st) {
+    } on Object catch (e, st) {
       state = AsyncValue.error(e, st);
     } finally {
       _isLoadingMore = false;

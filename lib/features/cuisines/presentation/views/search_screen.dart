@@ -25,7 +25,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
   String _sortBy = 'name'; // 'name', 'price_asc', 'price_desc'
-  double _minRating = 0.0;
+  double _minRating = 0;
 
   @override
   void dispose() {
@@ -224,14 +224,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Expanded(
             child: allCuisinesAsync.when(
               data: (items) {
-                var filteredItems = items.where((item) {
+                final filteredItems = items.where((item) {
                   final matchesQuery =
                       item.name.toLowerCase().contains(_query.toLowerCase()) ||
                       item.description.toLowerCase().contains(
                         _query.toLowerCase(),
                       );
                   // Mock rating for items if not present (as per requirement)
-                  final itemRating = 4.5;
+                  const itemRating = 4.5;
                   return matchesQuery && itemRating >= _minRating;
                 }).toList();
 
@@ -333,7 +333,9 @@ class SearchFoodCard extends ConsumerWidget {
     );
 
     return GestureDetector(
-      onTap: () => _navigateToRestaurant(context, ref),
+      onTap: () async {
+        await _navigateToRestaurant(context, ref);
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(12),

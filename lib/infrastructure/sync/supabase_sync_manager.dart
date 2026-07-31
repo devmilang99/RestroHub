@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:drift/drift.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
@@ -71,7 +72,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
 
       if (data.isNotEmpty) {
         logInfo(
-          'SYNC DIAGNOSTIC: Raw sample keys: ${data.first.keys.toList()}',
+          'SYNC DIAGNOSTIC: Raw sample keys: ${(data.first as Map).keys.toList()}',
         );
       }
 
@@ -177,19 +178,23 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           );
 
       logInfo('SYNC: Successfully completed restaurant sync.');
-      Future.microtask(() {
-        if (ref.mounted) {
-          ref.read(globalSyncStatusProvider.notifier).completeSync();
-        }
-      });
-    } catch (e, stack) {
+      unawaited(
+        Future.microtask(() {
+          if (ref.mounted) {
+            ref.read(globalSyncStatusProvider.notifier).completeSync();
+          }
+        }),
+      );
+    } on Object catch (e, stack) {
       logError('SYNC ERROR: Detailed failure report', e, stack);
-      Future.microtask(() {
-        if (ref.mounted) {
-          final errorMsg = e.toString();
-          ref.read(globalSyncStatusProvider.notifier).failSync(errorMsg);
-        }
-      });
+      unawaited(
+        Future.microtask(() {
+          if (ref.mounted) {
+            final errorMsg = e.toString();
+            ref.read(globalSyncStatusProvider.notifier).failSync(errorMsg);
+          }
+        }),
+      );
       if (ref.mounted) {
         ref.read(errorServiceProvider.notifier).handleException(e, stack);
       }

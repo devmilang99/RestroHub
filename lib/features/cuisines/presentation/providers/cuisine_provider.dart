@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/core/models/enums.dart';
@@ -26,7 +25,7 @@ Stream<List<MenuItemModel>> allCuisinesStream(Ref ref) {
 
 @Riverpod()
 Future<String?> restaurantIdFromCategory(Ref ref, String categoryId) async {
-  final db = await ref.read(appDatabaseProvider.future);
+  final db = await ref.watch(appDatabaseProvider.future);
   final query = db.select(db.cachedMenuCategories)
     ..where((t) => t.id.equals(categoryId));
   final row = await query.getSingleOrNull();
@@ -35,7 +34,7 @@ Future<String?> restaurantIdFromCategory(Ref ref, String categoryId) async {
 
 @Riverpod()
 Future<RestaurantModel?> restaurantFromId(Ref ref, String restaurantId) async {
-  final db = await ref.read(appDatabaseProvider.future);
+  final db = await ref.watch(appDatabaseProvider.future);
   final query = db.select(db.cachedRestaurants)
     ..where((t) => t.id.equals(restaurantId));
   final row = await query.getSingleOrNull();
@@ -58,14 +57,17 @@ Future<RestaurantModel?> restaurantFromId(Ref ref, String restaurantId) async {
   );
 }
 
-final restaurantFromCategoryIdProvider =
-    FutureProvider.family<RestaurantModel?, String>((ref, categoryId) async {
-      final restaurantId = await ref.watch(
-        restaurantIdFromCategoryProvider(categoryId).future,
-      );
-      if (restaurantId == null) return null;
-      return ref.watch(restaurantFromIdProvider(restaurantId).future);
-    });
+@Riverpod()
+Future<RestaurantModel?> restaurantFromCategoryId(
+  Ref ref,
+  String categoryId,
+) async {
+  final restaurantId = await ref.watch(
+    restaurantIdFromCategoryProvider(categoryId).future,
+  );
+  if (restaurantId == null) return null;
+  return ref.watch(restaurantFromIdProvider(restaurantId).future);
+}
 
 List<MenuItemModel> _mapMenuItemRowsToModels(List<CachedMenuItem> rows) {
   return rows

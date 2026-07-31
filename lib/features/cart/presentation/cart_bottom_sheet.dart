@@ -142,7 +142,6 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
     final cartItems = ref.watch(cartProvider).value ?? [];
     final cartNotifier = ref.read(cartProvider.notifier);
     final colorScheme = context.colorScheme;
-    final textTheme = context.textTheme;
 
     if (cartItems.isEmpty) {
       return Container(
@@ -164,7 +163,10 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
               const SizedBox(height: 16),
               const Text(
                 'Your cart is empty',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(

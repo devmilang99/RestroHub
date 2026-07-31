@@ -62,7 +62,6 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder> {
         Shimmer.fromColors(
           baseColor: baseColor,
           highlightColor: highlightColor,
-          period: const Duration(milliseconds: 1500),
           child: Container(
             width: widget.width,
             height: widget.height,

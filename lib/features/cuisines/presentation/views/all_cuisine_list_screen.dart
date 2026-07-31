@@ -34,14 +34,12 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
       backgroundColor: colorScheme.surface,
       floatingActionButton: totalItems > 0
           ? FloatingActionButton.extended(
-              onPressed: () {
-                unawaited(
-                  showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => const CartBottomSheet(),
-                  ),
+              onPressed: () async {
+                await showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const CartBottomSheet(),
                 );
               },
               label: Text('$totalItems items'),
@@ -64,7 +62,7 @@ class _AllCousineListState extends ConsumerState<AllCousineList> {
             position: index,
             duration: const Duration(milliseconds: 375),
             child: SlideAnimation(
-              verticalOffset: 50.0,
+              verticalOffset: 50,
               child: FadeInAnimation(
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 16),
@@ -90,8 +88,8 @@ class ExploreItemsList extends ConsumerWidget {
     ref.watch(favouritesProvider);
 
     return GestureDetector(
-      onTap: () {
-        context.pushNamed('cuisineSingleItem', extra: item);
+      onTap: () async {
+        await context.pushNamed('cuisineSingleItem', extra: item);
       },
       child: Container(
         decoration: BoxDecoration(

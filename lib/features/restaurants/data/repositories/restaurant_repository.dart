@@ -5,7 +5,6 @@ import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/core/models/result.dart';
 import 'package:restro_hub/core/utils/app_exception.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
-import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'restaurant_repository.g.dart';
@@ -19,10 +18,9 @@ abstract class IRestaurantRepository {
 }
 
 class RestaurantRepositoryImpl implements IRestaurantRepository {
-  final SupabaseSyncManager _syncManager;
   final Ref _ref;
 
-  RestaurantRepositoryImpl(this._syncManager, this._ref);
+  RestaurantRepositoryImpl(this._ref);
 
   @override
   Future<Result<List<RestaurantModel>>> getRestaurants({
@@ -79,6 +77,5 @@ List<RestaurantModel> _mapRowsToModels(List<CachedRestaurant> rows) {
 
 @riverpod
 IRestaurantRepository restaurantRepository(Ref ref) {
-  final syncManager = ref.watch(supabaseSyncManagerProvider.notifier);
-  return RestaurantRepositoryImpl(syncManager, ref);
+  return RestaurantRepositoryImpl(ref);
 }
