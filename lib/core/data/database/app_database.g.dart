@@ -132,6 +132,18 @@ class $CachedRestaurantsTable extends CachedRestaurants
     requiredDuringInsert: false,
     defaultValue: const Constant(r'$$'),
   );
+  static const VerificationMeta _minOrderAmountMeta = const VerificationMeta(
+    'minOrderAmount',
+  );
+  @override
+  late final GeneratedColumn<double> minOrderAmount = GeneratedColumn<double>(
+    'min_order_amount',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _taxPercentMeta = const VerificationMeta(
     'taxPercent',
   );
@@ -203,6 +215,7 @@ class $CachedRestaurantsTable extends CachedRestaurants
     status,
     rating,
     priceRange,
+    minOrderAmount,
     taxPercent,
     locationAddress,
     latitude,
@@ -295,6 +308,15 @@ class $CachedRestaurantsTable extends CachedRestaurants
       context.handle(
         _priceRangeMeta,
         priceRange.isAcceptableOrUnknown(data['price_range']!, _priceRangeMeta),
+      );
+    }
+    if (data.containsKey('min_order_amount')) {
+      context.handle(
+        _minOrderAmountMeta,
+        minOrderAmount.isAcceptableOrUnknown(
+          data['min_order_amount']!,
+          _minOrderAmountMeta,
+        ),
       );
     }
     if (data.containsKey('tax_percent')) {
@@ -390,6 +412,10 @@ class $CachedRestaurantsTable extends CachedRestaurants
         DriftSqlType.string,
         data['${effectivePrefix}price_range'],
       )!,
+      minOrderAmount: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}min_order_amount'],
+      )!,
       taxPercent: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}tax_percent'],
@@ -433,6 +459,7 @@ class CachedRestaurant extends DataClass
   final String status;
   final double rating;
   final String priceRange;
+  final double minOrderAmount;
   final double taxPercent;
   final String? locationAddress;
   final double? latitude;
@@ -451,6 +478,7 @@ class CachedRestaurant extends DataClass
     required this.status,
     required this.rating,
     required this.priceRange,
+    required this.minOrderAmount,
     required this.taxPercent,
     this.locationAddress,
     this.latitude,
@@ -486,6 +514,7 @@ class CachedRestaurant extends DataClass
     map['status'] = Variable<String>(status);
     map['rating'] = Variable<double>(rating);
     map['price_range'] = Variable<String>(priceRange);
+    map['min_order_amount'] = Variable<double>(minOrderAmount);
     map['tax_percent'] = Variable<double>(taxPercent);
     if (!nullToAbsent || locationAddress != null) {
       map['location_address'] = Variable<String>(locationAddress);
@@ -528,6 +557,7 @@ class CachedRestaurant extends DataClass
       status: Value(status),
       rating: Value(rating),
       priceRange: Value(priceRange),
+      minOrderAmount: Value(minOrderAmount),
       taxPercent: Value(taxPercent),
       locationAddress: locationAddress == null && nullToAbsent
           ? const Value.absent()
@@ -560,6 +590,7 @@ class CachedRestaurant extends DataClass
       status: serializer.fromJson<String>(json['status']),
       rating: serializer.fromJson<double>(json['rating']),
       priceRange: serializer.fromJson<String>(json['priceRange']),
+      minOrderAmount: serializer.fromJson<double>(json['minOrderAmount']),
       taxPercent: serializer.fromJson<double>(json['taxPercent']),
       locationAddress: serializer.fromJson<String?>(json['locationAddress']),
       latitude: serializer.fromJson<double?>(json['latitude']),
@@ -583,6 +614,7 @@ class CachedRestaurant extends DataClass
       'status': serializer.toJson<String>(status),
       'rating': serializer.toJson<double>(rating),
       'priceRange': serializer.toJson<String>(priceRange),
+      'minOrderAmount': serializer.toJson<double>(minOrderAmount),
       'taxPercent': serializer.toJson<double>(taxPercent),
       'locationAddress': serializer.toJson<String?>(locationAddress),
       'latitude': serializer.toJson<double?>(latitude),
@@ -604,6 +636,7 @@ class CachedRestaurant extends DataClass
     String? status,
     double? rating,
     String? priceRange,
+    double? minOrderAmount,
     double? taxPercent,
     Value<String?> locationAddress = const Value.absent(),
     Value<double?> latitude = const Value.absent(),
@@ -622,6 +655,7 @@ class CachedRestaurant extends DataClass
     status: status ?? this.status,
     rating: rating ?? this.rating,
     priceRange: priceRange ?? this.priceRange,
+    minOrderAmount: minOrderAmount ?? this.minOrderAmount,
     taxPercent: taxPercent ?? this.taxPercent,
     locationAddress: locationAddress.present
         ? locationAddress.value
@@ -648,6 +682,9 @@ class CachedRestaurant extends DataClass
       priceRange: data.priceRange.present
           ? data.priceRange.value
           : this.priceRange,
+      minOrderAmount: data.minOrderAmount.present
+          ? data.minOrderAmount.value
+          : this.minOrderAmount,
       taxPercent: data.taxPercent.present
           ? data.taxPercent.value
           : this.taxPercent,
@@ -677,6 +714,7 @@ class CachedRestaurant extends DataClass
           ..write('status: $status, ')
           ..write('rating: $rating, ')
           ..write('priceRange: $priceRange, ')
+          ..write('minOrderAmount: $minOrderAmount, ')
           ..write('taxPercent: $taxPercent, ')
           ..write('locationAddress: $locationAddress, ')
           ..write('latitude: $latitude, ')
@@ -700,6 +738,7 @@ class CachedRestaurant extends DataClass
     status,
     rating,
     priceRange,
+    minOrderAmount,
     taxPercent,
     locationAddress,
     latitude,
@@ -722,6 +761,7 @@ class CachedRestaurant extends DataClass
           other.status == this.status &&
           other.rating == this.rating &&
           other.priceRange == this.priceRange &&
+          other.minOrderAmount == this.minOrderAmount &&
           other.taxPercent == this.taxPercent &&
           other.locationAddress == this.locationAddress &&
           other.latitude == this.latitude &&
@@ -742,6 +782,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
   final Value<String> status;
   final Value<double> rating;
   final Value<String> priceRange;
+  final Value<double> minOrderAmount;
   final Value<double> taxPercent;
   final Value<String?> locationAddress;
   final Value<double?> latitude;
@@ -761,6 +802,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
     this.status = const Value.absent(),
     this.rating = const Value.absent(),
     this.priceRange = const Value.absent(),
+    this.minOrderAmount = const Value.absent(),
     this.taxPercent = const Value.absent(),
     this.locationAddress = const Value.absent(),
     this.latitude = const Value.absent(),
@@ -781,6 +823,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
     this.status = const Value.absent(),
     this.rating = const Value.absent(),
     this.priceRange = const Value.absent(),
+    this.minOrderAmount = const Value.absent(),
     this.taxPercent = const Value.absent(),
     this.locationAddress = const Value.absent(),
     this.latitude = const Value.absent(),
@@ -802,6 +845,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
     Expression<String>? status,
     Expression<double>? rating,
     Expression<String>? priceRange,
+    Expression<double>? minOrderAmount,
     Expression<double>? taxPercent,
     Expression<String>? locationAddress,
     Expression<double>? latitude,
@@ -822,6 +866,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
       if (status != null) 'status': status,
       if (rating != null) 'rating': rating,
       if (priceRange != null) 'price_range': priceRange,
+      if (minOrderAmount != null) 'min_order_amount': minOrderAmount,
       if (taxPercent != null) 'tax_percent': taxPercent,
       if (locationAddress != null) 'location_address': locationAddress,
       if (latitude != null) 'latitude': latitude,
@@ -844,6 +889,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
     Value<String>? status,
     Value<double>? rating,
     Value<String>? priceRange,
+    Value<double>? minOrderAmount,
     Value<double>? taxPercent,
     Value<String?>? locationAddress,
     Value<double?>? latitude,
@@ -864,6 +910,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
       status: status ?? this.status,
       rating: rating ?? this.rating,
       priceRange: priceRange ?? this.priceRange,
+      minOrderAmount: minOrderAmount ?? this.minOrderAmount,
       taxPercent: taxPercent ?? this.taxPercent,
       locationAddress: locationAddress ?? this.locationAddress,
       latitude: latitude ?? this.latitude,
@@ -912,6 +959,9 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
     if (priceRange.present) {
       map['price_range'] = Variable<String>(priceRange.value);
     }
+    if (minOrderAmount.present) {
+      map['min_order_amount'] = Variable<double>(minOrderAmount.value);
+    }
     if (taxPercent.present) {
       map['tax_percent'] = Variable<double>(taxPercent.value);
     }
@@ -948,6 +998,7 @@ class CachedRestaurantsCompanion extends UpdateCompanion<CachedRestaurant> {
           ..write('status: $status, ')
           ..write('rating: $rating, ')
           ..write('priceRange: $priceRange, ')
+          ..write('minOrderAmount: $minOrderAmount, ')
           ..write('taxPercent: $taxPercent, ')
           ..write('locationAddress: $locationAddress, ')
           ..write('latitude: $latitude, ')
@@ -1370,6 +1421,15 @@ class $CachedMenuItemsTable extends CachedMenuItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _ratingMeta = const VerificationMeta('rating');
+  @override
+  late final GeneratedColumn<double> rating = GeneratedColumn<double>(
+    'rating',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<List<String>, String>
   dietaryFlags = GeneratedColumn<String>(
@@ -1390,6 +1450,7 @@ class $CachedMenuItemsTable extends CachedMenuItems
     imageUrl,
     isAvailable,
     calories,
+    rating,
     dietaryFlags,
   ];
   @override
@@ -1463,6 +1524,12 @@ class $CachedMenuItemsTable extends CachedMenuItems
         calories.isAcceptableOrUnknown(data['calories']!, _caloriesMeta),
       );
     }
+    if (data.containsKey('rating')) {
+      context.handle(
+        _ratingMeta,
+        rating.isAcceptableOrUnknown(data['rating']!, _ratingMeta),
+      );
+    }
     return context;
   }
 
@@ -1504,6 +1571,10 @@ class $CachedMenuItemsTable extends CachedMenuItems
         DriftSqlType.int,
         data['${effectivePrefix}calories'],
       ),
+      rating: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}rating'],
+      ),
       dietaryFlags: $CachedMenuItemsTable.$converterdietaryFlags.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -1531,6 +1602,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
   final String? imageUrl;
   final bool isAvailable;
   final int? calories;
+  final double? rating;
   final List<String> dietaryFlags;
   const CachedMenuItem({
     required this.id,
@@ -1541,6 +1613,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
     this.imageUrl,
     required this.isAvailable,
     this.calories,
+    this.rating,
     required this.dietaryFlags,
   });
   @override
@@ -1559,6 +1632,9 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
     map['is_available'] = Variable<bool>(isAvailable);
     if (!nullToAbsent || calories != null) {
       map['calories'] = Variable<int>(calories);
+    }
+    if (!nullToAbsent || rating != null) {
+      map['rating'] = Variable<double>(rating);
     }
     {
       map['dietary_flags'] = Variable<String>(
@@ -1584,6 +1660,9 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
       calories: calories == null && nullToAbsent
           ? const Value.absent()
           : Value(calories),
+      rating: rating == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rating),
       dietaryFlags: Value(dietaryFlags),
     );
   }
@@ -1602,6 +1681,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
       isAvailable: serializer.fromJson<bool>(json['isAvailable']),
       calories: serializer.fromJson<int?>(json['calories']),
+      rating: serializer.fromJson<double?>(json['rating']),
       dietaryFlags: serializer.fromJson<List<String>>(json['dietaryFlags']),
     );
   }
@@ -1617,6 +1697,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
       'imageUrl': serializer.toJson<String?>(imageUrl),
       'isAvailable': serializer.toJson<bool>(isAvailable),
       'calories': serializer.toJson<int?>(calories),
+      'rating': serializer.toJson<double?>(rating),
       'dietaryFlags': serializer.toJson<List<String>>(dietaryFlags),
     };
   }
@@ -1630,6 +1711,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
     Value<String?> imageUrl = const Value.absent(),
     bool? isAvailable,
     Value<int?> calories = const Value.absent(),
+    Value<double?> rating = const Value.absent(),
     List<String>? dietaryFlags,
   }) => CachedMenuItem(
     id: id ?? this.id,
@@ -1640,6 +1722,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
     imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
     isAvailable: isAvailable ?? this.isAvailable,
     calories: calories.present ? calories.value : this.calories,
+    rating: rating.present ? rating.value : this.rating,
     dietaryFlags: dietaryFlags ?? this.dietaryFlags,
   );
   CachedMenuItem copyWithCompanion(CachedMenuItemsCompanion data) {
@@ -1658,6 +1741,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
           ? data.isAvailable.value
           : this.isAvailable,
       calories: data.calories.present ? data.calories.value : this.calories,
+      rating: data.rating.present ? data.rating.value : this.rating,
       dietaryFlags: data.dietaryFlags.present
           ? data.dietaryFlags.value
           : this.dietaryFlags,
@@ -1675,6 +1759,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
           ..write('imageUrl: $imageUrl, ')
           ..write('isAvailable: $isAvailable, ')
           ..write('calories: $calories, ')
+          ..write('rating: $rating, ')
           ..write('dietaryFlags: $dietaryFlags')
           ..write(')'))
         .toString();
@@ -1690,6 +1775,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
     imageUrl,
     isAvailable,
     calories,
+    rating,
     dietaryFlags,
   );
   @override
@@ -1704,6 +1790,7 @@ class CachedMenuItem extends DataClass implements Insertable<CachedMenuItem> {
           other.imageUrl == this.imageUrl &&
           other.isAvailable == this.isAvailable &&
           other.calories == this.calories &&
+          other.rating == this.rating &&
           other.dietaryFlags == this.dietaryFlags);
 }
 
@@ -1716,6 +1803,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
   final Value<String?> imageUrl;
   final Value<bool> isAvailable;
   final Value<int?> calories;
+  final Value<double?> rating;
   final Value<List<String>> dietaryFlags;
   final Value<int> rowid;
   const CachedMenuItemsCompanion({
@@ -1727,6 +1815,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
     this.imageUrl = const Value.absent(),
     this.isAvailable = const Value.absent(),
     this.calories = const Value.absent(),
+    this.rating = const Value.absent(),
     this.dietaryFlags = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -1739,6 +1828,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
     this.imageUrl = const Value.absent(),
     this.isAvailable = const Value.absent(),
     this.calories = const Value.absent(),
+    this.rating = const Value.absent(),
     this.dietaryFlags = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -1754,6 +1844,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
     Expression<String>? imageUrl,
     Expression<bool>? isAvailable,
     Expression<int>? calories,
+    Expression<double>? rating,
     Expression<String>? dietaryFlags,
     Expression<int>? rowid,
   }) {
@@ -1766,6 +1857,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
       if (imageUrl != null) 'image_url': imageUrl,
       if (isAvailable != null) 'is_available': isAvailable,
       if (calories != null) 'calories': calories,
+      if (rating != null) 'rating': rating,
       if (dietaryFlags != null) 'dietary_flags': dietaryFlags,
       if (rowid != null) 'rowid': rowid,
     });
@@ -1780,6 +1872,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
     Value<String?>? imageUrl,
     Value<bool>? isAvailable,
     Value<int?>? calories,
+    Value<double?>? rating,
     Value<List<String>>? dietaryFlags,
     Value<int>? rowid,
   }) {
@@ -1792,6 +1885,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
       imageUrl: imageUrl ?? this.imageUrl,
       isAvailable: isAvailable ?? this.isAvailable,
       calories: calories ?? this.calories,
+      rating: rating ?? this.rating,
       dietaryFlags: dietaryFlags ?? this.dietaryFlags,
       rowid: rowid ?? this.rowid,
     );
@@ -1824,6 +1918,9 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
     if (calories.present) {
       map['calories'] = Variable<int>(calories.value);
     }
+    if (rating.present) {
+      map['rating'] = Variable<double>(rating.value);
+    }
     if (dietaryFlags.present) {
       map['dietary_flags'] = Variable<String>(
         $CachedMenuItemsTable.$converterdietaryFlags.toSql(dietaryFlags.value),
@@ -1846,6 +1943,7 @@ class CachedMenuItemsCompanion extends UpdateCompanion<CachedMenuItem> {
           ..write('imageUrl: $imageUrl, ')
           ..write('isAvailable: $isAvailable, ')
           ..write('calories: $calories, ')
+          ..write('rating: $rating, ')
           ..write('dietaryFlags: $dietaryFlags, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -4502,6 +4600,7 @@ typedef $$CachedRestaurantsTableCreateCompanionBuilder =
       Value<String> status,
       Value<double> rating,
       Value<String> priceRange,
+      Value<double> minOrderAmount,
       Value<double> taxPercent,
       Value<String?> locationAddress,
       Value<double?> latitude,
@@ -4523,6 +4622,7 @@ typedef $$CachedRestaurantsTableUpdateCompanionBuilder =
       Value<String> status,
       Value<double> rating,
       Value<String> priceRange,
+      Value<double> minOrderAmount,
       Value<double> taxPercent,
       Value<String?> locationAddress,
       Value<double?> latitude,
@@ -4639,6 +4739,11 @@ class $$CachedRestaurantsTableFilterComposer
 
   ColumnFilters<String> get priceRange => $composableBuilder(
     column: $table.priceRange,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get minOrderAmount => $composableBuilder(
+    column: $table.minOrderAmount,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4762,6 +4867,11 @@ class $$CachedRestaurantsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get minOrderAmount => $composableBuilder(
+    column: $table.minOrderAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get taxPercent => $composableBuilder(
     column: $table.taxPercent,
     builder: (column) => ColumnOrderings(column),
@@ -4834,6 +4944,11 @@ class $$CachedRestaurantsTableAnnotationComposer
 
   GeneratedColumn<String> get priceRange => $composableBuilder(
     column: $table.priceRange,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get minOrderAmount => $composableBuilder(
+    column: $table.minOrderAmount,
     builder: (column) => column,
   );
 
@@ -4930,6 +5045,7 @@ class $$CachedRestaurantsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<double> rating = const Value.absent(),
                 Value<String> priceRange = const Value.absent(),
+                Value<double> minOrderAmount = const Value.absent(),
                 Value<double> taxPercent = const Value.absent(),
                 Value<String?> locationAddress = const Value.absent(),
                 Value<double?> latitude = const Value.absent(),
@@ -4949,6 +5065,7 @@ class $$CachedRestaurantsTableTableManager
                 status: status,
                 rating: rating,
                 priceRange: priceRange,
+                minOrderAmount: minOrderAmount,
                 taxPercent: taxPercent,
                 locationAddress: locationAddress,
                 latitude: latitude,
@@ -4970,6 +5087,7 @@ class $$CachedRestaurantsTableTableManager
                 Value<String> status = const Value.absent(),
                 Value<double> rating = const Value.absent(),
                 Value<String> priceRange = const Value.absent(),
+                Value<double> minOrderAmount = const Value.absent(),
                 Value<double> taxPercent = const Value.absent(),
                 Value<String?> locationAddress = const Value.absent(),
                 Value<double?> latitude = const Value.absent(),
@@ -4989,6 +5107,7 @@ class $$CachedRestaurantsTableTableManager
                 status: status,
                 rating: rating,
                 priceRange: priceRange,
+                minOrderAmount: minOrderAmount,
                 taxPercent: taxPercent,
                 locationAddress: locationAddress,
                 latitude: latitude,
@@ -5487,6 +5606,7 @@ typedef $$CachedMenuItemsTableCreateCompanionBuilder =
       Value<String?> imageUrl,
       Value<bool> isAvailable,
       Value<int?> calories,
+      Value<double?> rating,
       Value<List<String>> dietaryFlags,
       Value<int> rowid,
     });
@@ -5500,6 +5620,7 @@ typedef $$CachedMenuItemsTableUpdateCompanionBuilder =
       Value<String?> imageUrl,
       Value<bool> isAvailable,
       Value<int?> calories,
+      Value<double?> rating,
       Value<List<String>> dietaryFlags,
       Value<int> rowid,
     });
@@ -5580,6 +5701,11 @@ class $$CachedMenuItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnWithTypeConverterFilters<List<String>, List<String>, String>
   get dietaryFlags => $composableBuilder(
     column: $table.dietaryFlags,
@@ -5654,6 +5780,11 @@ class $$CachedMenuItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get rating => $composableBuilder(
+    column: $table.rating,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get dietaryFlags => $composableBuilder(
     column: $table.dietaryFlags,
     builder: (column) => ColumnOrderings(column),
@@ -5717,6 +5848,9 @@ class $$CachedMenuItemsTableAnnotationComposer
 
   GeneratedColumn<int> get calories =>
       $composableBuilder(column: $table.calories, builder: (column) => column);
+
+  GeneratedColumn<double> get rating =>
+      $composableBuilder(column: $table.rating, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<List<String>, String> get dietaryFlags =>
       $composableBuilder(
@@ -5787,6 +5921,7 @@ class $$CachedMenuItemsTableTableManager
                 Value<String?> imageUrl = const Value.absent(),
                 Value<bool> isAvailable = const Value.absent(),
                 Value<int?> calories = const Value.absent(),
+                Value<double?> rating = const Value.absent(),
                 Value<List<String>> dietaryFlags = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedMenuItemsCompanion(
@@ -5798,6 +5933,7 @@ class $$CachedMenuItemsTableTableManager
                 imageUrl: imageUrl,
                 isAvailable: isAvailable,
                 calories: calories,
+                rating: rating,
                 dietaryFlags: dietaryFlags,
                 rowid: rowid,
               ),
@@ -5811,6 +5947,7 @@ class $$CachedMenuItemsTableTableManager
                 Value<String?> imageUrl = const Value.absent(),
                 Value<bool> isAvailable = const Value.absent(),
                 Value<int?> calories = const Value.absent(),
+                Value<double?> rating = const Value.absent(),
                 Value<List<String>> dietaryFlags = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedMenuItemsCompanion.insert(
@@ -5822,6 +5959,7 @@ class $$CachedMenuItemsTableTableManager
                 imageUrl: imageUrl,
                 isAvailable: isAvailable,
                 calories: calories,
+                rating: rating,
                 dietaryFlags: dietaryFlags,
                 rowid: rowid,
               ),

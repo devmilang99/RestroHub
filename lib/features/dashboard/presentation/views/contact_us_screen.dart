@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -36,29 +37,35 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       // Simulate submission
-      unawaited(showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-          content: Text(
-            'Your $_selectedType has been submitted successfully. We will get back to you soon!',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text('OK'),
+      unawaited(
+        showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-          ],
+            title: const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 60,
+            ),
+            content: Text(
+              'Your $_selectedType has been submitted successfully. We will get back to you soon!',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -204,7 +211,7 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
-              initialValue: _selectedType,
+              value: _selectedType,
               decoration: InputDecoration(
                 labelText: 'Enquiry Type',
                 prefixIcon: const Icon(Icons.category_outlined),

@@ -54,6 +54,7 @@ class MenuItemModel extends Equatable {
   final String? imageUrl;
   final bool isAvailable;
   final int? calories;
+  final double rating;
   final List<String> dietaryFlags;
 
   const MenuItemModel({
@@ -65,6 +66,7 @@ class MenuItemModel extends Equatable {
     this.imageUrl,
     this.isAvailable = true,
     this.calories,
+    this.rating = 4.5,
     this.dietaryFlags = const [],
   });
 
@@ -78,6 +80,7 @@ class MenuItemModel extends Equatable {
       imageUrl: json['image_url'] as String?,
       isAvailable: (json['is_available'] ?? true) as bool,
       calories: json['calories'] as int?,
+      rating: ((json['rating'] ?? 4.5) as num).toDouble(),
       dietaryFlags: List<String>.from(json['dietary_flags'] as Iterable? ?? []),
     );
   }
@@ -92,6 +95,7 @@ class MenuItemModel extends Equatable {
       'image_url': imageUrl,
       'is_available': isAvailable,
       'calories': calories,
+      'rating': rating,
       'dietary_flags': dietaryFlags,
     };
   }
@@ -106,6 +110,7 @@ class MenuItemModel extends Equatable {
     imageUrl,
     isAvailable,
     calories,
+    rating,
     dietaryFlags,
   ];
 }

@@ -106,7 +106,6 @@ class SliverOfferCardsSkeleton extends StatelessWidget {
                       width: 160,
                       height: 180,
                       borderRadius: 16,
-                      showText: false,
                     ),
                   );
                 },
@@ -153,7 +152,6 @@ class SliverRestaurantCardsSkeleton extends StatelessWidget {
                       width: 200,
                       height: 200,
                       borderRadius: 15,
-                      showText: false,
                     ),
                   );
                 },
@@ -188,11 +186,10 @@ class SliverGridSkeleton extends StatelessWidget {
         crossAxisSpacing: 16,
       ),
       delegate: SliverChildBuilderDelegate(
-        (context, index) => ShimmerPlaceholder(
+        (context, index) => const ShimmerPlaceholder(
           width: double.infinity,
           height: double.infinity,
           borderRadius: 24,
-          showText: index == 0,
         ),
         childCount: itemCount,
       ),
@@ -220,7 +217,6 @@ class SliverListSkeleton extends StatelessWidget {
             width: double.infinity,
             height: height,
             borderRadius: 24,
-            showText: index == 0,
           ),
         ),
         childCount: itemCount,

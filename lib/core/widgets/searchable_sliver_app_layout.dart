@@ -88,7 +88,9 @@ class _SearchableSliverAppLayoutState<T>
   double get _collapseTarget => widget.expandedHeight;
 
   double get _headerHeight {
-    if (!widget.enableFilters) return 70;
+    if (!widget.enableFilters) {
+      return 70;
+    }
     final hasFilterContent =
         widget.filterBar != null ||
         widget.customFilterBuilder != null ||
@@ -101,12 +103,16 @@ class _SearchableSliverAppLayoutState<T>
     int duration = 300,
     Curve curve = Curves.easeInOut,
   }) {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     if (_scrollController.hasClients) {
       final max = _scrollController.position.maxScrollExtent;
       final target = to.clamp(0.0, max);
 
-      if ((_scrollController.offset - target).abs() < 1.0) return;
+      if ((_scrollController.offset - target).abs() < 1.0) {
+        return;
+      }
 
       unawaited(
         _scrollController.animateTo(
@@ -146,7 +152,9 @@ class _SearchableSliverAppLayoutState<T>
       }
 
       final showTop = _scrollController.offset > (_collapseTarget + 100);
-      if (showTop != _showBackToTop) setState(() => _showBackToTop = showTop);
+      if (showTop != _showBackToTop) {
+        setState(() => _showBackToTop = showTop);
+      }
 
       // Infinite scroll logic
       if (widget.onLoadMore != null && !widget.isLoadingMore) {
@@ -200,192 +208,201 @@ class _SearchableSliverAppLayoutState<T>
         const EdgeInsets.symmetric(horizontal: 16, vertical: 8);
 
     return SafeArea(
-      child: Stack(
-        children: [
-          NotificationListener<ScrollEndNotification>(
-            onNotification: (notification) {
-              final collapseTarget = widget.expandedHeight;
-              final offset = _scrollController.hasClients
-                  ? _scrollController.offset
-                  : 0.0;
-              if (offset > 0 && offset < collapseTarget) {
-                final mid = collapseTarget / 2;
-                final to = offset >= mid ? collapseTarget : 0.0;
-                _safeAnimateTo(to, duration: 250, curve: Curves.easeOut);
-              }
-              return false;
-            },
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: widget.physics ?? const BouncingScrollPhysics(),
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: widget.expandedHeight,
-                  collapsedHeight: kToolbarHeight,
-                  elevation: 0,
-                  backgroundColor: colorScheme.surface,
-                  actions: widget.actions,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background:
-                        widget.background ??
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                colorScheme.primary.withValues(alpha: 0.15),
-                                colorScheme.secondary.withValues(alpha: 0.15),
-                              ],
-                            ),
-                          ),
-                          child: Stack(
-                            children: [
-                              Center(
-                                child: Text(
-                                  widget.title!,
-                                  style: GoogleFonts.poppins(
-                                    color: colorScheme.onSurface,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 32,
-                                  ),
+      child: Semantics(
+        container: true,
+        child: Stack(
+          children: [
+            NotificationListener<ScrollEndNotification>(
+              onNotification: (notification) {
+                final collapseTarget = widget.expandedHeight;
+                final offset = _scrollController.hasClients
+                    ? _scrollController.offset
+                    : 0.0;
+                if (offset > 0 && offset < collapseTarget) {
+                  final mid = collapseTarget / 2;
+                  final to = offset >= mid ? collapseTarget : 0.0;
+                  _safeAnimateTo(to, duration: 250, curve: Curves.easeOut);
+                }
+                return false;
+              },
+              child: CustomScrollView(
+                key: const PageStorageKey('searchable_sliver_scroll_view'),
+                controller: _scrollController,
+                physics: widget.physics ?? const BouncingScrollPhysics(),
+                slivers: [
+                  if (widget.expandedHeight > 0)
+                    SliverAppBar(
+                      expandedHeight: widget.expandedHeight,
+                      collapsedHeight: kToolbarHeight,
+                      elevation: 0,
+                      backgroundColor: colorScheme.surface,
+                      actions: widget.actions,
+                      flexibleSpace: FlexibleSpaceBar(
+                        background:
+                            widget.background ??
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    colorScheme.primary.withValues(alpha: 0.15),
+                                    colorScheme.secondary.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              if (widget.enableFilters &&
-                                  (widget.filterItems?.isNotEmpty ?? false))
-                                Positioned(
-                                  right: 12,
-                                  bottom: 12,
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: IconButton(
-                                      icon: Icon(
-                                        Icons.tune,
+                              child: Stack(
+                                children: [
+                                  Center(
+                                    child: Text(
+                                      widget.title ?? '',
+                                      style: GoogleFonts.poppins(
                                         color: colorScheme.onSurface,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 32,
                                       ),
-                                      onPressed: _showFilterSheet,
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        ),
-                  ),
-                ),
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _SearchHeaderDelegate(
-                    height: headerHeight,
-                    child: _SearchHeaderContent(
-                      isCollapsed: _isCollapsed,
-                      showBackButton: widget.showBackButton,
-                      onBackPressed: widget.onBackPressed,
-                      searchController: _searchController,
-                      searchFocus: _searchFocus,
-                      hintText: widget.hintText,
-                      query: _query,
-                      clearSearch: _clearSearch,
-                      enableFilters: widget.enableFilters,
-                      showFilterSheet: _showFilterSheet,
-                      filterBar: widget.filterBar,
-                      customFilterBuilder: widget.customFilterBuilder,
-                      selectedFilters: _selectedFilters,
-                      filterItems: widget.filterItems,
-                      onFilterChanged: (selected) {
-                        setState(() {
-                          _selectedFilters
-                            ..clear()
-                            ..addAll(selected);
-                        });
-                        widget.onFilterChanged?.call(_selectedFilters);
-                      },
+                                  if (widget.enableFilters &&
+                                      (widget.filterItems?.isNotEmpty ?? false))
+                                    Positioned(
+                                      right: 12,
+                                      bottom: 12,
+                                      child: Material(
+                                        color: Colors.transparent,
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.tune,
+                                            color: colorScheme.onSurface,
+                                          ),
+                                          onPressed: _showFilterSheet,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                      ),
+                    ),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _SearchHeaderDelegate(
+                      height: headerHeight,
+                      child: _SearchHeaderContent(
+                        key: const ValueKey('search_header_content'),
+                        isCollapsed: _isCollapsed,
+                        expandedHeight: widget.expandedHeight,
+                        showBackButton: widget.showBackButton,
+                        onBackPressed: widget.onBackPressed,
+                        searchController: _searchController,
+                        searchFocus: _searchFocus,
+                        hintText: widget.hintText,
+                        query: _query,
+                        clearSearch: _clearSearch,
+                        enableFilters: widget.enableFilters,
+                        showFilterSheet: _showFilterSheet,
+                        filterBar: widget.filterBar,
+                        customFilterBuilder: widget.customFilterBuilder,
+                        selectedFilters: _selectedFilters,
+                        filterItems: widget.filterItems,
+                        onFilterChanged: (selected) {
+                          setState(() {
+                            _selectedFilters
+                              ..clear()
+                              ..addAll(selected);
+                          });
+                          widget.onFilterChanged?.call(_selectedFilters);
+                        },
+                      ),
                     ),
                   ),
-                ),
 
-                // ── Adaptive Content (List or Grid) ──
-                SliverPadding(
-                  padding: effectivePadding,
-                  sliver: widget.isLoading && widget.skeleton != null
-                      ? widget.skeleton!
-                      : filteredItems.isEmpty
-                      ? SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: Center(
-                            child: Text(
-                              'No results found',
-                              style: GoogleFonts.poppins(
-                                color: colorScheme.onSurfaceVariant,
+                  // ── Adaptive Content (List or Grid) ──
+                  SliverPadding(
+                    padding: effectivePadding,
+                    sliver: widget.isLoading && widget.skeleton != null
+                        ? widget.skeleton!
+                        : filteredItems.isEmpty
+                        ? SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Text(
+                                'No results found',
+                                style: GoogleFonts.poppins(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
-                          ),
-                        )
-                      : (widget.isGrid
-                            ? SliverGrid(
-                                gridDelegate:
-                                    widget.gridDelegate ??
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2,
-                                      childAspectRatio: 0.8,
-                                      mainAxisSpacing: 16,
-                                      crossAxisSpacing: 16,
+                          )
+                        : (widget.isGrid
+                              ? SliverGrid(
+                                  gridDelegate:
+                                      widget.gridDelegate ??
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 0.8,
+                                        mainAxisSpacing: 16,
+                                        crossAxisSpacing: 16,
+                                      ),
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, index) => widget.itemBuilder(
+                                      context,
+                                      filteredItems[index],
+                                      index,
                                     ),
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) => widget.itemBuilder(
-                                    context,
-                                    filteredItems[index],
-                                    index,
+                                    childCount: filteredItems.length,
                                   ),
-                                  childCount: filteredItems.length,
-                                ),
-                              )
-                            : SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) => widget.itemBuilder(
-                                    context,
-                                    filteredItems[index],
-                                    index,
+                                )
+                              : SliverList(
+                                  delegate: SliverChildBuilderDelegate(
+                                    (context, index) => widget.itemBuilder(
+                                      context,
+                                      filteredItems[index],
+                                      index,
+                                    ),
+                                    childCount: filteredItems.length,
                                   ),
-                                  childCount: filteredItems.length,
-                                ),
-                              )),
-                ),
-                if (widget.isLoadingMore)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 32),
-                      child: Center(
-                        child: CircularProgressIndicator.adaptive(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(
-                            colorScheme.primary,
+                                )),
+                  ),
+                  if (widget.isLoadingMore)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: CircularProgressIndicator.adaptive(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(
+                              colorScheme.primary,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                const SliverToBoxAdapter(child: SizedBox(height: 50)),
-              ],
-            ),
-          ),
-          if (_showBackToTop)
-            Positioned(
-              right: 16,
-              bottom: 24,
-              child: FloatingActionButton(
-                mini: true,
-                onPressed: () {
-                  _searchFocus.unfocus();
-                  _safeAnimateTo(0, duration: 400);
-                  setState(() {
-                    _showBackToTop = false;
-                  });
-                },
-                backgroundColor: colorScheme.primary,
-                child: const Icon(Icons.keyboard_arrow_up),
+                  const SliverToBoxAdapter(child: SizedBox(height: 50)),
+                ],
               ),
             ),
-        ],
+            if (_showBackToTop)
+              Positioned(
+                right: 16,
+                bottom: 24,
+                child: FloatingActionButton(
+                  mini: true,
+                  onPressed: () {
+                    _searchFocus.unfocus();
+                    _safeAnimateTo(0, duration: 400);
+                    setState(() {
+                      _showBackToTop = false;
+                    });
+                  },
+                  backgroundColor: colorScheme.primary,
+                  child: const Icon(Icons.keyboard_arrow_up),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -490,6 +507,7 @@ class _SearchableSliverAppLayoutState<T>
 
 class _SearchHeaderContent extends StatelessWidget {
   final bool isCollapsed;
+  final double expandedHeight;
   final bool showBackButton;
   final VoidCallback? onBackPressed;
   final TextEditingController searchController;
@@ -512,6 +530,7 @@ class _SearchHeaderContent extends StatelessWidget {
 
   const _SearchHeaderContent({
     required this.isCollapsed,
+    required this.expandedHeight,
     required this.showBackButton,
     required this.onBackPressed,
     required this.searchController,
@@ -526,6 +545,7 @@ class _SearchHeaderContent extends StatelessWidget {
     required this.selectedFilters,
     required this.filterItems,
     required this.onFilterChanged,
+    super.key,
   });
 
   @override
@@ -564,7 +584,8 @@ class _SearchHeaderContent extends StatelessWidget {
         children: [
           Row(
             children: [
-              if (showBackButton && isCollapsed)
+              if (showBackButton &&
+                  (isCollapsed || query.isNotEmpty || expandedHeight == 0))
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: IconButton(
@@ -686,7 +707,8 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_SearchHeaderDelegate oldDelegate) {
-    // Optimization: Check for equality to prevent unnecessary semantics updates
-    return oldDelegate.height != height || oldDelegate.child != child;
+    return oldDelegate.height != height ||
+        oldDelegate.child.key != child.key ||
+        oldDelegate.child != child;
   }
 }

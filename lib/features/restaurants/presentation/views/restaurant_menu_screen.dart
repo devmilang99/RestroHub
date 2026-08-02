@@ -172,8 +172,7 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
       price: 0,
     );
 
-    final isFav = ref.watch(favouritesProvider.notifier).isFavourite(favItem);
-    ref.watch(favouritesProvider);
+    final isFav = ref.watch(isFavouriteProvider(r.id));
 
     return StreamBuilder<List<MenuItemModel>>(
       stream: menuAsync,
@@ -192,7 +191,8 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                         context: context,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
-                        builder: (context) => const CartBottomSheet(),
+                        builder: (context) =>
+                            const CartBottomSheet(isInsideModal: true),
                       ),
                     );
                   },
@@ -407,6 +407,13 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                               label: '30 min',
                               color: Colors.orange,
                             ),
+                            if (r.minOrderAmount > 0)
+                              _MetaChip(
+                                icon: Icons.payments_rounded,
+                                label:
+                                    'Min Rs. ${r.minOrderAmount.toStringAsFixed(0)}',
+                                color: Colors.green,
+                              ),
                           ],
                         ),
                         const SizedBox(height: 18),
@@ -524,7 +531,7 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                                       ),
                                       columnCount: 2,
                                       child: SlideAnimation(
-                                        verticalOffset: 50.0,
+                                        verticalOffset: 50,
                                         child: FadeInAnimation(
                                           child: _MenuItemCard(
                                             item: menu[index],
@@ -548,7 +555,7 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                                         milliseconds: 375,
                                       ),
                                       child: SlideAnimation(
-                                        verticalOffset: 50.0,
+                                        verticalOffset: 50,
                                         child: FadeInAnimation(
                                           child: _MenuItemCard(
                                             item: menu[index],
@@ -814,26 +821,61 @@ class _MenuItemCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // badge (signature for first item)
-                    if (isFirst)
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 4),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 2,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // badge (signature for first item)
+                        if (isFirst)
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.deepOrange.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              'Best Dish',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          )
+                        else
+                          const SizedBox.shrink(),
+
+                        // Favourite Icon
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final isFavourited = ref.watch(
+                              isFavouriteProvider(item.id),
+                            );
+                            return GestureDetector(
+                              onTap: () async {
+                                await ref
+                                    .read(favouritesProvider.notifier)
+                                    .toggleFavourite(item);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                child: Icon(
+                                  isFavourited
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 18,
+                                  color: isFavourited
+                                      ? Colors.red
+                                      : cs.onSurface.withValues(alpha: 0.3),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.deepOrange.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          'Best Dish',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ),
+                      ],
+                    ),
 
                     // name
                     Text(
@@ -896,7 +938,7 @@ class _MenuItemCard extends ConsumerWidget {
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                Icons.add_rounded,
+                                Icons.add_shopping_cart_rounded,
                                 color: cs.primary,
                                 size: 20,
                               ),

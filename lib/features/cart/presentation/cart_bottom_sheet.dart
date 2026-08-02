@@ -9,7 +9,8 @@ import 'package:restro_hub/features/cart/presentation/providers/cart_provider.da
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
 
 class CartBottomSheet extends ConsumerStatefulWidget {
-  const CartBottomSheet({super.key});
+  final bool isInsideModal;
+  const CartBottomSheet({super.key, this.isInsideModal = false});
 
   @override
   ConsumerState<CartBottomSheet> createState() => _CartBottomSheetState();
@@ -151,25 +152,25 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
           color: colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        child: Center(
+        child: const Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.shopping_cart_outlined,
                 size: 64,
                 color: Colors.grey,
               ),
-              const SizedBox(height: 16),
-              const Text(
+              SizedBox(height: 16),
+              Text(
                 'Your cart is empty',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 'Add some delicious items to get started!',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey),
@@ -614,7 +615,9 @@ class _CartBottomSheetState extends ConsumerState<CartBottomSheet> {
                   ),
                 ),
                 onPressed: () {
-                  Navigator.pop(context); // Close bottom sheet first
+                  if (widget.isInsideModal) {
+                    Navigator.pop(context); // Close bottom sheet if it is a modal
+                  }
                   unawaited(context.push('/processCheckout'));
                 },
                 child: const Text(

@@ -7,6 +7,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/utils/launcher_utils.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
@@ -691,7 +692,7 @@ void _reorder(WidgetRef ref, BuildContext context, OrderModel order) {
                 unawaited(cartNotifier.addItem(item));
               }
               Navigator.pop(context);
-              context.pushNamed('processCheckout');
+              unawaited(context.pushNamed('processCheckout'));
             },
             child: const Text('Proceed'),
           ),
@@ -986,13 +987,8 @@ Widget _buildOrderItemCard(
               ],
             ),
             child: ClipOval(
-              child: Image.asset(
-                item.image,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => ColoredBox(
-                  color: colorScheme.surfaceContainerHighest,
-                  child: Icon(Icons.fastfood, size: isCompact ? 16 : 20),
-                ),
+              child: AppImage(
+                imagePath: item.image,
               ),
             ),
           ),

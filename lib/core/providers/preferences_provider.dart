@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'preferences_provider.g.dart';
 
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError();
+});
+
 @Riverpod(keepAlive: true)
 class PreferencesService extends _$PreferencesService {
-  late SharedPreferences _prefs;
+  SharedPreferences get _prefs => ref.read(sharedPreferencesProvider);
 
   @override
-  FutureOr<void> build() async {
-    _prefs = await SharedPreferences.getInstance();
-  }
+  PreferencesService build() => this;
 
   static const _onboardingCompletedKey = 'onboarding_completed';
   static const _themeModeKey = 'theme_mode';
@@ -21,7 +24,7 @@ class PreferencesService extends _$PreferencesService {
 
   Future<void> setOnboardingCompleted(bool completed) async {
     await _prefs.setBool(_onboardingCompletedKey, completed);
-    ref.invalidateSelf();
+    ref.notifyListeners();
   }
 
   ThemeMode get themeMode {
@@ -33,6 +36,6 @@ class PreferencesService extends _$PreferencesService {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs.setString(_themeModeKey, mode.name);
-    ref.invalidateSelf();
+    ref.notifyListeners();
   }
 }

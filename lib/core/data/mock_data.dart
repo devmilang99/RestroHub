@@ -80,9 +80,20 @@ final List<RestaurantModel> restaurantsList = [
     description: 'Friendly neighborhood cafe with great coffee and snacks.',
     logoUrl: 'assets/food1.webp',
     bannerUrl: 'assets/food1.webp',
-    rating: 4.5,
+    rating: 4.8, // Increased for filtering
     status: RestaurantStatus.open,
-    locationAddress: 'Sajha Chowk',
+    locationAddress: 'Sajha Chowk, Kathmandu', // Added Kathmandu
+    categories: mockCategories,
+  ),
+  RestaurantModel(
+    id: 'rest2',
+    name: 'Italian Bistro',
+    description: 'Authentic Italian flavors in the heart of the city.',
+    logoUrl: 'assets/food1.webp',
+    bannerUrl: 'assets/food1.webp',
+    rating: 4.6,
+    status: RestaurantStatus.open,
+    locationAddress: 'New Road, Kathmandu',
     categories: mockCategories,
   ),
 ];

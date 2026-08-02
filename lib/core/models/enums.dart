@@ -16,6 +16,9 @@ enum UserRole {
   String toSnakeCase() => _toSnakeCase(name);
 }
 
+/// Types of exploration modes for the unified explore screen.
+enum ExploreType { restaurant, food, recommended }
+
 /// Statuses for the order lifecycle.
 enum OrderStatus {
   pending,

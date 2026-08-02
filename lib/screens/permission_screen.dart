@@ -5,10 +5,12 @@ import 'dart:ui';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:restro_hub/core/providers/preferences_provider.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 
 class PermissionScreen extends ConsumerStatefulWidget {
@@ -59,6 +61,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
   @override
   void initState() {
     super.initState();
+    FlutterNativeSplash.remove();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -352,6 +355,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
               ),
               ElevatedButton(
                 onPressed: () {
+                  ref
+                      .read(preferencesServiceProvider)
+                      .setOnboardingCompleted(true);
                   Navigator.pop(context);
                   context.goNamed('mainLoginScreen');
                 },
@@ -751,6 +757,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
             ? null
             : () {
                 if (_showThemeSelection) {
+                  ref
+                      .read(preferencesServiceProvider)
+                      .setOnboardingCompleted(true);
                   context.goNamed('mainLoginScreen');
                 } else {
                   unawaited(_requestPermission());

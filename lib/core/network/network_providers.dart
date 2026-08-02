@@ -5,8 +5,7 @@ part 'network_providers.g.dart';
 
 @riverpod
 NetworkMonitor networkMonitor(Ref ref) {
-  final monitor = NetworkMonitor();
-  monitor.initialize();
+  final monitor = NetworkMonitor()..initialize();
   ref.onDispose(monitor.dispose);
   return monitor;
 }

@@ -1,4 +1,5 @@
 # Keep Google Sign-In classes to avoid ClassNotFoundException during unmarshalling
+-keep class com.google.android.gms.common.api.Scope { *; }
 -keep class com.google.android.gms.auth.api.signin.internal.SignInConfiguration { *; }
 -keep class com.google.android.gms.auth.api.signin.** { *; }
 -keep class com.google.android.gms.auth.api.signin.GoogleSignInAccount { *; }

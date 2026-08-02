@@ -2,6 +2,7 @@ import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/auth/presentation/views/authenticated_password_screen.dart';
@@ -12,7 +13,6 @@ import 'package:restro_hub/features/auth/presentation/views/register_screen.dart
 import 'package:restro_hub/features/checkout/presentation/views/checkout_screen.dart';
 import 'package:restro_hub/features/country/presentation/views/country_list_screen.dart';
 import 'package:restro_hub/features/country/presentation/views/explore_country.dart';
-import 'package:restro_hub/features/cuisines/presentation/views/all_cuisine_list_screen.dart';
 import 'package:restro_hub/features/cuisines/presentation/views/cuisine_detail_screen.dart';
 import 'package:restro_hub/features/cuisines/presentation/views/search_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/contact_us_screen.dart';
@@ -20,17 +20,18 @@ import 'package:restro_hub/features/dashboard/presentation/views/info_screens.da
 import 'package:restro_hub/features/dashboard/presentation/views/location_picker_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/main_dashboard_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
+import 'package:restro_hub/features/explore/presentation/views/unified_explore_screen.dart';
 import 'package:restro_hub/features/favourites/presentation/views/favourites_screen.dart';
 import 'package:restro_hub/features/notifications/presentation/views/notifications_screen.dart';
+import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
-import 'package:restro_hub/features/restaurants/presentation/views/explore_restaurants_screen.dart';
 import 'package:restro_hub/features/splash/presentation/views/splash_screen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
 
-  Page<dynamic> _buildPageWithTransition({
+  Page<dynamic> buildPageWithTransition({
     required BuildContext context,
     required GoRouterState state,
     required Widget child,
@@ -41,11 +42,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       key: state.pageKey,
       child: child,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return SharedAxisTransition(
-          animation: animation,
-          secondaryAnimation: secondaryAnimation,
-          transitionType: transitionType,
-          child: child,
+        return Semantics(
+          container: true,
+          child: SharedAxisTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            transitionType: transitionType,
+            child: child,
+          ),
         );
       },
     );
@@ -56,14 +60,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     redirect: (context, state) {
       final user = authRepository.currentUser;
-      final isLoggingIn =
-          state.matchedLocation == '/mainLoginScreen' ||
-          state.matchedLocation == '/splash' ||
-          state.matchedLocation == '/permissions';
 
-      if (user != null && isLoggingIn) {
+      // Define paths that should redirect to dashboard if user is already logged in
+      final authPaths = [
+        '/',
+        '/splash',
+        '/mainLoginScreen',
+        '/registerScreen',
+        '/forgotPasswordScreen',
+        '/permissions',
+      ];
+
+      final isAuthPath = authPaths.contains(state.matchedLocation);
+
+      if (user != null && isAuthPath) {
+        debugPrint('Router: User already logged in, redirecting to dashboard');
         return '/mainDashBoard';
       }
+
       return null;
     },
     routes: [
@@ -75,7 +89,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/permissions',
         name: 'permissionsScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const PermissionScreen(),
@@ -84,7 +98,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/mainLoginScreen',
         name: 'mainLoginScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const MainLoginScreen(),
@@ -107,7 +121,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             user = authRepository.currentUser;
           }
 
-          return _buildPageWithTransition(
+          return buildPageWithTransition(
             context: context,
             state: state,
             child: MainDashBoard(user: user, initialIndex: initialIndex),
@@ -118,7 +132,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/registerScreen',
         name: 'registerScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const Register(),
@@ -127,25 +141,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgotPasswordScreen',
         name: 'forgotPasswordScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const ForgotPasswordScreen(),
         ),
       ),
       GoRoute(
-        path: '/exploreRestaurantsScreen',
-        name: 'exploreRestaurantsScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
-          context: context,
-          state: state,
-          child: const ExploreRestaurantsScreen(),
-        ),
+        path: '/unifiedExplore',
+        name: 'unifiedExplore',
+        pageBuilder: (context, state) {
+          final type = state.extra as ExploreType? ?? ExploreType.restaurant;
+          return buildPageWithTransition(
+            context: context,
+            state: state,
+            child: UnifiedExploreScreen(type: type),
+          );
+        },
       ),
       GoRoute(
         path: '/notificationsScreen',
         name: 'notificationsScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const NotificationsScreen(),
@@ -156,7 +173,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'profileScreen',
         pageBuilder: (context, state) {
           final user = state.extra as UserModel?;
-          return _buildPageWithTransition(
+          return buildPageWithTransition(
             context: context,
             state: state,
             child: ProfileScreen(user: user),
@@ -166,7 +183,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/locationPicker',
         name: 'locationPicker',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const LocationPickerScreen(),
@@ -175,7 +192,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/contactUsScreen',
         name: 'contactUsScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const ContactUsScreen(),
@@ -184,33 +201,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/googleLoginScreen',
         name: 'googleLoginScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const GoogleLoginDemo(),
         ),
       ),
       GoRoute(
-        path: '/allCuisineList',
-        name: 'allCuisineList',
-        pageBuilder: (context, state) {
-          final extras = state.extra! as Map<String, dynamic>;
-          return _buildPageWithTransition(
-            context: context,
-            state: state,
-            child: AllCousineList(
-              title: extras['title'] as String,
-              items: extras['items'] as List<MenuItemModel>,
-            ),
-          );
-        },
-      ),
-      GoRoute(
         path: '/cuisineSingleItem',
         name: 'cuisineSingleItem',
         pageBuilder: (context, state) {
           final item = state.extra! as MenuItemModel;
-          return _buildPageWithTransition(
+          return buildPageWithTransition(
             context: context,
             state: state,
             child: CuisineSingleItem(item: item),
@@ -221,16 +223,25 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/processCheckout',
         name: 'processCheckout',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const ProcessCheckOut(),
         ),
       ),
       GoRoute(
+        path: '/ordersScreen',
+        name: 'ordersScreen',
+        pageBuilder: (context, state) => buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const OrdersScreen(),
+        ),
+      ),
+      GoRoute(
         path: '/showFavourites',
         name: 'showFavourites',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const ShowFavourites(),
@@ -239,7 +250,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/authenticatedPasswordScreen',
         name: 'authenticatedPasswordScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const AuthenticatedPasswordScreen(),
@@ -250,7 +261,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'exploreScreen',
         pageBuilder: (context, state) {
           final initialCountry = state.extra as String?;
-          return _buildPageWithTransition(
+          return buildPageWithTransition(
             context: context,
             state: state,
             child: ExploreScreen(initialCountry: initialCountry),
@@ -260,7 +271,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/countryListScreen',
         name: 'countryListScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
           child: const CountryListScreen(),
@@ -269,28 +280,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/searchScreen',
         name: 'searchScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
-          child: SearchScreen(),
+          child: const SearchScreen(),
         ),
       ),
       GoRoute(
         path: '/helplineScreen',
         name: 'helplineScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
-          child: HelplineScreen(),
+          child: const HelplineScreen(),
         ),
       ),
       GoRoute(
         path: '/policyScreen',
         name: 'policyScreen',
-        pageBuilder: (context, state) => _buildPageWithTransition(
+        pageBuilder: (context, state) => buildPageWithTransition(
           context: context,
           state: state,
-          child: PolicyScreen(),
+          child: const PolicyScreen(),
         ),
       ),
     ],

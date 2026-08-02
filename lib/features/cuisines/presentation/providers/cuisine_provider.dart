@@ -81,8 +81,50 @@ List<MenuItemModel> _mapMenuItemRowsToModels(List<CachedMenuItem> rows) {
           price: row.price,
           isAvailable: row.isAvailable,
           calories: row.calories,
+          rating: 4.5,
           dietaryFlags: row.dietaryFlags,
         ),
       )
       .toList();
+}
+
+@riverpod
+class FilteredCuisines extends _$FilteredCuisines {
+  int _page = 0;
+  static const int _pageSize = 20;
+  bool _hasMore = true;
+
+  @override
+  Future<List<MenuItemModel>> build() async {
+    _page = 0;
+    _hasMore = true;
+    return _fetchCuisines();
+  }
+
+  Future<List<MenuItemModel>> _fetchCuisines() async {
+    final db = await ref.read(appDatabaseProvider.future);
+    final query = db.select(db.cachedMenuItems)
+      ..limit(_pageSize, offset: _page * _pageSize);
+    final rows = await query.get();
+
+    if (rows.length < _pageSize) {
+      _hasMore = false;
+    }
+
+    return _mapMenuItemRowsToModels(rows);
+  }
+
+  Future<void> loadMore() async {
+    if (!_hasMore || (state.isLoading)) return;
+
+    state = const AsyncValue.loading();
+    try {
+      _page++;
+      final next = await _fetchCuisines();
+      final current = state.value ?? [];
+      state = AsyncValue.data([...current, ...next]);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }

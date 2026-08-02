@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';

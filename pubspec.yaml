@@ -33,11 +33,11 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  bonsoir: any
   animations: ^2.0.11
-  flutter_native_splash: ^2.4.0
+  bonsoir: any
   cached_network_image: ^3.4.1
   connectivity_plus: ^6.1.0
+  flutter_native_splash: ^2.4.0
   cupertino_icons: ^1.0.8
   device_info_plus: ^11.0.0
   dio: ^5.9.1
@@ -66,30 +66,24 @@ dependencies:
   shelf_web_socket: any
   shimmer: ^3.0.0
   sqlite3_flutter_libs: ^0.5.0
+  shared_preferences: ^2.5.2
   supabase_flutter: ^2.6.0
   url_launcher: ^6.3.2
   web_socket_channel: any
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  integration_test:
-    sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   build_runner: any
   custom_lint: any
   drift_dev: ^2.31.0
   flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
   json_serializable: any
   mocktail: ^1.0.4
   pigeon: any
   riverpod_generator: ^4.0.0+1
   riverpod_lint: ^3.1.0
-  shared_preferences: any
   very_good_analysis: ^10.2.0
 
 # For information on the generic Dart part of this file, see the

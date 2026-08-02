@@ -43,3 +43,22 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Secrets & Security
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+key.properties
+local.properties
+google-services.json
+GoogleService-Info.plist
+**/ios/Runner/GoogleService-Info.plist
+**/android/app/google-services.json
+
+# IDE - Personal settings
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/shelf

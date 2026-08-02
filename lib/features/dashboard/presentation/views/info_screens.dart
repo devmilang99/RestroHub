@@ -145,7 +145,7 @@ class PolicyScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Text(
+            const Text(
               'Last updated: July 29, 2026',
               style: TextStyle(color: Colors.grey, fontSize: 12),
             ),

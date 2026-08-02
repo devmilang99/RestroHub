@@ -13,7 +13,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
   // Mock location for Pokhara
   final double _lat = 28.2096;
   final double _lng = 83.9856;
-  String _address = 'Narayan Chowk';
+  final String _address = 'Narayan Chowk';
 
   @override
   Widget build(BuildContext context) {

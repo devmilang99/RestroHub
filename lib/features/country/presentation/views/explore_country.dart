@@ -75,7 +75,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => const CartBottomSheet(),
+                    builder: (context) => const CartBottomSheet(isInsideModal: true),
                   ),
                 );
               },

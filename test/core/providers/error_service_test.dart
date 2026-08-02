@@ -21,6 +21,7 @@ void main() {
 
     test('showError updates state correctly', () {
       final notifier = container.read(errorServiceProvider.notifier);
+      // ignore: cascade_invocations
       notifier.showError(message: 'Test error', type: ErrorType.network);
 
       final state = container.read(errorServiceProvider);
@@ -31,7 +32,9 @@ void main() {
 
     test('clearError resets state to null', () {
       final notifier = container.read(errorServiceProvider.notifier);
+      // ignore: cascade_invocations
       notifier.showError(message: 'Error');
+      // ignore: cascade_invocations
       notifier.clearError();
 
       final state = container.read(errorServiceProvider);
@@ -40,7 +43,10 @@ void main() {
 
     test('handleException parses network error correctly', () {
       final notifier = container.read(errorServiceProvider.notifier);
-      notifier.handleException(Exception('SocketException: Connection failed'));
+      // ignore: cascade_invocations
+      notifier.handleException(
+        Exception('SocketException: Connection failed'),
+      );
 
       final state = container.read(errorServiceProvider);
       expect(state!.type, ErrorType.network);

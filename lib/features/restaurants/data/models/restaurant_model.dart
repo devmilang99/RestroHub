@@ -15,6 +15,7 @@ class RestaurantModel extends Equatable {
   final RestaurantStatus status;
   final double rating;
   final String priceRange;
+  final double minOrderAmount;
   final double taxPercent;
   final String? locationAddress;
   final double? latitude;
@@ -33,6 +34,7 @@ class RestaurantModel extends Equatable {
     this.status = RestaurantStatus.closed,
     this.rating = 0.0,
     this.priceRange = r'$$',
+    this.minOrderAmount = 0.0,
     this.taxPercent = 0.0,
     this.locationAddress,
     this.latitude,
@@ -56,6 +58,9 @@ class RestaurantModel extends Equatable {
       rating: ((json['rating'] ?? 0.0) as num).toDouble(),
       priceRange: (json['price_range'] ?? json['priceRange'] ?? r'$$')
           .toString(),
+      minOrderAmount:
+          ((json['min_order_amount'] ?? json['minOrderAmount'] ?? 0.0) as num)
+              .toDouble(),
       taxPercent: ((json['tax_percent'] ?? json['taxPercent'] ?? 0.0) as num)
           .toDouble(),
       locationAddress: (json['location_address'] ?? json['address']) as String?,
@@ -84,6 +89,7 @@ class RestaurantModel extends Equatable {
       'status': status.toSnakeCase(),
       'rating': rating,
       'price_range': priceRange,
+      'min_order_amount': minOrderAmount,
       'tax_percent': taxPercent,
       'location_address': locationAddress,
       'latitude': latitude,
@@ -104,6 +110,7 @@ class RestaurantModel extends Equatable {
     status,
     rating,
     priceRange,
+    minOrderAmount,
     taxPercent,
     locationAddress,
     latitude,

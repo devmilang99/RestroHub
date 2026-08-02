@@ -30,7 +30,7 @@ class CountryListScreen extends ConsumerWidget {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => const CartBottomSheet(),
+                    builder: (context) => const CartBottomSheet(isInsideModal: true),
                   ),
                 );
               },

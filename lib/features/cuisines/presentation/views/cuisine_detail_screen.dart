@@ -101,7 +101,8 @@ class CuisineSingleItem extends ConsumerWidget {
                                 context: context,
                                 isScrollControlled: true,
                                 backgroundColor: Colors.transparent,
-                                builder: (context) => const CartBottomSheet(),
+                                builder: (context) =>
+                                    const CartBottomSheet(isInsideModal: true),
                               ),
                             );
                           },
@@ -151,8 +152,7 @@ class CuisineSingleItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
     final textTheme = context.textTheme;
-    final isFav = ref.watch(favouritesProvider.notifier).isFavourite(item);
-    ref.watch(favouritesProvider);
+    final isFav = ref.watch(isFavouriteProvider(item.id));
 
     // Mock data if missing
     final ingredients = [
@@ -351,26 +351,12 @@ class CuisineSingleItem extends ConsumerWidget {
                       const SizedBox(width: 4),
                       const Expanded(
                         child: Text(
-                          'Various', // Location not in MenuItemModel
+                          'Kathmandu, Nepal', // Location not in MenuItemModel
                           style: TextStyle(
                             color: Color(
                               0xFF6B7280,
                             ), // dummy colorScheme.onSurfaceVariant
                             fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Icon(Icons.public, color: Colors.blue, size: 16),
-                      const SizedBox(width: 4),
-                      const Flexible(
-                        child: Text(
-                          'Global', // country not in MenuItemModel
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -465,15 +451,17 @@ class CuisineSingleItem extends ConsumerWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: () async {
-                  await ref.read(cartProvider.notifier).addItem(
-                    CartModel(
-                      id: item.id,
-                      name: item.name,
-                      image: item.imageUrl ?? '',
-                      price: item.price,
-                      quantity: 1,
-                    ),
-                  );
+                  await ref
+                      .read(cartProvider.notifier)
+                      .addItem(
+                        CartModel(
+                          id: item.id,
+                          name: item.name,
+                          image: item.imageUrl ?? '',
+                          price: item.price,
+                          quantity: 1,
+                        ),
+                      );
                   unawaited(context.push('/processCheckout'));
                 },
                 style: OutlinedButton.styleFrom(
@@ -492,15 +480,17 @@ class CuisineSingleItem extends ConsumerWidget {
             const SizedBox(width: 12),
             ElevatedButton(
               onPressed: () async {
-                await ref.read(cartProvider.notifier).addItem(
-                  CartModel(
-                    id: item.id,
-                    name: item.name,
-                    image: item.imageUrl ?? '',
-                    price: item.price,
-                    quantity: 1,
-                  ),
-                );
+                await ref
+                    .read(cartProvider.notifier)
+                    .addItem(
+                      CartModel(
+                        id: item.id,
+                        name: item.name,
+                        image: item.imageUrl ?? '',
+                        price: item.price,
+                        quantity: 1,
+                      ),
+                    );
                 _showAddedNotification(context, item.name);
               },
               style: ElevatedButton.styleFrom(

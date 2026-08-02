@@ -21,10 +21,10 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
-            storeFile = keystoreProperties["storeFile"]?.let { rootProject.file(it) }
-            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreProperties.getProperty("storeFile")?.let { rootProject.file(it) }
+            storePassword = keystoreProperties.getProperty("storePassword")
         }
     }
 
@@ -37,6 +37,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        multiDexEnabled = true
 
         ndk {
             abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64"))
@@ -59,10 +61,20 @@ android {
 
     buildTypes {
         getByName("debug") {
-            signingConfig = signingConfigs.getByName("release")
+            if (keystoreProperties.containsKey("keyAlias")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (keystoreProperties.containsKey("keyAlias")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }
@@ -70,6 +82,7 @@ android {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+    implementation("com.google.android.gms:play-services-base:18.5.0")
 }
 
 

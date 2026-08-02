@@ -36,6 +36,7 @@ class CachedRestaurants extends Table {
   TextColumn get status => text().withDefault(const Constant('closed'))();
   RealColumn get rating => real().withDefault(const Constant(0))();
   TextColumn get priceRange => text().withDefault(const Constant(r'$$'))();
+  RealColumn get minOrderAmount => real().withDefault(const Constant(0))();
   RealColumn get taxPercent => real().withDefault(const Constant(0))();
   TextColumn get locationAddress => text().nullable()();
   RealColumn get latitude => real().nullable()();
@@ -71,6 +72,7 @@ class CachedMenuItems extends Table {
   TextColumn get imageUrl => text().nullable()();
   BoolColumn get isAvailable => boolean().withDefault(const Constant(true))();
   IntColumn get calories => integer().nullable()();
+  RealColumn get rating => real().nullable()();
   TextColumn get dietaryFlags => text()
       .map(const StringListConverter())
       .withDefault(const Constant('[]'))();
@@ -169,7 +171,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -213,6 +215,16 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(cachedRestaurants);
         await m.createTable(cachedMenuCategories);
         await m.createTable(cachedMenuItems);
+      }
+      if (from < 6) {
+        logInfo('Database onUpgrade: Adding rating to menu items for v6.');
+        await m.addColumn(cachedMenuItems, cachedMenuItems.rating);
+      }
+      if (from < 7) {
+        logInfo(
+          'Database onUpgrade: Adding minOrderAmount to restaurants for v7.',
+        );
+        await m.addColumn(cachedRestaurants, cachedRestaurants.minOrderAmount);
       }
     },
   );

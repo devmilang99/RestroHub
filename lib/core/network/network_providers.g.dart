@@ -48,7 +48,7 @@ final class NetworkMonitorProvider
   }
 }
 
-String _$networkMonitorHash() => r'4e2f494eacd7b43213f4d1f1f4d31ba292ea5238';
+String _$networkMonitorHash() => r'f9f5f4dff23de788555670b8f56754dea3de9db5';
 
 @ProviderFor(networkStatus)
 final networkStatusProvider = NetworkStatusProvider._();

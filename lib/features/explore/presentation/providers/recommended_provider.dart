@@ -6,8 +6,8 @@ part 'recommended_provider.g.dart';
 
 @riverpod
 Future<List<dynamic>> recommendedItems(Ref ref) async {
-  final restaurants = await ref.watch(restaurantsStreamProvider.first);
-  final cuisines = await ref.watch(allCuisinesStreamProvider.first);
+  final restaurants = await ref.watch(restaurantsStreamProvider.future);
+  final cuisines = await ref.watch(allCuisinesStreamProvider.future);
 
   final recommendedRestaurants = restaurants
       .where((r) => r.rating > 3.0)

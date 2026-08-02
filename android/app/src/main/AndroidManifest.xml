@@ -18,6 +18,8 @@
     <uses-permission android:name="android.permission.CAMERA"/>
     <!-- Internet Permission -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Notification Permission -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="restro_hub"
         android:name="${applicationName}"
@@ -39,6 +41,9 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <meta-data
+              android:name="io.flutter.embedding.android.EnableImpeller"
+              android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

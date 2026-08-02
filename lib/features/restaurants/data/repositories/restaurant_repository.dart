@@ -66,11 +66,11 @@ List<RestaurantModel> _mapRowsToModels(List<CachedRestaurant> rows) {
       status: RestaurantStatus.fromString(row.status),
       rating: row.rating,
       priceRange: row.priceRange,
+      minOrderAmount: row.minOrderAmount,
       taxPercent: row.taxPercent,
       locationAddress: row.locationAddress,
       latitude: row.latitude,
       longitude: row.longitude,
-      categories: const [],
     );
   }).toList();
 }

@@ -11,6 +11,7 @@ import 'package:restro_hub/features/cart/data/models/cart_model.dart'
     as cart_model;
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cuisines/presentation/providers/cuisine_provider.dart';
+import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/presentation/views/restaurant_menu_screen.dart';
 
@@ -34,111 +35,113 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _showFilterSheet() {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final colorScheme = Theme.of(context).colorScheme;
-          return Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(32),
+    unawaited(
+      showModalBottomSheet<void>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setModalState) {
+            final colorScheme = Theme.of(context).colorScheme;
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(32),
+                ),
               ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Sort & Filter',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Sort By',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  children: [
-                    FilterChip(
-                      label: const Text('Name'),
-                      selected: _sortBy == 'name',
-                      onSelected: (val) {
-                        setState(() => _sortBy = 'name');
-                        setModalState(() {});
-                      },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sort & Filter',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    FilterChip(
-                      label: const Text('Price: Low to High'),
-                      selected: _sortBy == 'price_asc',
-                      onSelected: (val) {
-                        setState(() => _sortBy = 'price_asc');
-                        setModalState(() {});
-                      },
-                    ),
-                    FilterChip(
-                      label: const Text('Price: High to Low'),
-                      selected: _sortBy == 'price_desc',
-                      onSelected: (val) {
-                        setState(() => _sortBy = 'price_desc');
-                        setModalState(() {});
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Minimum Rating',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
                   ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  children: [0.0, 3.0, 4.0, 4.5].map((rating) {
-                    return FilterChip(
-                      label: Text(rating == 0.0 ? 'All' : '$rating+ ★'),
-                      selected: _minRating == rating,
-                      onSelected: (val) {
-                        setState(() => _minRating = rating);
-                        setModalState(() {});
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Sort By',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    children: [
+                      FilterChip(
+                        label: const Text('Name'),
+                        selected: _sortBy == 'name',
+                        onSelected: (val) {
+                          setState(() => _sortBy = 'name');
+                          setModalState(() {});
+                        },
                       ),
-                    ),
-                    child: const Text('Apply'),
+                      FilterChip(
+                        label: const Text('Price: Low to High'),
+                        selected: _sortBy == 'price_asc',
+                        onSelected: (val) {
+                          setState(() => _sortBy = 'price_asc');
+                          setModalState(() {});
+                        },
+                      ),
+                      FilterChip(
+                        label: const Text('Price: High to Low'),
+                        selected: _sortBy == 'price_desc',
+                        onSelected: (val) {
+                          setState(() => _sortBy = 'price_desc');
+                          setModalState(() {});
+                        },
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: 20),
+                  Text(
+                    'Minimum Rating',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    children: [0.0, 3.0, 4.0, 4.5].map((rating) {
+                      return FilterChip(
+                        label: Text(rating == 0.0 ? 'All' : '$rating+ ★'),
+                        selected: _minRating == rating,
+                        onSelected: (val) {
+                          setState(() => _minRating = rating);
+                          setModalState(() {});
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text('Apply'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -176,7 +179,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             autofocus: true,
             onChanged: (val) => setState(() => _query = val),
             decoration: const InputDecoration(
-              hintText: 'Search for food...',
               prefixIcon: Icon(Icons.search, size: 20),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(vertical: 10),
@@ -380,25 +382,64 @@ class SearchFoodCard extends ConsumerWidget {
               ),
             Row(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: (item.imageUrl?.startsWith('assets') ?? false)
-                      ? Image.asset(
-                          item.imageUrl!,
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: item.imageUrl ?? '',
-                          height: 100,
-                          width: 100,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) =>
-                              const ShimmerPlaceholder(width: 100, height: 100),
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.fastfood),
-                        ),
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: (item.imageUrl?.startsWith('assets') ?? false)
+                          ? Image.asset(
+                              item.imageUrl!,
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                            )
+                          : CachedNetworkImage(
+                              imageUrl: item.imageUrl ?? '',
+                              height: 100,
+                              width: 100,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) =>
+                                  const ShimmerPlaceholder(
+                                    width: 100,
+                                    height: 100,
+                                  ),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.fastfood),
+                            ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final isFavourited = ref.watch(
+                            isFavouriteProvider(item.id),
+                          );
+                          return GestureDetector(
+                            onTap: () async {
+                              await ref
+                                  .read(favouritesProvider.notifier)
+                                  .toggleFavourite(item);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isFavourited
+                                    ? Icons.favorite_rounded
+                                    : Icons.favorite_border_rounded,
+                                size: 14,
+                                color: isFavourited ? Colors.red : Colors.white,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 Expanded(
                   child: Padding(

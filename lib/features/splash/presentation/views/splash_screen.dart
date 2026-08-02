@@ -6,6 +6,7 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/providers/preferences_provider.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/infrastructure/sync/models/sync_status.dart';
 import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
@@ -155,6 +156,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       }
 
       if (mounted) {
+        final prefs = ref.read(preferencesServiceProvider);
+        final user = ref.read(authRepositoryProvider).currentUser;
+
+        // Directly navigate to dashboard if user is already logged in
+        if (user != null) {
+          debugPrint('SPLASH: User logged in, navigating to dashboard...');
+          context.goNamed('mainDashBoard');
+          return;
+        }
+
+        if (prefs.isOnboardingCompleted) {
+          context.goNamed('mainLoginScreen');
+          return;
+        }
+
         setState(() {
           _imagesLoaded = true;
           _showLoader = false;

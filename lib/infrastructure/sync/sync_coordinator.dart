@@ -20,12 +20,12 @@ class SyncCoordinator extends _$SyncCoordinator {
       if (status == NetworkStatus.online &&
           prevStatus == NetworkStatus.offline) {
         logInfo('SYNC COORDINATOR: Network restored. Triggering auto-sync...');
-        _triggerSync();
+        unawaited(_triggerSync());
       }
     });
 
     // Initial check
-    _checkInitialStatus();
+    unawaited(_checkInitialStatus());
 
     return true;
   }
@@ -39,16 +39,18 @@ class SyncCoordinator extends _$SyncCoordinator {
       logInfo(
         'SYNC COORDINATOR: Online at startup. Triggering initial sync...',
       );
-      _triggerSync();
+      unawaited(_triggerSync());
     }
   }
 
-  void _triggerSync() {
+  Future<void> _triggerSync() async {
     try {
       if (ref.mounted) {
-        ref.read(supabaseSyncManagerProvider.notifier).syncRestaurants();
+        unawaited(
+          ref.read(supabaseSyncManagerProvider.notifier).syncRestaurants(),
+        );
       }
-    } catch (e, stack) {
+    } on Object catch (e, stack) {
       logError('SYNC COORDINATOR: Failed to trigger sync', e, stack);
     }
   }

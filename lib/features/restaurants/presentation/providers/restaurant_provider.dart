@@ -78,7 +78,6 @@ class FilteredRestaurants extends _$FilteredRestaurants {
 
     final repository = ref.read(restaurantRepositoryProvider);
     final result = await repository.getRestaurants(
-      limit: _pageSize,
       offset: _page * _pageSize,
     );
 
@@ -104,8 +103,11 @@ class FilteredRestaurants extends _$FilteredRestaurants {
     if (_isLoadingMore || !_hasMore) return;
 
     _isLoadingMore = true;
-    // ignore: invalid_use_of_internal_member
-    state = AsyncValue<List<RestaurantModel>>.loading().copyWithPrevious(state);
+    // ignore: invalid_use_of_internal_member - This is a known Riverpod compatibility
+    // workaround for the state-copy API used in this project.
+    state = const AsyncValue<List<RestaurantModel>>.loading().copyWithPrevious(
+      state,
+    );
 
     try {
       _page++;
@@ -121,7 +123,7 @@ class FilteredRestaurants extends _$FilteredRestaurants {
   }
 }
 
-/// Top-level function for background filtering
+/// Top-level function for background filtering.
 List<RestaurantModel> _filterRestaurants(Map<String, dynamic> params) {
   final list = params['list'] as List<RestaurantModel>;
   final filter = params['filter'] as String;

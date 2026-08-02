@@ -349,3 +349,48 @@ final class RestaurantFromCategoryIdFamily extends $Family
   @override
   String toString() => r'restaurantFromCategoryIdProvider';
 }
+
+@ProviderFor(FilteredCuisines)
+final filteredCuisinesProvider = FilteredCuisinesProvider._();
+
+final class FilteredCuisinesProvider
+    extends $AsyncNotifierProvider<FilteredCuisines, List<MenuItemModel>> {
+  FilteredCuisinesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'filteredCuisinesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$filteredCuisinesHash();
+
+  @$internal
+  @override
+  FilteredCuisines create() => FilteredCuisines();
+}
+
+String _$filteredCuisinesHash() => r'7b339b59cf9cd4030832ff104102b2cbf17b7d8a';
+
+abstract class _$FilteredCuisines extends $AsyncNotifier<List<MenuItemModel>> {
+  FutureOr<List<MenuItemModel>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref =
+        this.ref as $Ref<AsyncValue<List<MenuItemModel>>, List<MenuItemModel>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<MenuItemModel>>, List<MenuItemModel>>,
+              AsyncValue<List<MenuItemModel>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}

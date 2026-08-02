@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:restro_hub/core/providers/preferences_provider.dart';
+import 'package:restro_hub/core/services/notification_service.dart';
 import 'package:restro_hub/core/theme/app_theme.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/connectivity_banner.dart';
@@ -11,6 +13,7 @@ import 'package:restro_hub/infrastructure/supabase/supabase_service.dart';
 import 'package:restro_hub/infrastructure/sync/sync_coordinator.dart';
 import 'package:restro_hub/l10n/generated/app_localizations.dart';
 import 'package:restro_hub/router/router_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -18,15 +21,32 @@ void main() async {
 
   await dotenv.load();
 
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  final container = ProviderContainer(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+    ],
+  );
+
+  final service = container.read(notificationServiceProvider);
+  await service.init();
+  await service.requestPermissions();
+
   try {
     await SupabaseService.initialize();
-  } catch (e) {
+  } on Object catch (e) {
     debugPrint(
       'Supabase initialization failed: $e. App will continue in offline mode.',
     );
   }
 
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {
@@ -34,7 +54,6 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Initialize global listeners
     ref.read(syncCoordinatorProvider);
 
     final themeMode = ref.watch(themeProvider);

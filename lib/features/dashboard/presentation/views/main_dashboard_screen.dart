@@ -1,9 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/models/enums.dart';
+import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/responsive_center.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
@@ -12,6 +13,7 @@ import 'package:restro_hub/features/cuisines/presentation/providers/cuisine_prov
 import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_skeletons.dart';
 import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_slivers.dart';
+import 'package:restro_hub/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
@@ -30,19 +32,22 @@ class MainDashBoard extends ConsumerStatefulWidget {
 class _MainDashBoardState extends ConsumerState<MainDashBoard> {
   late int _currentIndex;
   final ScrollController _scrollController = ScrollController();
-  bool _showBackToTop = false;
 
   @override
   void initState() {
     super.initState();
+    FlutterNativeSplash.remove();
     _currentIndex = widget.initialIndex;
-    _scrollController.addListener(() {
-      if (_scrollController.offset > 400 && !_showBackToTop) {
-        setState(() => _showBackToTop = true);
-      } else if (_scrollController.offset <= 400 && _showBackToTop) {
-        setState(() => _showBackToTop = false);
-      }
-    });
+  }
+
+  @override
+  void didUpdateWidget(MainDashBoard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialIndex != oldWidget.initialIndex) {
+      setState(() {
+        _currentIndex = widget.initialIndex;
+      });
+    }
   }
 
   @override
@@ -72,24 +77,6 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
       extendBody: true,
       body: screens[_currentIndex],
       bottomNavigationBar: _buildFloatingBottomNav(colorScheme),
-      floatingActionButton: _currentIndex == 0 && _showBackToTop
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 80),
-              child: FloatingActionButton(
-                mini: true,
-                onPressed: () {
-                  unawaited(
-                    _scrollController.animateTo(
-                      0,
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    ),
-                  );
-                },
-                child: const Icon(Icons.arrow_upward),
-              ),
-            )
-          : null,
     );
   }
 
@@ -204,13 +191,43 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
     AsyncValue<List<RestaurantModel>> restaurantsAsync,
     AsyncValue<List<MenuItemModel>> allCuisinesAsync,
   ) {
-    final restaurants = restaurantsAsync.value ?? <RestaurantModel>[];
-    final allCuisines = allCuisinesAsync.value ?? <MenuItemModel>[];
-    final offers = allCuisines.where((c) => c.price < 500).take(5).toList();
-    final recommended = restaurants
-        .where((r) => r.rating >= 4.5)
-        .take(4)
+    const currentLocation = 'Kathmandu'; // Mock current location
+
+    // Filter by location for categories
+    final allRestaurants = (restaurantsAsync.value ?? <RestaurantModel>[])
+        .where(
+          (r) => r.locationAddress?.contains(currentLocation) ?? true,
+        )
         .toList();
+
+    final restaurants = allRestaurants.take(5).toList();
+
+    final allCuisines = (allCuisinesAsync.value ?? <MenuItemModel>[]).where((
+      c,
+    ) {
+      // If we want filtering by location for cuisines, we'd need to link back to restaurant.
+      // For now, let's keep the baseline logic but filtered by the current restaurants.
+      return true;
+    }).toList();
+
+    final cuisines = allCuisines.take(5).toList();
+
+    final recommendedRestaurants = allRestaurants
+        .where((r) => r.rating >= 4.0)
+        .take(5)
+        .toList();
+
+    final recommendedFood = allCuisines
+        .where((f) => f.rating >= 4.5)
+        .take(5)
+        .toList();
+
+    final recommendedItems = [...recommendedRestaurants, ...recommendedFood]
+      ..shuffle();
+
+    final unreadNotifications = ref.watch(notificationsProvider).where((n) => !n.isRead).length;
+
+    final offers = allCuisines.where((c) => c.price < 500).take(5).toList();
 
     return ResponsiveCenter(
       child: CustomScrollView(
@@ -267,18 +284,87 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                           ),
                         ],
                       ),
-                      IconButton.filledTonal(
-                        onPressed: () =>
-                            GoRouter.of(context).pushNamed('searchScreen'),
-                        icon: const Icon(Icons.search_rounded),
-                        style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.primary.withValues(
-                            alpha: 0.1,
+                      Row(
+                        children: [
+                          IconButton.filledTonal(
+                            onPressed: () {
+                              final isDark =
+                                  ref.read(themeProvider) == ThemeMode.dark;
+                              ref
+                                  .read(themeProvider.notifier)
+                                  .toggleTheme(isDark: !isDark);
+                            },
+                            icon: Icon(
+                              ref.watch(themeProvider) == ThemeMode.dark
+                                  ? Icons.light_mode_rounded
+                                  : Icons.dark_mode_rounded,
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: colorScheme.primary.withValues(
+                                alpha: 0.1,
+                              ),
+                              foregroundColor: colorScheme.primary,
+                            ),
                           ),
-                          foregroundColor: colorScheme.primary,
-                        ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            onPressed: () =>
+                                context.pushNamed('notificationsScreen'),
+                            icon: Badge.count(
+                              count: unreadNotifications,
+                              isLabelVisible: unreadNotifications > 0,
+                              child: const Icon(Icons.notifications_rounded),
+                            ),
+                            style: IconButton.styleFrom(
+                              backgroundColor: colorScheme.primary.withValues(
+                                alpha: 0.1,
+                              ),
+                              foregroundColor: colorScheme.primary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Full Search Bar
+                  InkWell(
+                    onTap: () => GoRouter.of(context).pushNamed('searchScreen'),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.5,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.search_rounded,
+                            color: colorScheme.onSurfaceVariant,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Search for food, restaurants...',
+                            style: GoogleFonts.poppins(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -289,10 +375,9 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           else
             DashboardSlivers(
               restaurants: restaurants,
-              recommendedRestaurants: recommended,
-              cuisines: allCuisines,
+              recommendedItems: recommendedItems,
+              cuisines: cuisines,
               offers: offers,
-              countries: const [], // Countries removed as per request
             ),
           const SliverToBoxAdapter(
             child: SizedBox(height: 100),
@@ -305,17 +390,15 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
 
 class DashboardSlivers extends StatelessWidget {
   final List<RestaurantModel> restaurants;
-  final List<RestaurantModel> recommendedRestaurants;
+  final List<dynamic> recommendedItems;
   final List<MenuItemModel> cuisines;
   final List<MenuItemModel> offers;
-  final List<dynamic> countries; // Kept for compatibility but unused
 
   const DashboardSlivers({
     required this.restaurants,
-    required this.recommendedRestaurants,
+    required this.recommendedItems,
     required this.cuisines,
     required this.offers,
-    required this.countries,
     super.key,
   });
 
@@ -332,11 +415,13 @@ class DashboardSlivers extends StatelessWidget {
 
     return SliverMainAxisGroup(
       slivers: [
-        if (recommendedRestaurants.isNotEmpty)
+        if (recommendedItems.isNotEmpty)
           SliverRestaurantCards(
-            headingTitle: 'Recommended Restaurants',
-            items: recommendedRestaurants,
+            headingTitle: 'Recommended',
+            titleIcon: Icons.star_rounded,
+            items: recommendedItems,
             seeAll: true,
+            exploreType: ExploreType.recommended,
           ),
         if (offers.isNotEmpty)
           SliverOfferCards(
@@ -347,14 +432,18 @@ class DashboardSlivers extends StatelessWidget {
         if (cuisines.isNotEmpty)
           SliverFoodCards(
             headingTitle: 'Best Pick Food Items',
+            titleIcon: Icons.restaurant_menu_rounded,
             items: cuisines,
             seeAll: true,
+            exploreType: ExploreType.food,
           ),
         if (restaurants.isNotEmpty)
           SliverRestaurantCards(
             headingTitle: 'Popular Restaurants',
+            titleIcon: Icons.storefront_rounded,
             items: restaurants,
             seeAll: true,
+            exploreType: ExploreType.restaurant,
           ),
       ],
     );

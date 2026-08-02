@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/providers/error_service.dart';
 import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
@@ -222,34 +223,105 @@ class ProcessCheckOut extends ConsumerWidget {
           ],
         ),
         child: ElevatedButton(
-          onPressed: () {
-            // Process payment logic
-            final orderId = 'ORD${DateTime.now().millisecondsSinceEpoch}';
-            ref
-                .read(ordersProvider.notifier)
-                .addOrder(
-                  OrderModel(
-                    id: orderId,
-                    items: cart,
-                    totalAmount: finalTotal,
-                    subStatus: OrderSubStatus.preparing,
-                    timestamp: DateTime.now(),
-                    paymentMethod: checkoutState.paymentMethod,
-                    discount: discount,
+          onPressed: () async {
+            if (cart.isEmpty) {
+              ref
+                  .read(errorServiceProvider.notifier)
+                  .showError(
+                    message:
+                        'Your cart is empty. Add some items to place an order.',
+                  );
+              return;
+            }
+
+            try {
+              // Process payment logic
+              final orderId = 'ORD${DateTime.now().millisecondsSinceEpoch}';
+              ref
+                  .read(ordersProvider.notifier)
+                  .addOrder(
+                    OrderModel(
+                      id: orderId,
+                      items: cart,
+                      totalAmount: finalTotal,
+                      subStatus: OrderSubStatus.preparing,
+                      timestamp: DateTime.now(),
+                      paymentMethod: checkoutState.paymentMethod,
+                      discount: discount,
+                    ),
+                  );
+
+              // ── Trigger Native Printer API ──
+              try {
+                await PrinterApi().printReceipt({
+                  'orderId': orderId,
+                  'amount': finalTotal.toStringAsFixed(2),
+                  'itemsCount': cart.length.toString(),
+                });
+              } on Object catch (e) {
+                // Log printer error but don't stop the checkout process
+                debugPrint('Printer API Error: $e');
+              }
+
+              await ref.read(cartProvider.notifier).clearCart();
+
+              if (context.mounted) {
+                unawaited(
+                  showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      title: const Column(
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: Colors.green,
+                            size: 60,
+                          ),
+                          SizedBox(height: 16),
+                          Text(
+                            'Order Placed!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      content: const Text(
+                        'Your delicious meal is being prepared. You can track your order status in the orders section.',
+                        textAlign: TextAlign.center,
+                      ),
+                      actions: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context); // Close dialog
+                              context.goNamed(
+                                'mainDashBoard',
+                                extra: {'initialIndex': 2},
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Track Order'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
-
-            // ── Trigger Native Printer API ──
-            unawaited(
-              PrinterApi().printReceipt({
-                'orderId': orderId,
-                'amount': finalTotal.toStringAsFixed(2),
-                'itemsCount': cart.length.toString(),
-              }),
-            );
-
-            unawaited(ref.read(cartProvider.notifier).clearCart());
-            context.goNamed('mainDashBoard', extra: {'initialIndex': 2});
+              }
+            } on Object catch (e, stack) {
+              ref.read(errorServiceProvider.notifier).handleException(e, stack);
+            }
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
