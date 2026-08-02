@@ -1,0 +1,8 @@
+# Mark generated files as generated to hide them from diffs in GitHub/GitLab
+*.g.dart linguist-generated=true
+*.freezed.dart linguist-generated=true
+*.generated.dart linguist-generated=true
+*.template.dart linguist-generated=true
+
+# Localization generated files
+lib/l10n/generated/** linguist-generated=true
