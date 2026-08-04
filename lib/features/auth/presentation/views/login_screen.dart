@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -53,30 +54,68 @@ class _LoginViewState extends ConsumerState<LoginView>
   final _googleAuthService = GoogleAuthService();
 
   late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+
+  // Staggered Animations
+  late Animation<double> _headerFade;
+  late Animation<Offset> _headerSlide;
+  late Animation<double> _cardFade;
+  late Animation<Offset> _cardSlide;
+  late Animation<double> _footerFade;
+  late Animation<Offset> _footerSlide;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1800),
     );
 
-    _fadeAnimation = CurvedAnimation(
+    // Header: 0.0 - 0.4
+    _headerFade = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0, 0.65, curve: Curves.easeOut),
+      curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
     );
+    _headerSlide =
+        Tween<Offset>(
+          begin: const Offset(0, -0.2),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.0, 0.4, curve: Curves.easeOutBack),
+          ),
+        );
 
-    _slideAnimation =
+    // Card: 0.3 - 0.7
+    _cardFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.3, 0.7, curve: Curves.easeOut),
+    );
+    _cardSlide =
         Tween<Offset>(
           begin: const Offset(0, 0.1),
           end: Offset.zero,
         ).animate(
           CurvedAnimation(
             parent: _controller,
-            curve: const Interval(0, 0.8, curve: Curves.fastOutSlowIn),
+            curve: const Interval(0.3, 0.7, curve: Curves.fastOutSlowIn),
+          ),
+        );
+
+    // Footer: 0.6 - 1.0
+    _footerFade = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
+    );
+    _footerSlide =
+        Tween<Offset>(
+          begin: const Offset(0, 0.2),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
           ),
         );
 
@@ -91,10 +130,6 @@ class _LoginViewState extends ConsumerState<LoginView>
     super.dispose();
   }
 
-  String _getBackgroundImage() {
-    return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop';
-  }
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -103,25 +138,30 @@ class _LoginViewState extends ConsumerState<LoginView>
     return Scaffold(
       body: Stack(
         children: [
-          // Background Image with Mesh Gradient
+          // Premium Background with ShaderMask
           Positioned.fill(
-            child: Image.network(
-              _getBackgroundImage(),
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+            child: ShaderMask(
+              shaderCallback: (rect) {
+                return LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.6),
-                    colorScheme.primary.withOpacity(0.2),
+                    Colors.black.withOpacity(0.4),
                     Colors.black.withOpacity(0.8),
+                    colorScheme.primary.withOpacity(0.2),
+                    Colors.black,
                   ],
-                ),
+                  stops: const [0.0, 0.5, 0.8, 1.0],
+                ).createShader(rect);
+              },
+              blendMode: BlendMode.darken,
+              child: CachedNetworkImage(
+                imageUrl:
+                    'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2070&auto=format&fit=crop',
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(color: Colors.black),
+                errorWidget: (context, url, error) =>
+                    Container(color: Colors.black),
               ),
             ),
           ),
@@ -136,45 +176,44 @@ class _LoginViewState extends ConsumerState<LoginView>
                     maxWidth: 450,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
-                      vertical: 40,
+                      vertical: 24,
                     ),
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildHeader(colorScheme),
-                            const SizedBox(height: 40),
-                            _buildLoginCard(context, colorScheme, isDark),
-                            const SizedBox(height: 24),
-                            _buildFooter(context, colorScheme),
-                          ],
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FadeTransition(
+                          opacity: _headerFade,
+                          child: SlideTransition(
+                            position: _headerSlide,
+                            child: _buildHeader(colorScheme),
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 24),
+                        FadeTransition(
+                          opacity: _cardFade,
+                          child: SlideTransition(
+                            position: _cardSlide,
+                            child: _buildLoginCard(
+                              context,
+                              colorScheme,
+                              isDark,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        FadeTransition(
+                          opacity: _footerFade,
+                          child: SlideTransition(
+                            position: _footerSlide,
+                            child: _buildFooter(context, colorScheme),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
               },
-            ),
-          ),
-
-          // Theme Toggle
-          Positioned(
-            top: 10,
-            right: 10,
-            child: SafeArea(
-              child: IconButton(
-                onPressed: () {
-                  ref.read(themeProvider.notifier).toggleTheme(isDark: !isDark);
-                },
-                icon: Icon(
-                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                  color: Colors.white,
-                ),
-              ),
             ),
           ),
         ],
@@ -185,44 +224,51 @@ class _LoginViewState extends ConsumerState<LoginView>
   Widget _buildHeader(ColorScheme colorScheme) {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white12),
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white10),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.primary.withOpacity(0.1),
+                blurRadius: 20,
+                spreadRadius: 2,
               ),
-              child: Icon(
+            ],
+          ),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/icon/app_icon.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Icon(
                 Icons.restaurant_menu_rounded,
-                size: 36,
                 color: colorScheme.primary,
+                size: 40,
               ),
             ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Restro Hub',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'Welcome back',
-                  style: GoogleFonts.lato(
-                    fontSize: 12,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ),
-          ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'RESTRO HUB',
+          style: GoogleFonts.montserrat(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Elevate Your Dining Experience',
+          style: GoogleFonts.lato(
+            fontSize: 14,
+            color: Colors.white60,
+            letterSpacing: 1.2,
+          ),
         ),
       ],
     );
@@ -234,16 +280,17 @@ class _LoginViewState extends ConsumerState<LoginView>
     bool isDark,
   ) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(32),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(isDark ? 0.04 : 0.08),
-            borderRadius: BorderRadius.circular(24),
+            color: Colors.white.withOpacity(isDark ? 0.05 : 0.08),
+            borderRadius: BorderRadius.circular(32),
             border: Border.all(
-              color: Colors.white.withOpacity(0.06),
+              color: Colors.white.withOpacity(0.12),
+              width: 1,
             ),
           ),
           child: Form(
@@ -251,25 +298,30 @@ class _LoginViewState extends ConsumerState<LoginView>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(
-                  child: Text(
-                    'Sign in to continue',
-                    style: GoogleFonts.montserrat(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                Text(
+                  'Sign In',
+                  style: GoogleFonts.montserrat(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Enter your credentials to continue',
+                  style: GoogleFonts.lato(
+                    color: Colors.white54,
+                    fontSize: 13,
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Email Field
                 _buildTextField(
                   controller: _emailController,
-                  hint: 'Email',
+                  hint: 'Email Address',
                   icon: Icons.email_outlined,
                   colorScheme: colorScheme,
                 ),
                 const SizedBox(height: 12),
-                // Password Field
                 _buildTextField(
                   controller: _passwordController,
                   hint: 'Password',
@@ -277,21 +329,27 @@ class _LoginViewState extends ConsumerState<LoginView>
                   isPassword: true,
                   colorScheme: colorScheme,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        Checkbox(
-                          value: _rememberMe,
-                          onChanged: (v) =>
-                              setState(() => _rememberMe = v ?? false),
-                          activeColor: colorScheme.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                        SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            onChanged: (v) =>
+                                setState(() => _rememberMe = v ?? false),
+                            activeColor: colorScheme.primary,
+                            side: const BorderSide(color: Colors.white24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           'Remember me',
                           style: GoogleFonts.lato(
@@ -305,15 +363,19 @@ class _LoginViewState extends ConsumerState<LoginView>
                       onPressed: () =>
                           context.pushNamed('forgotPasswordScreen'),
                       child: Text(
-                        'Forgot?',
-                        style: GoogleFonts.lato(color: colorScheme.primary),
+                        'Forgot Password?',
+                        style: GoogleFonts.lato(
+                          color: colorScheme.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 _buildSignInButton(colorScheme),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 _buildSocialLogin(colorScheme),
               ],
             ),
@@ -332,20 +394,19 @@ class _LoginViewState extends ConsumerState<LoginView>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.07),
+        color: Colors.white.withOpacity(0.04),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
       ),
       child: TextFormField(
         controller: controller,
         obscureText: isPassword && _obscurePassword,
-        style: GoogleFonts.lato(color: Colors.white),
+        style: GoogleFonts.lato(color: Colors.white, fontSize: 15),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.lato(color: Colors.white38, fontSize: 14),
+          hintStyle: GoogleFonts.lato(color: Colors.white30, fontSize: 14),
           prefixIcon: Icon(
             icon,
-            color: colorScheme.primary.withOpacity(0.7),
+            color: Colors.white30,
             size: 20,
           ),
           suffixIcon: isPassword
@@ -354,16 +415,25 @@ class _LoginViewState extends ConsumerState<LoginView>
                     _obscurePassword
                         ? Icons.visibility_off_rounded
                         : Icons.visibility_rounded,
-                    color: Colors.white38,
+                    color: Colors.white30,
                     size: 20,
                   ),
                   onPressed: () =>
                       setState(() => _obscurePassword = !_obscurePassword),
                 )
               : null,
-          border: InputBorder.none,
+          filled: true,
+          fillColor: Colors.transparent,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: colorScheme.primary.withOpacity(0.5)),
+          ),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
+            horizontal: 24,
             vertical: 16,
           ),
         ),
@@ -373,20 +443,20 @@ class _LoginViewState extends ConsumerState<LoginView>
 
   Widget _buildSignInButton(ColorScheme colorScheme) {
     return Container(
-      height: 56,
+      height: 52,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         gradient: LinearGradient(
           colors: [
             colorScheme.primary,
-            colorScheme.primary.withRed(200),
+            colorScheme.primary.withOpacity(0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: colorScheme.primary.withOpacity(0.25),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -396,16 +466,16 @@ class _LoginViewState extends ConsumerState<LoginView>
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
           ),
         ),
         child: Text(
           'SIGN IN',
           style: GoogleFonts.montserrat(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
             letterSpacing: 1.5,
-            color: Colors.black87,
+            color: Colors.black,
           ),
         ),
       ),
@@ -424,34 +494,45 @@ class _LoginViewState extends ConsumerState<LoginView>
                 'OR CONTINUE WITH',
                 style: GoogleFonts.lato(
                   fontSize: 10,
-                  color: Colors.white38,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+                  color: Colors.white24,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
             const Expanded(child: Divider(color: Colors.white10)),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
         OutlinedButton(
           onPressed: () => _handleGoogleLogin(ref),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            side: const BorderSide(color: Colors.white10),
+            side: BorderSide(color: Colors.white.withOpacity(0.1)),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            backgroundColor: Colors.white.withOpacity(0.03),
+            backgroundColor: Colors.white.withOpacity(0.02),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.network(
-                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
-                height: 20,
+              CachedNetworkImage(
+                imageUrl:
+                    'https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png',
+                height: 24,
+                placeholder: (context, url) => const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                errorWidget: (context, url, error) => const Icon(
+                  Icons.g_mobiledata,
+                  color: Colors.white,
+                  size: 30,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Text(
                 'GOOGLE',
                 style: GoogleFonts.montserrat(
@@ -475,16 +556,21 @@ class _LoginViewState extends ConsumerState<LoginView>
         children: [
           Text(
             "Don't have an account? ",
-            style: GoogleFonts.lato(color: Colors.white70),
+            style: GoogleFonts.lato(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           TextButton(
             onPressed: () => context.pushNamed('registerScreen'),
             child: Text(
-              'Sign Up',
+              'Sign Up Now',
               style: GoogleFonts.lato(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.underline,
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 14,
+                letterSpacing: 0.5,
               ),
             ),
           ),

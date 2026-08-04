@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -33,7 +32,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   bool _showLoader = true;
   bool _imagesLoaded = false;
-  final List<ImageProvider> _preloadedImages = [];
+  ImageProvider? _backgroundProvider;
+  late final List<ImageProvider?> _preloadedImages;
 
   // Theme-aware colors (will be initialized in build)
   late Color primaryColor;
@@ -43,29 +43,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   // Feature slides data with web image URLs
   final List<Map<String, String>> _slides = [
     {
-      'image':
-          'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&q=90',
+      'image': 'assets/food1.webp',
       'title': 'Delicious Food',
       'description':
           'Explore a wide variety of cuisines from local restaurants',
     },
     {
-      'image':
-          'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=1200&q=90',
+      'image': 'assets/food2.webp',
       'title': 'Fast Delivery',
       'description':
           'Get your favorite meals delivered hot and fresh to your door',
     },
     {
-      'image':
-          'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200&q=90',
+      'image': 'assets/food3.webp',
       'title': 'Easy Ordering',
       'description':
           'Browse menus, customize orders, and track deliveries in real-time',
     },
     {
-      'image':
-          'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=90',
+      'image': 'assets/food4.webp',
       'title': 'Special Offers',
       'description':
           'Enjoy exclusive deals and discounts on your favorite restaurants',
@@ -75,7 +71,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
-    FlutterNativeSplash.remove();
+
+    // Ensure native splash remains until our first frame is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        FlutterNativeSplash.remove();
+      }
+    });
 
     _iconController = AnimationController(
       duration: const Duration(milliseconds: 2000),
@@ -88,7 +90,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
     unawaited(_pulseController.repeat(reverse: true));
 
-    _scaleAnimation = Tween<double>(begin: 0, end: 1).animate(
+    // Logo starts at full scale (1.0) to ensure immediate visibility
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
       CurvedAnimation(parent: _iconController, curve: Curves.elasticOut),
     );
 
@@ -100,6 +103,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
+    _preloadedImages = List<ImageProvider?>.filled(_slides.length, null);
+
+    // Initial background - set to food1.webp immediately as requested
+    _backgroundProvider = const AssetImage('assets/food1.webp');
+
     unawaited(_iconController.forward());
     unawaited(_preloadImages());
   }
@@ -109,51 +117,55 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final minDelay = Future<void>.delayed(const Duration(milliseconds: 2500));
 
     try {
+      // 1. Preload the first onboarding image (atmospheric) immediately
+      if (mounted) {
+        precacheImage(const AssetImage('assets/food1.webp'), context)
+            .then((_) {
+              if (mounted) {
+                setState(() {
+                  _backgroundProvider = const AssetImage('assets/food1.webp');
+                });
+              }
+            })
+            .catchError(
+              (e) => debugPrint('Fallback background preload failed: $e'),
+            );
+      }
+
       final preloadingTasks = <Future<void>>[];
 
-      for (final slide in _slides) {
+      for (int i = 0; i < _slides.length; i++) {
         if (!mounted) return;
 
-        final imageProvider = NetworkImage(slide['image']!);
+        final imageProvider = AssetImage(_slides[i]['image']!);
         preloadingTasks.add(
           precacheImage(imageProvider, context)
               .then((_) {
-                if (mounted) _preloadedImages.add(imageProvider);
+                if (mounted) {
+                  _preloadedImages[i] = imageProvider;
+                }
               })
-              .timeout(
-                const Duration(seconds: 2),
-                onTimeout: () {
-                  debugPrint('Preload timeout for: ${slide['image']}');
-                },
-              )
               .catchError((Object e) {
-                debugPrint('Failed to preload image: ${slide['image']} - $e');
+                debugPrint(
+                  'Failed to preload image: ${_slides[i]['image']} - $e',
+                );
               }),
         );
       }
 
       await Future.wait(preloadingTasks);
 
-      // Start Data Sync after images or in parallel?
-      // Let's do it after images are somewhat ready, or just start it.
+      // Start Data Sync in the background to avoid blocking the user
       if (mounted) {
-        debugPrint('SPLASH: Starting data sync...');
-        await ref.read(supabaseSyncManagerProvider.notifier).syncRestaurants();
+        debugPrint('SPLASH: Starting data sync in background...');
+        unawaited(
+          ref.read(supabaseSyncManagerProvider.notifier).syncRestaurants(),
+        );
       }
     } on Object catch (e) {
       debugPrint('Global initialization error: $e');
     } finally {
       await minDelay;
-
-      // Wait for sync to complete if it's still running
-      var syncStatus = ref.read(globalSyncStatusProvider).status;
-      var retryCount = 0;
-      const maxRetries = 30; // 15 seconds max wait (30 * 500ms)
-      while (syncStatus == SyncStatus.syncing && retryCount < maxRetries) {
-        await Future<void>.delayed(const Duration(milliseconds: 500));
-        syncStatus = ref.read(globalSyncStatusProvider).status;
-        retryCount++;
-      }
 
       if (mounted) {
         final prefs = ref.read(preferencesServiceProvider);
@@ -244,13 +256,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget _buildLoader() {
     return Stack(
       children: [
-        Container(
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(
-                'assets/splashScreen/splashScreenBeginning.avif',
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 1000),
+          child: Container(
+            key: ValueKey(_backgroundProvider),
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image:
+                    _backgroundProvider ??
+                    const AssetImage('assets/food1.webp'),
+                fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  debugPrint('Background image load failed: $exception');
+                },
               ),
-              fit: BoxFit.cover,
             ),
           ),
         ),
@@ -260,8 +279,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.black.withValues(alpha: 0.7),
-                Colors.black.withValues(alpha: 0.5),
+                Colors.black.withValues(alpha: 0.6),
+                Colors.black.withValues(alpha: 0.3),
                 Colors.black.withValues(alpha: 0.8),
               ],
             ),
@@ -271,7 +290,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              RepaintBoundary(
+              SizedBox(
+                height: 250,
                 child: AnimatedBuilder(
                   animation: Listenable.merge([
                     _iconController,
@@ -279,73 +299,86 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   ]),
                   builder: (context, child) {
                     return Transform.scale(
-                      scale: _scaleAnimation.value,
+                      scale: _scaleAnimation
+                          .value, // Removed clamp to allow full elastic effect
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
+                          // Outer glow/pulse circle
                           Transform.scale(
                             scale: _pulseAnimation.value,
                             child: Container(
-                              width: 180,
-                              height: 180,
+                              width: 230,
+                              height: 230,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: primaryColor.withValues(alpha: 0.2),
+                                  color: primaryColor.withValues(alpha: 0.15),
+                                  width: 1.5,
                                 ),
                               ),
                             ),
                           ),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(100),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                              child: Container(
-                                width: 140,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white.withValues(alpha: 0.1),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    width: 1.5,
-                                  ),
+                          // Premium outer glow
+                          Container(
+                            width: 200,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor.withValues(alpha: 0.1),
+                                  blurRadius: 50,
+                                  spreadRadius: 10,
                                 ),
+                              ],
+                            ),
+                          ),
+                          // Middle translucent ring
+                          Container(
+                            width: 180,
+                            height: 180,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.03),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.08),
+                                width: 1,
                               ),
                             ),
                           ),
+                          // Inner Logo Container - Now fully covers the area
                           Transform.rotate(
                             angle: _rotationAnimation.value,
                             child: Container(
-                              width: 110,
-                              height: 110,
+                              width: 150,
+                              height: 150,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    primaryColor,
-                                    primaryColor.withValues(alpha: 0.7),
-                                  ],
-                                ),
+                                color: Colors.white,
                                 shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  width: 2,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: primaryColor.withValues(alpha: 0.6),
-                                    blurRadius: 40,
-                                    spreadRadius: 5,
-                                  ),
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 20,
-                                    offset: const Offset(10, 10),
+                                    color: primaryColor.withValues(alpha: 0.4),
+                                    blurRadius: 25,
+                                    spreadRadius: 2,
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.restaurant_menu,
-                                size: 55,
-                                color: Colors.black,
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/icon/app_icon.png',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(
+                                        Icons.restaurant,
+                                        color: primaryColor,
+                                        size: 80,
+                                      ),
+                                ),
                               ),
                             ),
                           ),
@@ -355,23 +388,23 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   },
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 40),
               Text(
                 'Restro Hub',
                 style: GoogleFonts.playfairDisplay(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 54,
+                  fontWeight: FontWeight.w900,
                   color: primaryColor,
-                  letterSpacing: 4,
+                  letterSpacing: 6,
                   shadows: [
                     Shadow(
                       color: Colors.black.withValues(alpha: 0.5),
-                      offset: const Offset(2, 2),
-                      blurRadius: 10,
+                      offset: const Offset(2, 4),
+                      blurRadius: 12,
                     ),
                     Shadow(
-                      color: primaryColor.withValues(alpha: 0.3),
-                      blurRadius: 20,
+                      color: primaryColor.withValues(alpha: 0.4),
+                      blurRadius: 25,
                     ),
                   ],
                 ),
@@ -402,12 +435,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     return Column(
       children: [
         SizedBox(
-          width: 30,
-          height: 30,
+          width: 40,
+          height: 40,
           child: CircularProgressIndicator(
-            strokeWidth: 2,
+            strokeWidth: 3,
             valueColor: AlwaysStoppedAnimation<Color>(
-              primaryColor.withValues(alpha: 0.8),
+              primaryColor.withValues(alpha: 0.9),
             ),
           ),
         ),
@@ -549,30 +582,19 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Widget _buildSlideItem(Map<String, String> slide, int index) {
+    final preloadedImage = index < _preloadedImages.length
+        ? _preloadedImages[index]
+        : null;
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (_imagesLoaded && index < _preloadedImages.length)
-          Image(image: _preloadedImages[index], fit: BoxFit.cover)
+        if (_imagesLoaded && preloadedImage != null)
+          Image(image: preloadedImage, fit: BoxFit.cover)
         else
-          Image.network(
+          Image.asset(
             slide['image']!,
             fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return ColoredBox(
-                color: const Color(0xFF1A1A1A),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: primaryColor,
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                        : null,
-                  ),
-                ),
-              );
-            },
             errorBuilder: (context, error, stackTrace) {
               return ColoredBox(
                 color: const Color(0xFF1A1A1A),

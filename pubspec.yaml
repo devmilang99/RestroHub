@@ -73,6 +73,7 @@ dependencies:
   uuid: any
   riverpod: any
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.3
   build_runner: any
   custom_lint: any
   drift_dev: ^2.31.0
@@ -100,6 +101,7 @@ flutter:
   assets:
     - .env
     - assets/
+    - assets/icon/
     - assets/splashScreen/
     - assets/permission/
 
@@ -131,8 +133,14 @@ flutter:
 
 flutter_native_splash:
   color: "#000000"
-  image: assets/splashScreen/splash_icon.png
+  image: assets/icon/app_icon.png
   android_12:
     color: "#000000"
-    image: assets/splashScreen/splash_icon.png
+    image: assets/icon/app_icon.png
   fullscreen: true
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
