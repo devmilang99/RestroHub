@@ -3952,6 +3952,17 @@ class $CachedCartItemsTable extends CachedCartItems
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _restaurantIdMeta = const VerificationMeta(
+    'restaurantId',
+  );
+  @override
+  late final GeneratedColumn<String> restaurantId = GeneratedColumn<String>(
+    'restaurant_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -3996,6 +4007,7 @@ class $CachedCartItemsTable extends CachedCartItems
   @override
   List<GeneratedColumn> get $columns => [
     menuItemId,
+    restaurantId,
     name,
     imageUrl,
     price,
@@ -4023,6 +4035,15 @@ class $CachedCartItemsTable extends CachedCartItems
       );
     } else if (isInserting) {
       context.missing(_menuItemIdMeta);
+    }
+    if (data.containsKey('restaurant_id')) {
+      context.handle(
+        _restaurantIdMeta,
+        restaurantId.isAcceptableOrUnknown(
+          data['restaurant_id']!,
+          _restaurantIdMeta,
+        ),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -4065,6 +4086,10 @@ class $CachedCartItemsTable extends CachedCartItems
         DriftSqlType.string,
         data['${effectivePrefix}menu_item_id'],
       )!,
+      restaurantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}restaurant_id'],
+      ),
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -4092,12 +4117,14 @@ class $CachedCartItemsTable extends CachedCartItems
 
 class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
   final String menuItemId;
+  final String? restaurantId;
   final String name;
   final String? imageUrl;
   final double price;
   final int quantity;
   const CachedCartItem({
     required this.menuItemId,
+    this.restaurantId,
     required this.name,
     this.imageUrl,
     required this.price,
@@ -4107,6 +4134,9 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['menu_item_id'] = Variable<String>(menuItemId);
+    if (!nullToAbsent || restaurantId != null) {
+      map['restaurant_id'] = Variable<String>(restaurantId);
+    }
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || imageUrl != null) {
       map['image_url'] = Variable<String>(imageUrl);
@@ -4119,6 +4149,9 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
   CachedCartItemsCompanion toCompanion(bool nullToAbsent) {
     return CachedCartItemsCompanion(
       menuItemId: Value(menuItemId),
+      restaurantId: restaurantId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(restaurantId),
       name: Value(name),
       imageUrl: imageUrl == null && nullToAbsent
           ? const Value.absent()
@@ -4135,6 +4168,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CachedCartItem(
       menuItemId: serializer.fromJson<String>(json['menuItemId']),
+      restaurantId: serializer.fromJson<String?>(json['restaurantId']),
       name: serializer.fromJson<String>(json['name']),
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
       price: serializer.fromJson<double>(json['price']),
@@ -4146,6 +4180,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'menuItemId': serializer.toJson<String>(menuItemId),
+      'restaurantId': serializer.toJson<String?>(restaurantId),
       'name': serializer.toJson<String>(name),
       'imageUrl': serializer.toJson<String?>(imageUrl),
       'price': serializer.toJson<double>(price),
@@ -4155,12 +4190,14 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
 
   CachedCartItem copyWith({
     String? menuItemId,
+    Value<String?> restaurantId = const Value.absent(),
     String? name,
     Value<String?> imageUrl = const Value.absent(),
     double? price,
     int? quantity,
   }) => CachedCartItem(
     menuItemId: menuItemId ?? this.menuItemId,
+    restaurantId: restaurantId.present ? restaurantId.value : this.restaurantId,
     name: name ?? this.name,
     imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
     price: price ?? this.price,
@@ -4171,6 +4208,9 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
       menuItemId: data.menuItemId.present
           ? data.menuItemId.value
           : this.menuItemId,
+      restaurantId: data.restaurantId.present
+          ? data.restaurantId.value
+          : this.restaurantId,
       name: data.name.present ? data.name.value : this.name,
       imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
       price: data.price.present ? data.price.value : this.price,
@@ -4182,6 +4222,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
   String toString() {
     return (StringBuffer('CachedCartItem(')
           ..write('menuItemId: $menuItemId, ')
+          ..write('restaurantId: $restaurantId, ')
           ..write('name: $name, ')
           ..write('imageUrl: $imageUrl, ')
           ..write('price: $price, ')
@@ -4191,12 +4232,14 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
   }
 
   @override
-  int get hashCode => Object.hash(menuItemId, name, imageUrl, price, quantity);
+  int get hashCode =>
+      Object.hash(menuItemId, restaurantId, name, imageUrl, price, quantity);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CachedCartItem &&
           other.menuItemId == this.menuItemId &&
+          other.restaurantId == this.restaurantId &&
           other.name == this.name &&
           other.imageUrl == this.imageUrl &&
           other.price == this.price &&
@@ -4205,6 +4248,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
 
 class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
   final Value<String> menuItemId;
+  final Value<String?> restaurantId;
   final Value<String> name;
   final Value<String?> imageUrl;
   final Value<double> price;
@@ -4212,6 +4256,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
   final Value<int> rowid;
   const CachedCartItemsCompanion({
     this.menuItemId = const Value.absent(),
+    this.restaurantId = const Value.absent(),
     this.name = const Value.absent(),
     this.imageUrl = const Value.absent(),
     this.price = const Value.absent(),
@@ -4220,6 +4265,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
   });
   CachedCartItemsCompanion.insert({
     required String menuItemId,
+    this.restaurantId = const Value.absent(),
     required String name,
     this.imageUrl = const Value.absent(),
     required double price,
@@ -4230,6 +4276,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
        price = Value(price);
   static Insertable<CachedCartItem> custom({
     Expression<String>? menuItemId,
+    Expression<String>? restaurantId,
     Expression<String>? name,
     Expression<String>? imageUrl,
     Expression<double>? price,
@@ -4238,6 +4285,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
   }) {
     return RawValuesInsertable({
       if (menuItemId != null) 'menu_item_id': menuItemId,
+      if (restaurantId != null) 'restaurant_id': restaurantId,
       if (name != null) 'name': name,
       if (imageUrl != null) 'image_url': imageUrl,
       if (price != null) 'price': price,
@@ -4248,6 +4296,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
 
   CachedCartItemsCompanion copyWith({
     Value<String>? menuItemId,
+    Value<String?>? restaurantId,
     Value<String>? name,
     Value<String?>? imageUrl,
     Value<double>? price,
@@ -4256,6 +4305,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
   }) {
     return CachedCartItemsCompanion(
       menuItemId: menuItemId ?? this.menuItemId,
+      restaurantId: restaurantId ?? this.restaurantId,
       name: name ?? this.name,
       imageUrl: imageUrl ?? this.imageUrl,
       price: price ?? this.price,
@@ -4269,6 +4319,9 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
     final map = <String, Expression>{};
     if (menuItemId.present) {
       map['menu_item_id'] = Variable<String>(menuItemId.value);
+    }
+    if (restaurantId.present) {
+      map['restaurant_id'] = Variable<String>(restaurantId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -4292,6 +4345,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
   String toString() {
     return (StringBuffer('CachedCartItemsCompanion(')
           ..write('menuItemId: $menuItemId, ')
+          ..write('restaurantId: $restaurantId, ')
           ..write('name: $name, ')
           ..write('imageUrl: $imageUrl, ')
           ..write('price: $price, ')
@@ -7303,6 +7357,7 @@ typedef $$CachedFavouritesTableProcessedTableManager =
 typedef $$CachedCartItemsTableCreateCompanionBuilder =
     CachedCartItemsCompanion Function({
       required String menuItemId,
+      Value<String?> restaurantId,
       required String name,
       Value<String?> imageUrl,
       required double price,
@@ -7312,6 +7367,7 @@ typedef $$CachedCartItemsTableCreateCompanionBuilder =
 typedef $$CachedCartItemsTableUpdateCompanionBuilder =
     CachedCartItemsCompanion Function({
       Value<String> menuItemId,
+      Value<String?> restaurantId,
       Value<String> name,
       Value<String?> imageUrl,
       Value<double> price,
@@ -7330,6 +7386,11 @@ class $$CachedCartItemsTableFilterComposer
   });
   ColumnFilters<String> get menuItemId => $composableBuilder(
     column: $table.menuItemId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get restaurantId => $composableBuilder(
+    column: $table.restaurantId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7368,6 +7429,11 @@ class $$CachedCartItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get restaurantId => $composableBuilder(
+    column: $table.restaurantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -7400,6 +7466,11 @@ class $$CachedCartItemsTableAnnotationComposer
   });
   GeneratedColumn<String> get menuItemId => $composableBuilder(
     column: $table.menuItemId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get restaurantId => $composableBuilder(
+    column: $table.restaurantId,
     builder: (column) => column,
   );
 
@@ -7454,6 +7525,7 @@ class $$CachedCartItemsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> menuItemId = const Value.absent(),
+                Value<String?> restaurantId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> imageUrl = const Value.absent(),
                 Value<double> price = const Value.absent(),
@@ -7461,6 +7533,7 @@ class $$CachedCartItemsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => CachedCartItemsCompanion(
                 menuItemId: menuItemId,
+                restaurantId: restaurantId,
                 name: name,
                 imageUrl: imageUrl,
                 price: price,
@@ -7470,6 +7543,7 @@ class $$CachedCartItemsTableTableManager
           createCompanionCallback:
               ({
                 required String menuItemId,
+                Value<String?> restaurantId = const Value.absent(),
                 required String name,
                 Value<String?> imageUrl = const Value.absent(),
                 required double price,
@@ -7477,6 +7551,7 @@ class $$CachedCartItemsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => CachedCartItemsCompanion.insert(
                 menuItemId: menuItemId,
+                restaurantId: restaurantId,
                 name: name,
                 imageUrl: imageUrl,
                 price: price,

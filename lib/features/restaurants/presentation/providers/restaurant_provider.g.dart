@@ -212,7 +212,7 @@ final class FilteredRestaurantsProvider
 }
 
 String _$filteredRestaurantsHash() =>
-    r'b87fb4ba9832f102913f6eeba188e80cdb410fda';
+    r'1e32a49584de7a05617f55819664a20442f4d79c';
 
 abstract class _$FilteredRestaurants
     extends $AsyncNotifier<List<RestaurantModel>> {

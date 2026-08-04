@@ -23,7 +23,7 @@ class QuickActionCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: const Color(0xFF1E1E1E).withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(20),
@@ -36,26 +36,26 @@ class QuickActionCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.orange, size: 28),
-              const SizedBox(height: 12),
+              Icon(icon, color: Colors.orange, size: 24),
+              const SizedBox(height: 8),
               Text(
                 title,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 13,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.poppins(
                   color: Colors.white70,
-                  fontSize: 11,
+                  fontSize: 10,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -73,6 +73,7 @@ class RecommendationCard extends StatelessWidget {
   final String price;
   final String imageUrl;
   final String category;
+  final VoidCallback? onTap;
 
   const RecommendationCard({
     required this.title,
@@ -80,129 +81,133 @@ class RecommendationCard extends StatelessWidget {
     required this.price,
     required this.imageUrl,
     required this.category,
+    this.onTap,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.1),
+          ),
         ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Image.network(
-              imageUrl,
-              width: 100,
-              height: 120,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                imageUrl,
                 width: 100,
                 height: 120,
-                color: Colors.grey[800],
-                child: const Icon(Icons.image, color: Colors.white24),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 100,
+                  height: 120,
+                  color: Colors.grey[800],
+                  child: const Icon(Icons.image, color: Colors.white24),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  category.toUpperCase(),
-                  style: GoogleFonts.poppins(
-                    color: Colors.orange,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                Text(
-                  description,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white60,
-                    fontSize: 11,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.storefront,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    category.toUpperCase(),
+                    style: GoogleFonts.poppins(
                       color: Colors.orange,
-                      size: 14,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Official Store',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white38,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Price',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white38,
-                    fontSize: 10,
                   ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        price,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    description,
+                    style: GoogleFonts.poppins(
+                      color: Colors.white60,
+                      fontSize: 11,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.storefront,
+                        color: Colors.orange,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Official Store',
                         style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          color: Colors.white38,
+                          fontSize: 10,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Price',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white38,
+                      fontSize: 10,
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2C2C2C),
-                        shape: BoxShape.circle,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          price,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.chevron_right,
-                        color: Colors.orange,
-                        size: 20,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2C2C2C),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.chevron_right,
+                          color: Colors.orange,
+                          size: 20,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -213,16 +218,12 @@ class AiInputBar extends StatelessWidget {
   final VoidCallback onSend;
   final VoidCallback? onStop;
   final bool isProcessing;
-  final int? searchCount;
-  final int? searchLimit;
 
   const AiInputBar({
     required this.controller,
     required this.onSend,
     this.onStop,
     this.isProcessing = false,
-    this.searchCount,
-    this.searchLimit,
     super.key,
   });
 
@@ -271,18 +272,7 @@ class AiInputBar extends StatelessWidget {
                 onSubmitted: (_) => isProcessing ? null : onSend(),
               ),
             ),
-            if (searchCount != null && searchLimit != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Text(
-                  '$searchCount/$searchLimit',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white38,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+
             const SizedBox(width: 4),
             GestureDetector(
               onTap: isProcessing ? onStop : onSend,

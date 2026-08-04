@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
+import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 import 'package:riverpod/src/providers/provider.dart';
 
 class FavouritesNotifier extends AsyncNotifier<List<MenuItemModel>> {
@@ -85,15 +86,26 @@ class FavouritesNotifier extends AsyncNotifier<List<MenuItemModel>> {
       await (db.delete(
         db.cachedFavourites,
       )..where((t) => t.id.equals(id))).go();
+
+      // Sync to Supabase
+      unawaited(
+        ref.read(supabaseSyncManagerProvider.notifier).removeFavourite(id),
+      );
     } else {
+      final type = isRestaurant ? 'restaurant' : 'menu_item';
       await db
           .into(db.cachedFavourites)
           .insert(
             CachedFavouritesCompanion.insert(
               id: id,
-              type: isRestaurant ? 'restaurant' : 'menu_item',
+              type: type,
             ),
           );
+
+      // Sync to Supabase
+      unawaited(
+        ref.read(supabaseSyncManagerProvider.notifier).pushFavourite(id, type),
+      );
     }
 
     // Refresh state
@@ -117,8 +129,9 @@ final favouritesProvider =
       return FavouritesNotifier();
     });
 
-final ProviderFamily<bool, String?> isFavouriteProvider = Provider.family<bool, String?>((ref, id) {
-  if (id == null) return false;
-  final favourites = ref.watch(favouritesProvider).value ?? [];
-  return favourites.any((e) => e.id == id);
-});
+final ProviderFamily<bool, String?> isFavouriteProvider =
+    Provider.family<bool, String?>((ref, id) {
+      if (id == null) return false;
+      final favourites = ref.watch(favouritesProvider).value ?? [];
+      return favourites.any((e) => e.id == id);
+    });

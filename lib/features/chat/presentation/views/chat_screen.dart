@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/chat/presentation/widgets/ai_assistant_widgets.dart';
 import 'package:restro_hub/infrastructure/ai/gemini_search_router.dart';
 
@@ -21,9 +22,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isTyping = false;
   final ScrollController _scrollController = ScrollController();
   bool _isCancelled = false;
-  int _searchCount = 0;
   int _errorCount = 0;
-  final int _searchLimit = 5;
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -43,15 +42,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final text = manualText ?? _controller.text.trim();
     if (text.isEmpty || _isTyping) return;
 
-    if (_searchCount >= _searchLimit) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You have reached the limit of 5 AI searches.'),
-        ),
-      );
-      return;
-    }
-
     if (_errorCount >= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -68,7 +58,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       if (manualText == null) _controller.clear();
       _isTyping = true;
       _isCancelled = false;
-      _searchCount++;
     });
     _scrollToBottom();
 
@@ -118,6 +107,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final isInitial = _displayMessages.isEmpty;
 
+    final user = ref.watch(authRepositoryProvider).currentUser;
+    final userName = user?.fullName?.split(' ').first ?? 'there';
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Container(
@@ -137,15 +129,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             children: [
               _buildAppBar(context, isInitial),
               Expanded(
-                child: isInitial ? _buildInitialView() : _buildChatView(),
+                child: isInitial
+                    ? _buildInitialView(userName)
+                    : _buildChatView(),
               ),
               AiInputBar(
                 controller: _controller,
                 onSend: _sendMessage,
                 onStop: _cancelProcessing,
                 isProcessing: _isTyping,
-                searchCount: _searchCount,
-                searchLimit: _searchLimit,
               ),
             ],
           ),
@@ -172,7 +164,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 setState(() {
                   _displayMessages.clear();
                   _history.clear();
-                  _searchCount = 0;
                   _errorCount = 0;
                 });
               }
@@ -206,7 +197,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               setState(() {
                 _displayMessages.clear();
                 _history.clear();
-                _searchCount = 0;
                 _errorCount = 0;
               });
             },
@@ -216,7 +206,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildInitialView() {
+  Widget _buildInitialView(String userName) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -236,7 +226,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Hi, Kalyani!',
+            'Hi, $userName!',
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontSize: 22,
@@ -269,7 +259,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             crossAxisCount: 2,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.4,
+            childAspectRatio: 1.1,
             children: [
               QuickActionCard(
                 icon: Icons.star,

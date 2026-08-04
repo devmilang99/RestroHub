@@ -64,65 +64,71 @@ class _OrderList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orders = ref.watch(ordersProvider);
+    final ordersAsync = ref.watch(ordersProvider);
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = context.colorScheme;
 
-    final filteredOrders = orders.where((o) {
-      if (statusType == l10n.inProgress) {
-        return o.subStatus != OrderSubStatus.success &&
-            o.subStatus != OrderSubStatus.cancelled;
-      } else if (statusType == l10n.success) {
-        return o.subStatus == OrderSubStatus.success;
-      } else {
-        return o.subStatus == OrderSubStatus.cancelled;
-      }
-    }).toList();
+    return ordersAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+      data: (orders) {
+        final filteredOrders = orders.where((o) {
+          if (statusType == l10n.inProgress) {
+            return o.subStatus != OrderSubStatus.success &&
+                o.subStatus != OrderSubStatus.cancelled;
+          } else if (statusType == l10n.success) {
+            return o.subStatus == OrderSubStatus.success;
+          } else {
+            return o.subStatus == OrderSubStatus.cancelled;
+          }
+        }).toList();
 
-    if (filteredOrders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              statusType == l10n.inProgress
-                  ? Icons.restaurant_menu_outlined
-                  : (statusType == l10n.success
-                        ? Icons.check_circle_outline
-                        : Icons.cancel_outlined),
-              size: 80,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: .2),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.noOrdersFound(statusType),
-              style: context.textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return AnimationLimiter(
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-        itemCount: filteredOrders.length,
-        itemBuilder: (context, index) {
-          final order = filteredOrders[index];
-          return AnimationConfiguration.staggeredList(
-            position: index,
-            duration: const Duration(milliseconds: 375),
-            child: SlideAnimation(
-              verticalOffset: 50,
-              child: FadeInAnimation(
-                child: _OrderCard(order: order),
-              ),
+        if (filteredOrders.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  statusType == l10n.inProgress
+                      ? Icons.restaurant_menu_outlined
+                      : (statusType == l10n.success
+                            ? Icons.check_circle_outline
+                            : Icons.cancel_outlined),
+                  size: 80,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: .2),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.noOrdersFound(statusType),
+                  style: context.textTheme.bodyLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           );
-        },
-      ),
+        }
+
+        return AnimationLimiter(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+            itemCount: filteredOrders.length,
+            itemBuilder: (context, index) {
+              final order = filteredOrders[index];
+              return AnimationConfiguration.staggeredList(
+                position: index,
+                duration: const Duration(milliseconds: 375),
+                child: SlideAnimation(
+                  verticalOffset: 50,
+                  child: FadeInAnimation(
+                    child: _OrderCard(order: order),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

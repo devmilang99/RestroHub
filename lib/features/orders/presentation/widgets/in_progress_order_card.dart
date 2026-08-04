@@ -1,23 +1,27 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/utils/launcher_utils.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/features/orders/presentation/widgets/order_item_card.dart';
 import 'package:restro_hub/l10n/generated/app_localizations.dart';
 
-class InProgressOrderCard extends StatefulWidget {
+class InProgressOrderCard extends ConsumerStatefulWidget {
   final OrderModel order;
   const InProgressOrderCard({required this.order, super.key});
 
   @override
-  State<InProgressOrderCard> createState() => _InProgressOrderCardState();
+  ConsumerState<InProgressOrderCard> createState() =>
+      _InProgressOrderCardState();
 }
 
-class _InProgressOrderCardState extends State<InProgressOrderCard> {
+class _InProgressOrderCardState extends ConsumerState<InProgressOrderCard> {
   late Timer _timer;
   int _secondsRemaining = 0;
+
+  String? _selectedReason;
 
   @override
   void initState() {
@@ -70,7 +74,7 @@ class _InProgressOrderCardState extends State<InProgressOrderCard> {
         side: BorderSide(
           color: isPickup
               ? Colors.green.withValues(alpha: .5)
-              : Colors.amber.withValues(alpha: .5),
+              : colorScheme.primaryContainer.withValues(alpha: .5),
           width: 2,
         ),
       ),
@@ -80,6 +84,10 @@ class _InProgressOrderCardState extends State<InProgressOrderCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.order.subStatus == OrderSubStatus.pending) ...[
+              _buildPendingCancelWindow(context, l10n, colorScheme, textTheme),
+              const SizedBox(height: 16),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -287,9 +295,12 @@ class _InProgressOrderCardState extends State<InProgressOrderCard> {
 
             const SizedBox(height: 16),
 
-            if (widget.order.subStatus == OrderSubStatus.preparing)
+            if (widget.order.subStatus == OrderSubStatus.pending)
+              const SizedBox.shrink()
+            else if (widget.order.subStatus == OrderSubStatus.preparing)
               _OrderStepProgress(progress: widget.order.progress)
-            else
+            else if (widget.order.subStatus == OrderSubStatus.delivered ||
+                widget.order.subStatus == OrderSubStatus.pickup)
               _LiveTrackingBar(order: widget.order),
           ],
         ),
@@ -298,6 +309,7 @@ class _InProgressOrderCardState extends State<InProgressOrderCard> {
   }
 
   IconData _getStatusIcon(OrderModel order) {
+    if (order.subStatus == OrderSubStatus.pending) return Icons.timer_outlined;
     if (order.subStatus == OrderSubStatus.preparing) return Icons.soup_kitchen;
     if (order.subStatus == OrderSubStatus.delivered) {
       return Icons.delivery_dining;
@@ -306,6 +318,8 @@ class _InProgressOrderCardState extends State<InProgressOrderCard> {
   }
 
   String _getStatusText(OrderModel order) {
+    if (order.subStatus == OrderSubStatus.pending)
+      return 'Awaiting Initiation...';
     if (order.subStatus == OrderSubStatus.preparing) {
       return 'Cooking your meal...';
     }
@@ -313,6 +327,187 @@ class _InProgressOrderCardState extends State<InProgressOrderCard> {
       return 'Out for delivery...';
     }
     return 'Processing...';
+  }
+
+  Widget _buildPendingCancelWindow(
+    BuildContext context,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    var remainingSeconds = 0;
+    if (widget.order.isPendingPaused) {
+      remainingSeconds = widget.order.remainingPendingSeconds ?? 0;
+    } else if (widget.order.targetConfirmationTime != null) {
+      remainingSeconds = widget.order.targetConfirmationTime!
+          .difference(DateTime.now())
+          .inSeconds
+          .clamp(0, 10);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.error.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  value: remainingSeconds / 10,
+                  strokeWidth: 3,
+                  backgroundColor: colorScheme.error.withValues(alpha: 0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(colorScheme.error),
+                ),
+              ),
+              Text(
+                '$remainingSeconds',
+                style: textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.error,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Order Initiating...',
+                  style: textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.error,
+                  ),
+                ),
+                Text(
+                  'Cancel window is closing soon',
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _showDetailedCancellationDialog(context),
+            style: TextButton.styleFrom(
+              backgroundColor: colorScheme.error.withValues(alpha: 0.1),
+              foregroundColor: colorScheme.error,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: Text(
+              l10n.cancel,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetailedCancellationDialog(BuildContext context) {
+    ref.read(ordersProvider.notifier).pausePendingTimer(widget.order.id);
+    final colorScheme = context.colorScheme;
+
+    final reasons = [
+      'Changed my mind',
+      'Wait time is too long',
+      'Ordered by mistake',
+      'Added wrong items',
+      'Price is too high',
+      'Other',
+    ];
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Cancel Order'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Please tell us why you want to cancel this order:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _selectedReason,
+                      hint: const Text('Select a reason'),
+                      items: reasons.map((reason) {
+                        return DropdownMenuItem(
+                          value: reason,
+                          child: Text(reason),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          _selectedReason = value;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  ref
+                      .read(ordersProvider.notifier)
+                      .resumePendingTimer(widget.order.id);
+                },
+                child: const Text('Continue'),
+              ),
+              ElevatedButton(
+                onPressed: _selectedReason == null
+                    ? null
+                    : () {
+                        ref
+                            .read(ordersProvider.notifier)
+                            .cancelOrder(
+                              widget.order.id,
+                              reason: _selectedReason,
+                            );
+                        Navigator.pop(context);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: Colors.red.withValues(alpha: 0.5),
+                ),
+                child: const Text('Cancel Order'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 }
 

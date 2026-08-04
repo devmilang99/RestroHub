@@ -481,6 +481,7 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                                         child: FadeInAnimation(
                                           child: MenuItemCard(
                                             item: menu[index],
+                                            restaurantId: r.id,
                                             index: index,
                                             isFirst: index == 0,
                                             isDark: isDark,
@@ -505,6 +506,7 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                                         child: FadeInAnimation(
                                           child: MenuItemCard(
                                             item: menu[index],
+                                            restaurantId: r.id,
                                             index: index,
                                             isFirst: index == 0,
                                             isDark: isDark,

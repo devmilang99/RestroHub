@@ -20,7 +20,7 @@ final class AiSearchNotifierProvider
         argument: null,
         retry: null,
         name: r'aiSearchProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -33,7 +33,7 @@ final class AiSearchNotifierProvider
   AiSearchNotifier create() => AiSearchNotifier();
 }
 
-String _$aiSearchNotifierHash() => r'54bda0547309ad9d10adbe68229de16e40513e83';
+String _$aiSearchNotifierHash() => r'd485dff5837ac1058cb7f93533d6d8ad1def5f93';
 
 abstract class _$AiSearchNotifier extends $AsyncNotifier<AiSearchState> {
   FutureOr<AiSearchState> build();

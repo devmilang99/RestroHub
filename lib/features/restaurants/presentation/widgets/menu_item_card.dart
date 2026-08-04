@@ -11,6 +11,7 @@ import 'package:restro_hub/l10n/generated/app_localizations.dart';
 
 class MenuItemCard extends ConsumerWidget {
   final MenuItemModel item;
+  final String? restaurantId;
   final int index;
   final bool isFirst;
   final bool isDark;
@@ -22,6 +23,7 @@ class MenuItemCard extends ConsumerWidget {
     required this.isFirst,
     required this.isDark,
     required this.colorScheme,
+    this.restaurantId,
     super.key,
   });
 
@@ -203,6 +205,7 @@ class MenuItemCard extends ConsumerWidget {
                                   .addItem(
                                     CartModel(
                                       id: item.id,
+                                      restaurantId: restaurantId,
                                       name: item.name,
                                       price: item.price,
                                       image: item.imageUrl ?? '',

@@ -86,6 +86,7 @@ class OrderModel extends Equatable {
       'delivery_partner_id': deliveryPartnerId,
       'estimated_delivery_time': estimatedDeliveryTime?.toIso8601String(),
       'notes': notes,
+      'order_items': items.map((i) => i.toJson()).toList(),
     };
   }
 
@@ -142,6 +143,19 @@ class OrderItemModel extends Equatable {
       totalPrice: ((json['total_price'] ?? 0.0) as num).toDouble(),
       notes: json['notes'] as String?,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) 'id': id,
+      if (orderId != null) 'order_id': orderId,
+      'menu_item_id': menuItemId,
+      'name': name,
+      'quantity': quantity,
+      'unit_price': unitPrice,
+      'total_price': totalPrice,
+      if (notes != null) 'notes': notes,
+    };
   }
 
   @override

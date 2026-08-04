@@ -59,6 +59,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     debugLogDiagnostics: true,
+    refreshListenable: ref.watch(authListenableProvider),
     redirect: (context, state) {
       final user = authRepository.currentUser;
 
@@ -112,12 +113,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           UserModel? user;
           var initialIndex = 0;
 
+          // Check query parameters first (more reliable for tab switching)
+          final tabParam = state.uri.queryParameters['tab'];
+          if (tabParam != null) {
+            initialIndex = int.tryParse(tabParam) ?? 0;
+          }
+
           if (state.extra is UserModel) {
             user = state.extra! as UserModel;
           } else if (state.extra is Map<String, dynamic>) {
             final extra = state.extra! as Map<String, dynamic>;
-            user = extra['user'] as UserModel?;
-            initialIndex = extra['initialIndex'] as int? ?? 0;
+            user = extra['user'] as UserModel? ?? authRepository.currentUser;
+            // If tab wasn't in query, check extra
+            if (tabParam == null) {
+              initialIndex = extra['initialIndex'] as int? ?? 0;
+            }
           } else {
             user = authRepository.currentUser;
           }
@@ -125,7 +135,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return buildPageWithTransition(
             context: context,
             state: state,
-            child: MainDashBoard(user: user, initialIndex: initialIndex),
+            child: MainDashBoard(
+              user: user,
+              initialIndex: initialIndex,
+            ),
             transitionType: SharedAxisTransitionType.scaled,
           );
         },

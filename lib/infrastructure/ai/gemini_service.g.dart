@@ -20,7 +20,7 @@ final class GeminiServiceProvider
         argument: null,
         retry: null,
         name: r'geminiServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -33,7 +33,7 @@ final class GeminiServiceProvider
   GeminiService create() => GeminiService();
 }
 
-String _$geminiServiceHash() => r'9bf566b78b6ddef38899e174a0fb33e206deebed';
+String _$geminiServiceHash() => r'1c22d95683d1a366c0c82d183b0619f885840d2d';
 
 abstract class _$GeminiService extends $AsyncNotifier<void> {
   FutureOr<void> build();

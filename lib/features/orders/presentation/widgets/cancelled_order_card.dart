@@ -83,9 +83,13 @@ class CancelledOrderCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Cancelled recently',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+            Text(
+              order.cancellationReason ?? 'Cancelled recently',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),

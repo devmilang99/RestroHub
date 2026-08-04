@@ -5,18 +5,53 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 
 class CartNotifier extends AsyncNotifier<List<CartModel>> {
   @override
   FutureOr<List<CartModel>> build() async {
     final db = await ref.watch(appDatabaseProvider.future);
+
+    // Initial sync check could be here, but let's keep it simple for now
     final items = await db.select(db.cachedCartItems).get();
     return items.map(_mapToModel).toList();
+  }
+
+  /// Syncs local cart with Supabase. Call this after login.
+  Future<void> syncWithRemote() async {
+    final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
+    final remoteItems = await syncManager.fetchRemoteCart();
+
+    if (remoteItems.isEmpty) return;
+
+    final db = await ref.read(appDatabaseProvider.future);
+    await db.batch((batch) {
+      for (final item in remoteItems) {
+        batch.insert(
+          db.cachedCartItems,
+          CachedCartItemsCompanion.insert(
+            menuItemId: item['menu_item_id'] as String,
+            restaurantId: Value(item['restaurant_id'] as String?),
+            name: item['name'] as String,
+            price: (item['price_at_purchase'] as num).toDouble(),
+            imageUrl: Value(item['image_url'] as String?),
+            quantity: Value(item['quantity'] as int),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+
+    state = await AsyncValue.guard(() async {
+      final items = await db.select(db.cachedCartItems).get();
+      return items.map(_mapToModel).toList();
+    });
   }
 
   CartModel _mapToModel(CachedCartItem row) {
     return CartModel(
       id: row.menuItemId,
+      restaurantId: row.restaurantId,
       name: row.name,
       image: row.imageUrl ?? '',
       price: row.price,
@@ -34,10 +69,20 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
     )..where((t) => t.menuItemId.equals(id))).getSingleOrNull();
 
     if (existing != null) {
+      final newQuantity = existing.quantity + 1;
       await (db.update(
         db.cachedCartItems,
       )..where((t) => t.menuItemId.equals(id))).write(
-        CachedCartItemsCompanion(quantity: Value(existing.quantity + 1)),
+        CachedCartItemsCompanion(quantity: Value(newQuantity)),
+      );
+
+      // Sync to Supabase
+      unawaited(
+        ref
+            .read(supabaseSyncManagerProvider.notifier)
+            .pushCartItem(
+              item.copyWith(quantity: newQuantity).toJson(),
+            ),
       );
     } else {
       await db
@@ -45,6 +90,7 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
           .insert(
             CachedCartItemsCompanion.insert(
               menuItemId: id,
+              restaurantId: Value(item.restaurantId),
               name: item.name,
               price: item.price,
               imageUrl: Value(item.image),
@@ -52,6 +98,15 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
             ),
             mode: InsertMode.insertOrReplace,
           );
+
+      // Sync to Supabase
+      unawaited(
+        ref
+            .read(supabaseSyncManagerProvider.notifier)
+            .pushCartItem(
+              item.toJson(),
+            ),
+      );
     }
 
     state = await AsyncValue.guard(() async {
@@ -66,10 +121,25 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
       await (db.delete(
         db.cachedCartItems,
       )..where((t) => t.menuItemId.equals(id))).go();
+      unawaited(
+        ref.read(supabaseSyncManagerProvider.notifier).removeCartItem(id),
+      );
     } else {
       await (db.update(db.cachedCartItems)
             ..where((t) => t.menuItemId.equals(id)))
           .write(CachedCartItemsCompanion(quantity: Value(quantity)));
+
+      // Get item for sync
+      final item = await (db.select(
+        db.cachedCartItems,
+      )..where((t) => t.menuItemId.equals(id))).getSingle();
+      unawaited(
+        ref
+            .read(supabaseSyncManagerProvider.notifier)
+            .pushCartItem(
+              _mapToModel(item).toJson(),
+            ),
+      );
     }
 
     state = await AsyncValue.guard(() async {
@@ -84,6 +154,10 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
       db.cachedCartItems,
     )..where((t) => t.menuItemId.equals(id))).go();
 
+    unawaited(
+      ref.read(supabaseSyncManagerProvider.notifier).removeCartItem(id),
+    );
+
     state = await AsyncValue.guard(() async {
       final items = await db.select(db.cachedCartItems).get();
       return items.map(_mapToModel).toList();
@@ -93,6 +167,7 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
   Future<void> clearCart() async {
     final db = await ref.read(appDatabaseProvider.future);
     await db.delete(db.cachedCartItems).go();
+    unawaited(ref.read(supabaseSyncManagerProvider.notifier).clearRemoteCart());
     state = const AsyncValue.data([]);
   }
 }

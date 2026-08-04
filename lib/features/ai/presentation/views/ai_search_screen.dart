@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/features/ai/presentation/ai_search_notifier.dart';
 import 'package:restro_hub/features/ai/presentation/ai_search_state.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/chat/presentation/widgets/ai_assistant_widgets.dart';
+import 'package:restro_hub/features/restaurants/presentation/views/restaurant_menu_screen.dart';
 
 class AiSearchScreen extends ConsumerStatefulWidget {
   const AiSearchScreen({super.key});
@@ -40,6 +42,7 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
     if (text.isNotEmpty) {
       ref.read(aiSearchProvider.notifier).performAiSearch(text);
       if (manualText == null) _controller.clear();
+      _scrollToBottom();
     }
   }
 
@@ -47,6 +50,9 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
   Widget build(BuildContext context) {
     final aiState = ref.watch(aiSearchProvider);
     final isInitial = aiState.value?.messages.isEmpty ?? true;
+
+    final user = ref.watch(authRepositoryProvider).currentUser;
+    final userName = user?.fullName?.split(' ').first ?? 'there';
 
     // Auto scroll to bottom when messages change
     ref.listen<AsyncValue<AiSearchState>>(aiSearchProvider, (
@@ -66,16 +72,6 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
             SnackBar(content: Text(nextValue.error!)),
           );
         }
-      }
-
-      final messagesChanged =
-          nextValue.messages.length != prevValue?.messages.length;
-      final restaurantsChanged =
-          nextValue.restaurants.length != prevValue?.restaurants.length;
-      if (messagesChanged ||
-          restaurantsChanged ||
-          nextValue.isProcessing == true) {
-        _scrollToBottom();
       }
     });
 
@@ -102,15 +98,13 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
               _buildAppBar(context, colorScheme, isInitial),
               Expanded(
                 child: isInitial
-                    ? _buildInitialView(colorScheme)
+                    ? _buildInitialView(colorScheme, userName)
                     : _buildChatView(aiState),
               ),
               // status is shown inside the input bar to avoid extra layout height
               // Respect keyboard insets so the input bar isn't covered or causes overflow
               Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-                ),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: SafeArea(
                   top: false,
                   child: AiInputBar(
@@ -119,8 +113,6 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
                     onStop: () =>
                         ref.read(aiSearchProvider.notifier).cancelSearch(),
                     isProcessing: aiState.value?.isProcessing ?? false,
-                    searchCount: aiState.value?.searchCount ?? 0,
-                    searchLimit: 5,
                   ),
                 ),
               ),
@@ -136,6 +128,7 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
     ColorScheme colorScheme,
     bool isInitial,
   ) {
+    final aiState = ref.watch(aiSearchProvider);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -177,7 +170,10 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.history_toggle_off, color: Colors.white70),
+            icon: const Icon(
+              Icons.history_toggle_off,
+              color: Colors.white70,
+            ),
             onPressed: () => ref.read(aiSearchProvider.notifier).clearSearch(),
           ),
         ],
@@ -185,7 +181,7 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
     );
   }
 
-  Widget _buildInitialView(ColorScheme colorScheme) {
+  Widget _buildInitialView(ColorScheme colorScheme, String userName) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -205,7 +201,7 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Hi, Kalyani!',
+            'Hi, $userName!',
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontSize: 22,
@@ -238,7 +234,7 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
             crossAxisCount: 2,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.4,
+            childAspectRatio: 1.1,
             children: [
               QuickActionCard(
                 icon: Icons.star,
@@ -280,45 +276,48 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
     return aiState.when(
       data: (state) => ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(20, 10, 20, 120),
-        itemCount: state.messages.length +
-            (state.restaurants.isNotEmpty ? 1 : 0) +
-            (state.isProcessing ? 1 : 0),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+        itemCount: state.messages.length + (state.isProcessing ? 1 : 0),
         itemBuilder: (context, index) {
           if (index < state.messages.length) {
             final msg = state.messages[index];
-            return _ChatBubble(
-              text: msg.text ?? '',
-              isUser: msg.isUser,
-            );
-          }
-
-          final relativeIndex = index - state.messages.length;
-
-          if (state.restaurants.isNotEmpty && relativeIndex == 0) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 16, bottom: 8),
-                  child: Text(
-                    'Top recommendations',
-                    style: GoogleFonts.poppins(
-                      color: Theme.of(context).colorScheme.onSurface,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                _ChatBubble(
+                  text: msg.text ?? '',
+                  isUser: msg.isUser,
+                ),
+                if (!msg.isUser && msg.restaurants.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16, bottom: 8),
+                    child: Text(
+                      'Top recommendations',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
-                ),
-                ...state.restaurants.map(
-                  (r) => RecommendationCard(
-                    title: r.name,
-                    description: r.description,
-                    price: 'Rs. ${(r.rating * 10).toInt()}', // Sample price
-                    category: 'Restaurant',
-                    imageUrl: r.bannerUrl ?? '',
+                  ...msg.restaurants.map(
+                    (r) => RecommendationCard(
+                      title: r.name,
+                      description: r.description,
+                      price: 'Rs. ${(r.rating * 10).toInt()}', // Sample price
+                      category: 'Restaurant',
+                      imageUrl: r.bannerUrl ?? '',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RestaurantMenuScreen(restaurant: r),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
+                ],
               ],
             );
           }

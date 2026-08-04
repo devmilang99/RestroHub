@@ -37,9 +37,11 @@ class SyncCoordinator extends _$SyncCoordinator {
 
     if (status == NetworkStatus.online) {
       logInfo(
-        'SYNC COORDINATOR: Online at startup. Triggering initial sync...',
+        'SYNC COORDINATOR: Online at startup. Triggering initial sync and diagnostics...',
       );
-      unawaited(_triggerSync());
+      final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
+      unawaited(syncManager.diagnoseSchemaMismatch());
+      unawaited(syncManager.syncRestaurants());
     }
   }
 

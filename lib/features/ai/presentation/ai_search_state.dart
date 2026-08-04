@@ -10,7 +10,7 @@ class AiSearchState extends Equatable {
   final List<RestaurantModel> restaurants;
   final List<MenuItemModel> menuItems;
   final List<String> history;
-  final int searchCount;
+  final List<DateTime> searchTimestamps;
   final int errorCount;
 
   const AiSearchState({
@@ -20,9 +20,15 @@ class AiSearchState extends Equatable {
     this.restaurants = const [],
     this.menuItems = const [],
     this.history = const [],
-    this.searchCount = 0,
+    this.searchTimestamps = const [],
     this.errorCount = 0,
   });
+
+  int get searchCount {
+    final now = DateTime.now();
+    final oneHourAgo = now.subtract(const Duration(hours: 1));
+    return searchTimestamps.where((t) => t.isAfter(oneHourAgo)).length;
+  }
 
   AiSearchState copyWith({
     List<AiChatMessage>? messages,
@@ -31,7 +37,7 @@ class AiSearchState extends Equatable {
     List<RestaurantModel>? restaurants,
     List<MenuItemModel>? menuItems,
     List<String>? history,
-    int? searchCount,
+    List<DateTime>? searchTimestamps,
     int? errorCount,
   }) {
     return AiSearchState(
@@ -41,7 +47,7 @@ class AiSearchState extends Equatable {
       restaurants: restaurants ?? this.restaurants,
       menuItems: menuItems ?? this.menuItems,
       history: history ?? this.history,
-      searchCount: searchCount ?? this.searchCount,
+      searchTimestamps: searchTimestamps ?? this.searchTimestamps,
       errorCount: errorCount ?? this.errorCount,
     );
   }
@@ -54,7 +60,7 @@ class AiSearchState extends Equatable {
     restaurants,
     menuItems,
     history,
-    searchCount,
+    searchTimestamps,
     errorCount,
   ];
 }

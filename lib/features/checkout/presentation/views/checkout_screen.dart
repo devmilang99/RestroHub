@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,13 +7,20 @@ import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
-import 'package:restro_hub/infrastructure/printer/printer_api.g.dart';
+import 'package:restro_hub/infrastructure/supabase/supabase_service.dart';
 
-class ProcessCheckOut extends ConsumerWidget {
+class ProcessCheckOut extends ConsumerStatefulWidget {
   const ProcessCheckOut({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProcessCheckOut> createState() => _ProcessCheckOutState();
+}
+
+class _ProcessCheckOutState extends ConsumerState<ProcessCheckOut> {
+  bool _isPlacingOrder = false;
+
+  @override
+  Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider).value ?? [];
     final totalAmount = cart.fold<double>(
       0,
@@ -223,106 +228,83 @@ class ProcessCheckOut extends ConsumerWidget {
           ],
         ),
         child: ElevatedButton(
-          onPressed: () async {
-            if (cart.isEmpty) {
-              ref
-                  .read(errorServiceProvider.notifier)
-                  .showError(
-                    message:
-                        'Your cart is empty. Add some items to place an order.',
-                  );
-              return;
-            }
+          onPressed: _isPlacingOrder
+              ? null
+              : () async {
+                  // Check if user is logged in before placing order
+                  final user = ref
+                      .read(supabaseClientProvider)
+                      .auth
+                      .currentUser;
+                  if (user == null) {
+                    _showLoginRequiredDialog(context);
+                    return;
+                  }
 
-            try {
-              // Process payment logic
-              final orderId = 'ORD${DateTime.now().millisecondsSinceEpoch}';
-              ref
-                  .read(ordersProvider.notifier)
-                  .addOrder(
-                    OrderModel(
-                      id: orderId,
-                      items: cart,
-                      totalAmount: finalTotal,
-                      subStatus: OrderSubStatus.preparing,
-                      timestamp: DateTime.now(),
-                      paymentMethod: checkoutState.paymentMethod,
-                      discount: discount,
-                    ),
-                  );
+                  if (cart.isEmpty) {
+                    ref
+                        .read(errorServiceProvider.notifier)
+                        .showError(
+                          message:
+                              'Your cart is empty. Add some items to place an order.',
+                        );
+                    return;
+                  }
 
-              // ── Trigger Native Printer API ──
-              try {
-                await PrinterApi().printReceipt({
-                  'orderId': orderId,
-                  'amount': finalTotal.toStringAsFixed(2),
-                  'itemsCount': cart.length.toString(),
-                });
-              } on Object catch (e) {
-                // Log printer error but don't stop the checkout process
-                debugPrint('Printer API Error: $e');
-              }
+                  setState(() => _isPlacingOrder = true);
 
-              await ref.read(cartProvider.notifier).clearCart();
+                  try {
+                    // Simulate a small delay for better UX
+                    await Future.delayed(const Duration(milliseconds: 1500));
 
-              if (context.mounted) {
-                unawaited(
-                  showDialog<void>(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (context) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      title: const Column(
-                        children: [
-                          Icon(
-                            Icons.check_circle_outline,
-                            color: Colors.green,
-                            size: 60,
+                    final orderId =
+                        'ORD${DateTime.now().millisecondsSinceEpoch}';
+                    final restaurantId = cart.isNotEmpty
+                        ? cart.first.restaurantId
+                        : null;
+
+                    await ref
+                        .read(ordersProvider.notifier)
+                        .addOrder(
+                          OrderModel(
+                            id: orderId,
+                            restaurantId: restaurantId,
+                            items: cart,
+                            totalAmount: finalTotal,
+                            subStatus: OrderSubStatus.pending,
+                            timestamp: DateTime.now(),
+                            paymentMethod: checkoutState.paymentMethod,
+                            discount: discount,
                           ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Order Placed!',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      content: const Text(
-                        'Your delicious meal is being prepared. You can track your order status in the orders section.',
-                        textAlign: TextAlign.center,
-                      ),
-                      actions: [
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.pop(context); // Close dialog
-                              context.goNamed(
-                                'mainDashBoard',
-                                extra: {'initialIndex': 2},
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Track Order'),
+                        );
+
+                    await ref.read(cartProvider.notifier).clearCart();
+
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Order placed successfully!'),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-            } on Object catch (e, stack) {
-              ref.read(errorServiceProvider.notifier).handleException(e, stack);
-            }
-          },
+                      );
+
+                      // Using path with query parameter for absolute reliability
+                      context.go('/mainDashBoard?tab=2');
+                    }
+                  } on Object catch (e, stack) {
+                    ref
+                        .read(errorServiceProvider.notifier)
+                        .handleException(e, stack);
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isPlacingOrder = false);
+                    }
+                  }
+                },
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
             foregroundColor: Colors.white,
@@ -331,11 +313,56 @@ class ProcessCheckOut extends ConsumerWidget {
               borderRadius: BorderRadius.circular(15),
             ),
           ),
-          child: const Text(
-            'Place Order',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
+          child: _isPlacingOrder
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Text(
+                  'Place Order',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
         ),
+      ),
+    );
+  }
+
+  void _showLoginRequiredDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Login Required'),
+        content: const Text(
+          'You need to be logged in to place an order and track your delivery.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: context.colorScheme.secondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.push('/mainLoginScreen');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.colorScheme.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text('Login Now'),
+          ),
+        ],
       ),
     );
   }

@@ -24,6 +24,8 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     _client = ref.watch(supabaseClientProvider);
   }
 
+  User? get currentUser => _client.auth.currentUser;
+
   /// Initiates a background sync of restaurants, categories, and items into Drift.
   Future<void> syncRestaurants({bool force = false}) async {
     final syncState = ref.read(globalSyncStatusProvider);
@@ -214,12 +216,288 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     }
   }
 
+  /// Pushes a new order and its items to Supabase
+  Future<void> pushOrderToRemote(
+    Map<String, dynamic> orderJson,
+    List<Map<String, dynamic>> itemsJson,
+  ) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      logWarning(
+        'SYNC: Cannot push order ${orderJson['id']} to remote - No authenticated user found.',
+      );
+      return;
+    }
+
+    try {
+      // Use upsert for orders to avoid duplicate key errors if sync is retried
+      await _client.from('orders').upsert({
+        ...orderJson,
+        'customer_id': userId,
+      });
+
+      if (itemsJson.isNotEmpty) {
+        // For order items, we use upsert matching on the primary key or unique identifier
+        await _client
+            .from('order_items')
+            .upsert(
+              itemsJson
+                  .map(
+                    (item) => {
+                      ...item,
+                      'order_id': orderJson['id'],
+                    },
+                  )
+                  .toList(),
+            );
+      }
+    } on PostgrestException catch (e) {
+      logError(
+        'SYNC ERROR: Supabase Database Error in pushOrderToRemote',
+        'Code: ${e.code}, Message: ${e.message}, Details: ${e.details}',
+      );
+    } on Object catch (e) {
+      logError('SYNC ERROR: Unexpected failure in pushOrderToRemote', e);
+    }
+  }
+
+  /// Fetches orders and their items from Supabase for the current user
+  Future<List<Map<String, dynamic>>> fetchRemoteOrders() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    try {
+      final response = await _client
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('customer_id', userId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } on Object catch (e) {
+      logError('SYNC ERROR: Failed to fetch orders from Supabase', e);
+      return [];
+    }
+  }
+
+  /// Syncs local cart items to Supabase
+  Future<void> pushCartItem(Map<String, dynamic> cartItemJson) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      // Specify onConflict to ensure it updates existing items for this user
+      await _client.from('cart_items').upsert(
+        {
+          ...cartItemJson,
+          'user_id': userId,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        onConflict: 'user_id, menu_item_id',
+      );
+    } on PostgrestException catch (e) {
+      logError(
+        'SYNC ERROR: Supabase Database Error in pushCartItem',
+        'Code: ${e.code}, Message: ${e.message}, Details: ${e.details}',
+      );
+    }
+  }
+
+  /// Removes a cart item from Supabase
+  Future<void> removeCartItem(String menuItemId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await _client.from('cart_items').delete().match({
+      'user_id': userId,
+      'menu_item_id': menuItemId,
+    });
+  }
+
+  /// Fetches the user's cart from Supabase
+  Future<List<Map<String, dynamic>>> fetchRemoteCart() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await _client
+        .from('cart_items')
+        .select('*')
+        .eq('user_id', userId);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Clears user cart in Supabase
+  Future<void> clearRemoteCart() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await _client.from('cart_items').delete().eq('user_id', userId);
+  }
+
   /// Generic remote sync helper
   Future<void> syncLocalToRemote(
     String table,
     Map<String, dynamic> data,
   ) async {
-    await _client.from(table).upsert(data);
+    try {
+      await _client.from(table).upsert(data);
+    } on PostgrestException catch (e) {
+      logError(
+        'SYNC ERROR: Supabase Database Error in syncLocalToRemote ($table)',
+        'Code: ${e.code}, Message: ${e.message}, Details: ${e.details}',
+      );
+    }
+  }
+
+  /// Pushes a favorite to Supabase
+  Future<void> pushFavourite(String itemId, String type) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      await _client.from('favourites').upsert(
+        {
+          'user_id': userId,
+          'item_id': itemId,
+          'type': type,
+        },
+        onConflict: 'user_id, item_id',
+      );
+    } on PostgrestException catch (e) {
+      logError('SYNC ERROR: Failed to push favourite', e.message);
+    }
+  }
+
+  /// Removes a favorite from Supabase
+  Future<void> removeFavourite(String itemId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      await _client.from('favourites').delete().match({
+        'user_id': userId,
+        'item_id': itemId,
+      });
+    } on PostgrestException catch (e) {
+      logError('SYNC ERROR: Failed to remove favourite', e.message);
+    }
+  }
+
+  /// Pushes a transaction record to Supabase
+  Future<void> pushTransaction(Map<String, dynamic> transactionData) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      await _client.from('transactions').upsert({
+        ...transactionData,
+        'user_id': userId,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } on PostgrestException catch (e) {
+      logError('SYNC ERROR: Failed to push transaction', e.message);
+    }
+  }
+
+  /// Forces a full sync of all local data to Supabase
+  Future<void> performFullExport() async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      logError('SYNC: Cannot export data - No authenticated user found.');
+      return;
+    }
+
+    logInfo('SYNC: Starting full data export to Supabase...');
+    final db = await ref.read(appDatabaseProvider.future);
+
+    try {
+      // 1. Export Cart
+      final cartRows = await db.select(db.cachedCartItems).get();
+      for (final row in cartRows) {
+        await pushCartItem({
+          'menu_item_id': row.menuItemId,
+          'restaurant_id': row.restaurantId,
+          'name': row.name,
+          'price_at_purchase': row.price,
+          'image_url': row.imageUrl,
+          'quantity': row.quantity,
+        });
+      }
+
+      // 2. Export Favourites
+      final favRows = await db.select(db.cachedFavourites).get();
+      for (final row in favRows) {
+        await pushFavourite(row.id, row.type);
+      }
+
+      // 3. Export Orders
+      final orderRows = await db.select(db.cachedOrders).get();
+      for (final row in orderRows) {
+        final itemRows = await (db.select(
+          db.cachedOrderItems,
+        )..where((t) => t.orderId.equals(row.id))).get();
+
+        await pushOrderToRemote(
+          {
+            'id': row.id,
+            'restaurant_id': row.restaurantId,
+            'status': row.status,
+            'total_amount': row.totalAmount,
+            'created_at': row.createdAt.toIso8601String(),
+            'discount_amount': row.discountAmount,
+          },
+          itemRows
+              .map(
+                (i) => {
+                  'menu_item_id': i.menuItemId,
+                  'name': i.name,
+                  'quantity': i.quantity,
+                  'unit_price': i.unitPrice,
+                  'total_price': i.totalPrice,
+                },
+              )
+              .toList(),
+        );
+      }
+
+      logInfo('SYNC COMPLETE: Full export finished successfully.');
+    } catch (e) {
+      logError('SYNC ERROR: Bulk export failed', e);
+      rethrow;
+    }
+  }
+
+  /// Diagnoses schema mismatches for critical tables
+  Future<void> diagnoseSchemaMismatch() async {
+    final tables = [
+      'orders',
+      'order_items',
+      'cart_items',
+      'favourites',
+      'transactions',
+    ];
+    logInfo('DIAGNOSTICS: Starting Supabase schema validation...');
+
+    for (final table in tables) {
+      try {
+        // Try to fetch one row to see if the table exists and columns match
+        final response = await _client.from(table).select().limit(1);
+        logInfo('DIAGNOSTICS: Table "$table" is accessible.');
+
+        if (response.isNotEmpty) {
+          final keys = (response.first as Map).keys.toList();
+          logInfo('DIAGNOSTICS: Table "$table" sample keys: $keys');
+        }
+      } on PostgrestException catch (e) {
+        logError(
+          'DIAGNOSTICS FAILURE: Table "$table" has issues',
+          'Code: ${e.code}, Message: ${e.message}',
+        );
+      } catch (e) {
+        logError('DIAGNOSTICS FAILURE: Unexpected error on table "$table"', e);
+      }
+    }
   }
 }
 

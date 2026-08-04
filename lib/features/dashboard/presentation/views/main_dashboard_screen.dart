@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/models/enums.dart';
@@ -20,6 +21,8 @@ import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/presentation/providers/restaurant_provider.dart';
 
+final dashboardTabIndexProvider = StateProvider<int>((ref) => 0);
+
 class MainDashBoard extends ConsumerStatefulWidget {
   final UserModel? user;
   final int initialIndex;
@@ -30,22 +33,29 @@ class MainDashBoard extends ConsumerStatefulWidget {
 }
 
 class _MainDashBoardState extends ConsumerState<MainDashBoard> {
-  late int _currentIndex;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     FlutterNativeSplash.remove();
-    _currentIndex = widget.initialIndex;
+    // Use a post-frame callback to update the provider after the first build
+    // if it differs from the initialIndex
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(dashboardTabIndexProvider) != widget.initialIndex) {
+        ref.read(dashboardTabIndexProvider.notifier).state =
+            widget.initialIndex;
+      }
+    });
   }
 
   @override
   void didUpdateWidget(MainDashBoard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialIndex != oldWidget.initialIndex) {
-      setState(() {
-        _currentIndex = widget.initialIndex;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(dashboardTabIndexProvider.notifier).state =
+            widget.initialIndex;
       });
     }
   }
@@ -57,11 +67,12 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
   }
 
   void _onItemTapped(int index) {
-    setState(() => _currentIndex = index);
+    ref.read(dashboardTabIndexProvider.notifier).state = index;
   }
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(dashboardTabIndexProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final restaurantsAsync = ref.watch(filteredRestaurantsProvider);
     final allCuisinesAsync = ref.watch(allCuisinesStreamProvider);
@@ -75,15 +86,14 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
 
     return Scaffold(
       extendBody: true,
-      body: screens[_currentIndex],
-      bottomNavigationBar: _buildFloatingBottomNav(colorScheme),
+      body: screens[currentIndex],
+      bottomNavigationBar: _buildFloatingBottomNav(colorScheme, currentIndex),
     );
   }
 
-  Widget _buildFloatingBottomNav(ColorScheme colorScheme) {
+  Widget _buildFloatingBottomNav(ColorScheme colorScheme, int currentIndex) {
     final cartItems = ref.watch(cartProvider).value ?? [];
-    final activeOrders = ref
-        .watch(ordersProvider)
+    final activeOrders = (ref.watch(ordersProvider).value ?? [])
         .where(
           (o) =>
               o.subStatus != OrderSubStatus.success &&
@@ -111,7 +121,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(35),
             child: BottomNavigationBar(
-              currentIndex: _currentIndex,
+              currentIndex: currentIndex,
               onTap: _onItemTapped,
               type: BottomNavigationBarType.fixed,
               backgroundColor: Colors.transparent,
@@ -149,7 +159,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                   label: 'Orders',
                 ),
                 BottomNavigationBarItem(
-                  icon: _buildProfileIcon(colorScheme),
+                  icon: _buildProfileIcon(colorScheme, currentIndex),
                   label: 'Profile',
                 ),
               ],
@@ -160,10 +170,10 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
     );
   }
 
-  Widget _buildProfileIcon(ColorScheme colorScheme) {
+  Widget _buildProfileIcon(ColorScheme colorScheme, int currentIndex) {
     final user = widget.user;
     final hasImage = user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty;
-    final isSelected = _currentIndex == 3;
+    final isSelected = currentIndex == 3;
 
     return Container(
       padding: const EdgeInsets.all(2),

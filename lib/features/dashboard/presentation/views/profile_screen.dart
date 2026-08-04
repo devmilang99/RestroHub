@@ -11,6 +11,7 @@ import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/dashboard/logic/membership_rules.dart';
 import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
+import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final UserModel? user;
@@ -200,6 +201,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             'Saved Addresses',
             Icons.location_on_outlined,
             () {},
+            theme,
+          ),
+          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.1)),
+          _buildInfoTile(
+            'Sync Data to Cloud',
+            Icons.cloud_upload_outlined,
+            () async {
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Syncing data to Supabase...')),
+                );
+                await ref
+                    .read(supabaseSyncManagerProvider.notifier)
+                    .performFullExport();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sync completed successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Sync failed: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
             theme,
           ),
           Divider(height: 1, color: Colors.grey.withValues(alpha: 0.1)),

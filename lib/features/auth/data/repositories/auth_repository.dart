@@ -7,4 +7,5 @@ abstract class IAuthRepository {
   Future<UserModel?> signIn(String email, String password);
   Future<void> signOut({bool clearData = true});
   UserModel? get currentUser;
+  Future<bool> verifySession();
 }

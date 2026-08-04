@@ -46,4 +46,4 @@ final class RecommendedItemsProvider
   }
 }
 
-String _$recommendedItemsHash() => r'4e41205fcf6e06a8ef40f5fb38af29a6907a77ae';
+String _$recommendedItemsHash() => r'c1668bd04dd6b5771ab2dcd965807c5a1ced3d21';

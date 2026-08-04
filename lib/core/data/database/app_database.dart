@@ -137,6 +137,7 @@ class CachedFavourites extends Table {
 
 class CachedCartItems extends Table {
   TextColumn get menuItemId => text()();
+  TextColumn get restaurantId => text().nullable()();
   TextColumn get name => text()();
   TextColumn get imageUrl => text().nullable()();
   RealColumn get price => real()();
@@ -171,7 +172,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -225,6 +226,12 @@ class AppDatabase extends _$AppDatabase {
           'Database onUpgrade: Adding minOrderAmount to restaurants for v7.',
         );
         await m.addColumn(cachedRestaurants, cachedRestaurants.minOrderAmount);
+      }
+      if (from < 8) {
+        logInfo(
+          'Database onUpgrade: Adding restaurantId to cart items for v8.',
+        );
+        await m.addColumn(cachedCartItems, cachedCartItems.restaurantId);
       }
     },
   );

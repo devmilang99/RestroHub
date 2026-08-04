@@ -6,6 +6,8 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 
+import 'package:restro_hub/core/widgets/simple_header.dart';
+
 class ContactUsScreen extends ConsumerStatefulWidget {
   const ContactUsScreen({super.key});
 
@@ -74,68 +76,29 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
     final colorScheme = context.colorScheme;
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'Contact Us',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+      appBar: const SimpleHeader(
+        title: 'Contact Us',
+        watermarkIcon: Icons.contact_support,
+      ),
+      body: SingleChildScrollView(
+        child: AnimationLimiter(
+          child: Column(
+            children: AnimationConfiguration.toStaggeredList(
+              duration: const Duration(milliseconds: 375),
+              childAnimationBuilder: (widget) => SlideAnimation(
+                horizontalOffset: 50,
+                child: FadeInAnimation(child: widget),
               ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          colorScheme.primary,
-                          colorScheme.primary.withValues(alpha: 0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: -50,
-                    top: -50,
-                    child: Icon(
-                      Icons.contact_support,
-                      size: 250,
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                ],
-              ),
+              children: [
+                _buildContactInfoSection(colorScheme),
+                _buildGrievanceForm(colorScheme),
+                _buildSocialSection(colorScheme),
+                _buildFAQSection(colorScheme),
+                const SizedBox(height: 50),
+              ],
             ),
           ),
-          SliverToBoxAdapter(
-            child: AnimationLimiter(
-              child: Column(
-                children: AnimationConfiguration.toStaggeredList(
-                  duration: const Duration(milliseconds: 375),
-                  childAnimationBuilder: (widget) => SlideAnimation(
-                    horizontalOffset: 50,
-                    child: FadeInAnimation(child: widget),
-                  ),
-                  children: [
-                    _buildContactInfoSection(colorScheme),
-                    _buildGrievanceForm(colorScheme),
-                    _buildSocialSection(colorScheme),
-                    _buildFAQSection(colorScheme),
-                    const SizedBox(height: 50),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

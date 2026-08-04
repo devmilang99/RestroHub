@@ -9,7 +9,20 @@ class SupabaseAuthRepositoryImpl implements IAuthRepository {
   final SupabaseClient _client;
   final Ref _ref;
 
-  SupabaseAuthRepositoryImpl(this._client, this._ref);
+  SupabaseAuthRepositoryImpl(this._client, this._ref) {
+    _initAuthListener();
+  }
+
+  void _initAuthListener() {
+    _client.auth.onAuthStateChange.listen((data) async {
+      final event = data.event;
+      if (event == AuthChangeEvent.signedIn ||
+          event == AuthChangeEvent.tokenRefreshed) {
+        // Double check if user still exists in DB
+        await verifySession();
+      }
+    });
+  }
 
   @override
   Future<UserModel?> signUp(String email, String password) async {
@@ -60,6 +73,23 @@ class SupabaseAuthRepositoryImpl implements IAuthRepository {
 
   @override
   UserModel? get currentUser => _mapUser(_client.auth.currentUser);
+
+  @override
+  Future<bool> verifySession() async {
+    try {
+      final response = await _client.auth.getUser();
+      return response.user != null;
+    } on AuthException catch (e) {
+      // If user was deleted or session is invalid, getUser() throws AuthException
+      // Code '404' or specific messages usually indicate user not found
+      await signOut(clearData: true);
+      return false;
+    } catch (e) {
+      // For network errors, we might want to return true to allow offline usage
+      // assuming the local session is still technically valid.
+      return _client.auth.currentUser != null;
+    }
+  }
 
   UserModel? _mapUser(User? user) {
     if (user == null) return null;

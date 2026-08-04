@@ -4,16 +4,18 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:restro_hub/core/data/mock_data.dart';
 import 'package:restro_hub/features/ai/domain/model/ai_chat_message.dart';
 import 'package:restro_hub/features/ai/presentation/ai_search_state.dart';
+import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/data/repositories/restaurant_repository.dart';
 import 'package:restro_hub/infrastructure/ai/gemini_search_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ai_search_notifier.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class AiSearchNotifier extends _$AiSearchNotifier {
   final List<Content> _chatHistory = [];
   static const int _maxChatHistory = 10;
+  final List<RestaurantModel> _currentTurnRestaurants = [];
 
   bool _isCancelled = false;
 
@@ -29,7 +31,7 @@ class AiSearchNotifier extends _$AiSearchNotifier {
     if (current.searchCount >= 5) {
       state = AsyncData(
         current.copyWith(
-          error: 'You have reached the limit of 5 AI searches.',
+          error: 'You have reached the limit of 5 AI searches per hour.',
         ),
       );
       return;
@@ -45,14 +47,15 @@ class AiSearchNotifier extends _$AiSearchNotifier {
     }
 
     _isCancelled = false;
-    final nextSearchCount = current.searchCount + 1;
+    _currentTurnRestaurants.clear();
+    final nextSearchTimestamps = [...current.searchTimestamps, DateTime.now()];
 
     state = AsyncData(
       current.copyWith(
         isProcessing: true,
         error: null,
         restaurants: [], // Clear previous search results
-        searchCount: nextSearchCount,
+        searchTimestamps: nextSearchTimestamps,
         messages: [
           ...current.messages,
           AiChatMessage(text: query, isUser: true),
@@ -66,6 +69,7 @@ class AiSearchNotifier extends _$AiSearchNotifier {
 
       await _executeSearch(query);
     } catch (e) {
+      _currentTurnRestaurants.addAll(restaurantsList);
       state = AsyncData(
         state.value!.copyWith(
           isProcessing: false,
@@ -75,11 +79,11 @@ class AiSearchNotifier extends _$AiSearchNotifier {
             AiChatMessage(
               text: "I've found these recommendations for you!",
               isUser: false,
+              restaurants: List.from(_currentTurnRestaurants),
             ),
           ],
           error: null,
           restaurants: restaurantsList,
-          searchCount: state.value!.searchCount,
         ),
       );
     }
@@ -132,13 +136,20 @@ class AiSearchNotifier extends _$AiSearchNotifier {
             isProcessing: false,
             messages: [
               ...state.value!.messages,
-              AiChatMessage(text: finalMessage, isUser: false),
+              AiChatMessage(
+                text: finalMessage,
+                isUser: false,
+                restaurants: List.from(_currentTurnRestaurants),
+              ),
             ],
           ),
         );
         _addToHistory(candidate!.content);
       } else {
-        final hasRestaurants = state.value?.restaurants.isNotEmpty ?? false;
+        final hasRestaurants = _currentTurnRestaurants.isNotEmpty;
+        final finalRestaurants = hasRestaurants
+            ? _currentTurnRestaurants
+            : restaurantsList;
         state = AsyncData(
           state.value!.copyWith(
             isProcessing: false,
@@ -149,13 +160,17 @@ class AiSearchNotifier extends _$AiSearchNotifier {
                     ? "I've found some great options for you based on your request!"
                     : "I've found these recommendations for you!",
                 isUser: false,
+                restaurants: List.from(finalRestaurants),
               ),
             ],
           ),
         );
       }
     } catch (e) {
-      final hasRestaurants = state.value?.restaurants.isNotEmpty ?? false;
+      final hasRestaurants = _currentTurnRestaurants.isNotEmpty;
+      final finalRestaurants = hasRestaurants
+          ? _currentTurnRestaurants
+          : restaurantsList;
       state = AsyncData(
         state.value!.copyWith(
           isProcessing: false,
@@ -167,12 +182,10 @@ class AiSearchNotifier extends _$AiSearchNotifier {
                   ? "I've found some great options for you based on your request!"
                   : "I've found these recommendations for you!",
               isUser: false,
+              restaurants: List.from(finalRestaurants),
             ),
           ],
-          restaurants: hasRestaurants
-              ? state.value!.restaurants
-              : restaurantsList,
-          searchCount: state.value!.searchCount, // Explicitly carry over count
+          restaurants: List.from(finalRestaurants),
           error: null,
         ),
       );
@@ -219,6 +232,8 @@ class AiSearchNotifier extends _$AiSearchNotifier {
               filtered = filtered.where((r) => r.rating >= ratingMin).toList();
             }
 
+            _currentTurnRestaurants.addAll(filtered);
+
             state = AsyncData(
               state.value!.copyWith(
                 restaurants: filtered,
@@ -261,7 +276,13 @@ class AiSearchNotifier extends _$AiSearchNotifier {
 
   void clearSearch() {
     _chatHistory.clear();
-    state = const AsyncData(AiSearchState());
+    final current = state.value!;
+    state = AsyncData(
+      AiSearchState(
+        searchTimestamps: current.searchTimestamps,
+        errorCount: current.errorCount,
+      ),
+    );
   }
 
   void cancelSearch() {

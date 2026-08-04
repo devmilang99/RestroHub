@@ -169,13 +169,28 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       if (mounted) {
         final prefs = ref.read(preferencesServiceProvider);
-        final user = ref.read(authRepositoryProvider).currentUser;
+        final authRepo = ref.read(authRepositoryProvider);
+        final user = authRepo.currentUser;
 
         // Directly navigate to dashboard if user is already logged in
         if (user != null) {
-          debugPrint('SPLASH: User logged in, navigating to dashboard...');
-          context.goNamed('mainDashBoard');
-          return;
+          debugPrint('SPLASH: User logged in, verifying session...');
+          final isValid = await authRepo.verifySession();
+
+          if (!mounted) return;
+
+          if (isValid) {
+            debugPrint('SPLASH: Session valid, navigating to dashboard...');
+            context.goNamed('mainDashBoard');
+            return;
+          } else {
+            debugPrint(
+              'SPLASH: Session invalid or user removed. Redirecting to login...',
+            );
+            // Session was cleared in verifySession() if invalid
+            context.goNamed('mainLoginScreen');
+            return;
+          }
         }
 
         if (prefs.isOnboardingCompleted) {
