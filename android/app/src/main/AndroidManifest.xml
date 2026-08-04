@@ -21,7 +21,7 @@
     <!-- Notification Permission -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="restro_hub"
+        android:label="Restro Hub"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

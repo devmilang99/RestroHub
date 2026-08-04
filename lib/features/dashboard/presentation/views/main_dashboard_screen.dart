@@ -91,63 +91,70 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
         )
         .toList();
 
-    return Container(
-      height: 70,
-      margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(35),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(35),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          showSelectedLabels: true,
-          showUnselectedLabels: true,
-          selectedItemColor: colorScheme.primary,
-          unselectedItemColor: Colors.grey.withValues(alpha: 0.6),
-          selectedLabelStyle: GoogleFonts.poppins(
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-          ),
-          unselectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
-          items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge.count(
-                count: cartItems.length,
-                isLabelVisible: cartItems.isNotEmpty,
-                child: const Icon(Icons.shopping_cart_rounded),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+        child: Container(
+          height: 80,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(35),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-              label: 'Cart',
-            ),
-            BottomNavigationBarItem(
-              icon: Badge.count(
-                count: activeOrders.length,
-                isLabelVisible: activeOrders.isNotEmpty,
-                child: const Icon(Icons.receipt_long_rounded),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(35),
+            child: BottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: _onItemTapped,
+              type: BottomNavigationBarType.fixed,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              showSelectedLabels: true,
+              showUnselectedLabels: true,
+              selectedItemColor: colorScheme.primary,
+              unselectedItemColor: Colors.grey.withValues(alpha: 0.6),
+              selectedFontSize: 10,
+              unselectedFontSize: 10,
+              selectedLabelStyle: GoogleFonts.poppins(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
               ),
-              label: 'Orders',
+              unselectedLabelStyle: GoogleFonts.poppins(fontSize: 10),
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.home_rounded),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Badge.count(
+                    count: cartItems.length,
+                    isLabelVisible: cartItems.isNotEmpty,
+                    child: const Icon(Icons.shopping_cart_rounded),
+                  ),
+                  label: 'Cart',
+                ),
+                BottomNavigationBarItem(
+                  icon: Badge.count(
+                    count: activeOrders.length,
+                    isLabelVisible: activeOrders.isNotEmpty,
+                    child: const Icon(Icons.receipt_long_rounded),
+                  ),
+                  label: 'Orders',
+                ),
+                BottomNavigationBarItem(
+                  icon: _buildProfileIcon(colorScheme),
+                  label: 'Profile',
+                ),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: _buildProfileIcon(colorScheme),
-              label: 'Profile',
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -212,10 +219,11 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
 
     final cuisines = allCuisines.take(5).toList();
 
-    final recommendedRestaurants = allRestaurants
-        .where((r) => r.rating >= 4.0)
-        .take(5)
-        .toList();
+    final recommendedRestaurants =
+        (restaurantsAsync.value ?? <RestaurantModel>[])
+            .where((r) => r.rating >= 4.0)
+            .take(5)
+            .toList();
 
     final recommendedFood = allCuisines
         .where((f) => f.rating >= 4.5)
@@ -223,9 +231,20 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
         .toList();
 
     final recommendedItems = [...recommendedRestaurants, ...recommendedFood]
-      ..shuffle();
+      ..sort((a, b) {
+        final rA = a is RestaurantModel
+            ? a.rating
+            : (a as MenuItemModel).rating;
+        final rB = b is RestaurantModel
+            ? b.rating
+            : (b as MenuItemModel).rating;
+        return rB.compareTo(rA);
+      });
 
-    final unreadNotifications = ref.watch(notificationsProvider).where((n) => !n.isRead).length;
+    final unreadNotifications = ref
+        .watch(notificationsProvider)
+        .where((n) => !n.isRead)
+        .length;
 
     final offers = allCuisines.where((c) => c.price < 500).take(5).toList();
 
@@ -328,43 +347,62 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                   ),
                   const SizedBox(height: 16),
                   // Full Search Bar
-                  InkWell(
-                    onTap: () => GoRouter.of(context).pushNamed('searchScreen'),
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(
-                          alpha: 0.5,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.3,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.search_rounded,
-                            color: colorScheme.onSurfaceVariant,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Search for food, restaurants...',
-                            style: GoogleFonts.poppins(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 14,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () =>
+                              GoRouter.of(context).pushNamed('searchScreen'),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest
+                                  .withValues(
+                                    alpha: 0.5,
+                                  ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: colorScheme.outlineVariant.withValues(
+                                  alpha: 0.3,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.search_rounded,
+                                  color: colorScheme.onSurfaceVariant,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Search for food, restaurants...',
+                                  style: GoogleFonts.poppins(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        onPressed: () => context.push('/aiSearch'),
+                        icon: const Icon(Icons.auto_awesome),
+                        style: IconButton.styleFrom(
+                          backgroundColor: colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
+                          foregroundColor: colorScheme.primary,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -435,7 +473,6 @@ class DashboardSlivers extends StatelessWidget {
             titleIcon: Icons.restaurant_menu_rounded,
             items: cuisines,
             seeAll: true,
-            exploreType: ExploreType.food,
           ),
         if (restaurants.isNotEmpty)
           SliverRestaurantCards(
@@ -443,7 +480,6 @@ class DashboardSlivers extends StatelessWidget {
             titleIcon: Icons.storefront_rounded,
             items: restaurants,
             seeAll: true,
-            exploreType: ExploreType.restaurant,
           ),
       ],
     );

@@ -81,7 +81,6 @@ List<MenuItemModel> _mapMenuItemRowsToModels(List<CachedMenuItem> rows) {
           price: row.price,
           isAvailable: row.isAvailable,
           calories: row.calories,
-          rating: 4.5,
           dietaryFlags: row.dietaryFlags,
         ),
       )

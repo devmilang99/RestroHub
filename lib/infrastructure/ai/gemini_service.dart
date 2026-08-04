@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:restro_hub/features/ai/data/gemini_models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'gemini_service.g.dart';
@@ -9,14 +11,17 @@ part 'gemini_service.g.dart';
 @riverpod
 class GeminiService extends _$GeminiService {
   final List<String> _prioritizedModels = [
-    'gemini-2.0-flash',
     'gemini-1.5-flash',
     'gemini-1.5-pro',
   ];
 
+  late final Dio _dio;
+  final String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models';
+
   @override
-  FutureOr<void> build() async {
-    // Initialization is now handled lazily or via sendMessage to support retries
+  FutureOr<void> build() {
+    _dio = Dio();
   }
 
   GenerativeModel _createModel(
@@ -35,22 +40,6 @@ class GeminiService extends _$GeminiService {
       tools: tools,
       systemInstruction: systemInstruction,
     );
-  }
-
-  Future<String> sendMessage(String message) async {
-    for (final modelName in _prioritizedModels) {
-      try {
-        final model = _createModel(modelName);
-        // Start a fresh chat for now or manage session
-        final response = await model.startChat().sendMessage(
-          Content.text(message),
-        );
-        return response.text ?? "I'm sorry, I couldn't process that.";
-      } on Exception catch (_) {
-        continue;
-      }
-    }
-    return 'All Gemini models failed to generate content or API key is missing.';
   }
 
   /// Generic method to generate content with tools, following the Kotlin pattern
@@ -74,5 +63,14 @@ class GeminiService extends _$GeminiService {
       }
     }
     throw lastException ?? Exception('All Gemini models failed');
+  }
+
+  Future<GeminiModelList> listModels() async {
+    final apiKey = dotenv.maybeGet('GEMINI_API_KEY');
+    final response = await _dio.get<Map<String, dynamic>>(
+      _baseUrl,
+      queryParameters: {'key': apiKey},
+    );
+    return GeminiModelList.fromJson(response.data!);
   }
 }

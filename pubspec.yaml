@@ -70,6 +70,8 @@ dependencies:
   supabase_flutter: ^2.6.0
   url_launcher: ^6.3.2
   web_socket_channel: any
+  uuid: any
+  riverpod: any
 dev_dependencies:
   build_runner: any
   custom_lint: any

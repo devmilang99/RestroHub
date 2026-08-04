@@ -50,10 +50,46 @@ class DashboardDrawer extends ConsumerWidget {
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () async {
-              Navigator.pop(context);
-              await ref.read(authRepositoryProvider).signOut();
-              if (context.mounted) {
-                context.goNamed('splash');
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('CANCEL'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text(
+                        'LOGOUT',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true && context.mounted) {
+                Navigator.pop(context); // Close drawer
+                // Show loading indicator
+                unawaited(
+                  showDialog<void>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                );
+
+                await ref.read(authRepositoryProvider).signOut();
+
+                if (context.mounted) {
+                  Navigator.pop(context); // Close loading indicator
+                  context.goNamed('splash');
+                }
               }
             },
           ),

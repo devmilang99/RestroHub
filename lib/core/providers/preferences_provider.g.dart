@@ -42,7 +42,7 @@ final class PreferencesServiceProvider
 }
 
 String _$preferencesServiceHash() =>
-    r'f62b4e30067f58e4f02c94fa0f9e68949bfafaf1';
+    r'a3798ea7482350714d1e305006c760b2d353458b';
 
 abstract class _$PreferencesService extends $Notifier<PreferencesService> {
   PreferencesService build();

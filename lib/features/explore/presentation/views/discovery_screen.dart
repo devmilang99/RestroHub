@@ -19,17 +19,17 @@ import 'package:restro_hub/features/favourites/presentation/providers/favourites
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/presentation/providers/restaurant_provider.dart';
+import 'package:restro_hub/l10n/generated/app_localizations.dart';
 
-class UnifiedExploreScreen extends ConsumerStatefulWidget {
+class DiscoveryScreen extends ConsumerStatefulWidget {
   final ExploreType type;
-  const UnifiedExploreScreen({required this.type, super.key});
+  const DiscoveryScreen({required this.type, super.key});
 
   @override
-  ConsumerState<UnifiedExploreScreen> createState() =>
-      _UnifiedExploreScreenState();
+  ConsumerState<DiscoveryScreen> createState() => _DiscoveryScreenState();
 }
 
-class _UnifiedExploreScreenState extends ConsumerState<UnifiedExploreScreen> {
+class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -45,8 +45,8 @@ class _UnifiedExploreScreenState extends ConsumerState<UnifiedExploreScreen> {
         : (widget.type == ExploreType.food ? cuisinesAsync : recommendedAsync);
 
     final items = currentAsync.maybeWhen(
-      data: (d) => d as List,
-      orElse: () => (currentAsync.value as List?) ?? [],
+      data: (d) => d,
+      orElse: () => currentAsync.value ?? [],
     );
     final isLoading = currentAsync is AsyncLoading;
 
@@ -93,7 +93,7 @@ class _UnifiedExploreScreenState extends ConsumerState<UnifiedExploreScreen> {
                 ],
               ),
               label: Text(
-                'VIEW CART',
+                AppLocalizations.of(context)!.viewCart,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
@@ -104,14 +104,16 @@ class _UnifiedExploreScreenState extends ConsumerState<UnifiedExploreScreen> {
           : null,
       body: SearchableSliverAppLayout<dynamic>(
         title: widget.type == ExploreType.restaurant
-            ? 'Restaurants'
-            : (widget.type == ExploreType.food ? 'Cuisines' : 'Recommended'),
+            ? AppLocalizations.of(context)!.restaurants
+            : (widget.type == ExploreType.food
+                ? AppLocalizations.of(context)!.cuisines
+                : AppLocalizations.of(context)!.recommended),
         expandedHeight: 0,
         hintText: widget.type == ExploreType.restaurant
-            ? 'Search restaurants...'
+            ? AppLocalizations.of(context)!.searchRestaurants
             : (widget.type == ExploreType.food
-                  ? 'Search cuisines...'
-                  : 'Search recommended...'),
+                ? AppLocalizations.of(context)!.searchCuisines
+                : AppLocalizations.of(context)!.searchRecommended),
         items: items,
         isLoading: isLoading,
         filterPredicate: (item, query) {
@@ -204,9 +206,9 @@ class _UnifiedExploreScreenState extends ConsumerState<UnifiedExploreScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'RESTAURANT',
+                      AppLocalizations.of(context)!.restaurant,
                       style: GoogleFonts.poppins(
-                        color: Colors.black,
+                        color: Colors.white,
                         fontSize: 8,
                         fontWeight: FontWeight.bold,
                       ),
@@ -390,9 +392,9 @@ class _UnifiedExploreScreenState extends ConsumerState<UnifiedExploreScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'FOOD',
+                      AppLocalizations.of(context)!.food,
                       style: GoogleFonts.poppins(
-                        color: Colors.black,
+                        color: Colors.white,
                         fontSize: 8,
                         fontWeight: FontWeight.bold,
                       ),
@@ -471,7 +473,8 @@ class _UnifiedExploreScreenState extends ConsumerState<UnifiedExploreScreen> {
                               );
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('${item.name} added to cart'),
+                              content: Text(AppLocalizations.of(context)!
+                                  .addedToCart(item.name)),
                               duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
                             ),

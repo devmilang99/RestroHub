@@ -34,7 +34,7 @@ final class GeminiSearchRouterProvider
 }
 
 String _$geminiSearchRouterHash() =>
-    r'48375ebd9c9154e6aeeb14b9c70ff4e44263d044';
+    r'7d2fbc2e35db47f60447db40ba886de32e160f9d';
 
 abstract class _$GeminiSearchRouter extends $AsyncNotifier<void> {
   FutureOr<void> build();

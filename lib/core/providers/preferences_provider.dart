@@ -24,7 +24,7 @@ class PreferencesService extends _$PreferencesService {
 
   Future<void> setOnboardingCompleted(bool completed) async {
     await _prefs.setBool(_onboardingCompletedKey, completed);
-    ref.notifyListeners();
+    state = this;
   }
 
   ThemeMode get themeMode {
@@ -36,6 +36,6 @@ class PreferencesService extends _$PreferencesService {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs.setString(_themeModeKey, mode.name);
-    ref.notifyListeners();
+    state = this;
   }
 }

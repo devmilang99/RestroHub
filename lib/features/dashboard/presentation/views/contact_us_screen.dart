@@ -211,7 +211,7 @@ class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
             ),
             const SizedBox(height: 20),
             DropdownButtonFormField<String>(
-              value: _selectedType,
+              initialValue: _selectedType,
               decoration: InputDecoration(
                 labelText: 'Enquiry Type',
                 prefixIcon: const Icon(Icons.category_outlined),

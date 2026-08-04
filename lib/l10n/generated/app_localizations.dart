@@ -118,6 +118,18 @@ abstract class AppLocalizations {
   /// **'Restaurants'**
   String get restaurants;
 
+  /// No description provided for @cuisines.
+  ///
+  /// In en, this message translates to:
+  /// **'Cuisines'**
+  String get cuisines;
+
+  /// No description provided for @recommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get recommended;
+
   /// No description provided for @all.
   ///
   /// In en, this message translates to:
@@ -147,6 +159,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Premium'**
   String get premium;
+
+  /// No description provided for @viewCart.
+  ///
+  /// In en, this message translates to:
+  /// **'VIEW CART'**
+  String get viewCart;
+
+  /// No description provided for @restaurant.
+  ///
+  /// In en, this message translates to:
+  /// **'RESTAURANT'**
+  String get restaurant;
+
+  /// No description provided for @food.
+  ///
+  /// In en, this message translates to:
+  /// **'FOOD'**
+  String get food;
+
+  /// No description provided for @searchRestaurants.
+  ///
+  /// In en, this message translates to:
+  /// **'Search restaurants...'**
+  String get searchRestaurants;
+
+  /// No description provided for @searchCuisines.
+  ///
+  /// In en, this message translates to:
+  /// **'Search cuisines...'**
+  String get searchCuisines;
+
+  /// No description provided for @searchRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Search recommended...'**
+  String get searchRecommended;
+
+  /// No description provided for @addedToCart.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} added to cart'**
+  String addedToCart(String name);
+
+  /// No description provided for @myOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'My Orders'**
+  String get myOrders;
+
+  /// No description provided for @inProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In Progress'**
+  String get inProgress;
+
+  /// No description provided for @success.
+  ///
+  /// In en, this message translates to:
+  /// **'Success'**
+  String get success;
+
+  /// No description provided for @cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get cancelled;
+
+  /// No description provided for @noOrdersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No {status} orders found'**
+  String noOrdersFound(String status);
+
+  /// No description provided for @orderId.
+  ///
+  /// In en, this message translates to:
+  /// **'Order #{id}'**
+  String orderId(String id);
+
+  /// No description provided for @deliveredSuccessfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered successfully'**
+  String get deliveredSuccessfully;
+
+  /// No description provided for @cancelledOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Order Cancelled'**
+  String get cancelledOrder;
+
+  /// No description provided for @refunded.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunded'**
+  String get refunded;
+
+  /// No description provided for @reorder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reorder'**
+  String get reorder;
+
+  /// No description provided for @viewDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View Details'**
+  String get viewDetails;
+
+  /// No description provided for @trackOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Track Order'**
+  String get trackOrder;
+
+  /// No description provided for @itemsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items'**
+  String itemsCount(int count);
+
+  /// No description provided for @minOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Min Order'**
+  String get minOrder;
+
+  /// No description provided for @deliveryTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivers in'**
+  String get deliveryTime;
+
+  /// No description provided for @reviews.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews'**
+  String get reviews;
+
+  /// No description provided for @writeAReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a review'**
+  String get writeAReview;
+
+  /// No description provided for @shareExperience.
+  ///
+  /// In en, this message translates to:
+  /// **'Share your experience'**
+  String get shareExperience;
+
+  /// No description provided for @rating.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get rating;
+
+  /// No description provided for @comment.
+  ///
+  /// In en, this message translates to:
+  /// **'Comment'**
+  String get comment;
+
+  /// No description provided for @submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get submit;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get menu;
+
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @searchMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Search menu...'**
+  String get searchMenu;
 }
 
 class _AppLocalizationsDelegate

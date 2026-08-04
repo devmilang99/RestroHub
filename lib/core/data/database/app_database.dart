@@ -229,6 +229,20 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
+  /// Clears all user-related temporary data from the database.
+  Future<void> clearAllUserData() async {
+    await transaction(() async {
+      await delete(cachedCartItems).go();
+      await delete(cachedFavourites).go();
+      await delete(cachedOrders).go();
+      await delete(cachedOrderItems).go();
+      await delete(cachedUserAddresses).go();
+      await delete(syncMetadata).go();
+      // Optionally clear cached restaurants if you want a full reset
+      // await delete(cachedRestaurants).go();
+    });
+  }
+
   static QueryExecutor openConnection() {
     return LazyDatabase(() async {
       final dbFolder = await getApplicationDocumentsDirectory();

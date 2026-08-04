@@ -24,6 +24,7 @@ class PermissionScreen extends ConsumerStatefulWidget {
     ];
 
     if (!kIsWeb && Platform.isAndroid) {
+      permissionsToCheck.add(Permission.notification);
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
       if (androidInfo.version.sdkInt >= 33) {
@@ -32,6 +33,7 @@ class PermissionScreen extends ConsumerStatefulWidget {
         permissionsToCheck.add(Permission.storage);
       }
     } else if (!kIsWeb && Platform.isIOS) {
+      permissionsToCheck.add(Permission.notification);
       permissionsToCheck.add(Permission.photos);
     }
 
@@ -120,6 +122,18 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
 
       permissions.add(
         PermissionItem(
+          permission: Permission.notification,
+          title: 'Stay Notified',
+          description:
+              'Receive real-time updates on your order status and exclusive offers.',
+          icon: Icons.notifications_active_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1579389083046-e3df9c2b3325?q=80&w=1974&auto=format&fit=crop',
+        ),
+      );
+
+      permissions.add(
+        PermissionItem(
           permission: isAndroid13OrHigher
               ? Permission.photos
               : Permission.storage,
@@ -161,6 +175,15 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
       ]);
     } else if (Platform.isIOS) {
       permissions.addAll([
+        PermissionItem(
+          permission: Permission.notification,
+          title: 'Stay Notified',
+          description:
+              'Receive real-time updates on your order status and exclusive offers.',
+          icon: Icons.notifications_active_rounded,
+          imageUrl:
+              'https://images.unsplash.com/photo-1579389083046-e3df9c2b3325?q=80&w=1974&auto=format&fit=crop',
+        ),
         PermissionItem(
           permission: Permission.photos,
           title: 'Photos Access',

@@ -1,9 +1,10 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/chat/presentation/widgets/ai_assistant_widgets.dart';
 import 'package:restro_hub/infrastructure/ai/gemini_search_router.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
@@ -16,9 +17,13 @@ class ChatScreen extends ConsumerStatefulWidget {
 class _ChatScreenState extends ConsumerState<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<Content> _history = [];
-  final List<Map<String, String>> _displayMessages = [];
+  final List<Map<String, dynamic>> _displayMessages = [];
   bool _isTyping = false;
   final ScrollController _scrollController = ScrollController();
+  bool _isCancelled = false;
+  int _searchCount = 0;
+  int _errorCount = 0;
+  final int _searchLimit = 5;
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -34,14 +39,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
-  Future<void> _sendMessage() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  Future<void> _sendMessage([String? manualText]) async {
+    final text = manualText ?? _controller.text.trim();
+    if (text.isEmpty || _isTyping) return;
+
+    if (_searchCount >= _searchLimit) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You have reached the limit of 5 AI searches.'),
+        ),
+      );
+      return;
+    }
+
+    if (_errorCount >= 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Multiple errors occurred. Please restart the assistant.',
+          ),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _displayMessages.add({'role': 'user', 'text': text});
-      _controller.clear();
+      if (manualText == null) _controller.clear();
       _isTyping = true;
+      _isCancelled = false;
+      _searchCount++;
     });
     _scrollToBottom();
 
@@ -50,121 +77,287 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .read(geminiSearchRouterProvider.notifier)
           .routeSearch(text, history: _history);
 
+      if (_isCancelled) return;
+
       final assistantText =
           response.text ?? "I'm sorry, I couldn't process that.";
 
       setState(() {
         _displayMessages.add({'role': 'assistant', 'text': assistantText});
+
         _history
           ..add(Content.text(text))
           ..add(Content.model([TextPart(assistantText)]));
         _isTyping = false;
+        _errorCount = 0; // Reset error count on success
       });
     } on Object catch (e) {
+      if (_isCancelled) return;
       setState(() {
         _displayMessages.add({'role': 'assistant', 'text': 'Error: $e'});
         _isTyping = false;
+        _errorCount++;
       });
     }
     _scrollToBottom();
   }
 
+  void _cancelProcessing() {
+    setState(() {
+      _isCancelled = true;
+      _isTyping = false;
+      _displayMessages.add({
+        'role': 'assistant',
+        'text': 'Processing cancelled.',
+      });
+    });
+    _scrollToBottom();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
+    final isInitial = _displayMessages.isEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'AI Assistant',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _displayMessages.length,
-              itemBuilder: (context, index) {
-                final msg = _displayMessages[index];
-                final isUser = msg['role'] == 'user';
-                return _ChatBubble(
-                  text: msg['text']!,
-                  isUser: isUser,
-                  colorScheme: colorScheme,
-                );
-              },
-            ),
+      backgroundColor: Colors.black,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF0A1A12),
+              Color(0xFF000000),
+            ],
+            stops: [0.0, 0.4],
           ),
-          if (_isTyping)
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Assistant is typing...',
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildAppBar(context, isInitial),
+              Expanded(
+                child: isInitial ? _buildInitialView() : _buildChatView(),
+              ),
+              AiInputBar(
+                controller: _controller,
+                onSend: _sendMessage,
+                onStop: _cancelProcessing,
+                isProcessing: _isTyping,
+                searchCount: _searchCount,
+                searchLimit: _searchLimit,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar(BuildContext context, bool isInitial) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: Icon(
+              isInitial ? Icons.arrow_back : Icons.close,
+              color: Colors.white,
+            ),
+            onPressed: () {
+              if (isInitial) {
+                Navigator.pop(context);
+              } else {
+                setState(() {
+                  _displayMessages.clear();
+                  _history.clear();
+                  _searchCount = 0;
+                  _errorCount = 0;
+                });
+              }
+            },
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF322416),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.auto_awesome, color: Colors.orange, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  'AI Assistant',
                   style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: Colors.orange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
                 ),
-              ),
+              ],
             ),
-          _buildInputArea(colorScheme),
+          ),
+          IconButton(
+            icon: const Icon(Icons.history_toggle_off, color: Colors.white70),
+            onPressed: () {
+              setState(() {
+                _displayMessages.clear();
+                _history.clear();
+                _searchCount = 0;
+                _errorCount = 0;
+              });
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInputArea(ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
+  Widget _buildInitialView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFF1E1E1E),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Colors.orange,
+              size: 24,
+            ),
           ),
+          const SizedBox(height: 12),
+          Text(
+            'Hi, Kalyani!',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            'What can I help you find today?',
+            style: GoogleFonts.poppins(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Quick Explore',
+              style: GoogleFonts.poppins(
+                color: Colors.orange,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.4,
+            children: [
+              QuickActionCard(
+                icon: Icons.star,
+                title: 'Top Rated',
+                subtitle: '"Find top-rated restaurants"',
+                onTap: () => _sendMessage('Find top-rated restaurants near me'),
+              ),
+              QuickActionCard(
+                icon: Icons.restaurant,
+                title: 'Italian Bistro',
+                subtitle: '"Authentic Italian flavors"',
+                onTap: () =>
+                    _sendMessage('Show me authentic Italian restaurants'),
+              ),
+              QuickActionCard(
+                icon: Icons.coffee,
+                title: 'Coffee & Snacks',
+                subtitle: '"Great coffee and snacks"',
+                onTap: () =>
+                    _sendMessage('Where can I get good coffee and snacks?'),
+              ),
+              QuickActionCard(
+                icon: Icons.location_on,
+                title: 'Near Kathmandu',
+                subtitle: '"Restaurants in Kathmandu"',
+                onTap: () =>
+                    _sendMessage('What are the best restaurants in Kathmandu?'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+          const PoweredByGeminiLabel(),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                hintText: 'Ask me anything...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(25),
-                  borderSide: BorderSide.none,
-                ),
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.3,
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
+    );
+  }
+
+  Widget _buildChatView() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      itemCount: _displayMessages.length + (_isTyping ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (_isTyping && index == _displayMessages.length) {
+          return const AiThinkingBubble();
+        }
+        final msg = _displayMessages[index];
+        final role = msg['role'] as String;
+
+        if (role == 'recommendation') {
+          final data = msg['data'] as Map<String, dynamic>;
+          final title = data['title'] as String;
+          final description = data['description'] as String;
+          final price = data['price'] as String;
+          final category = data['category'] as String;
+          final imageUrl = data['imageUrl'] as String;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 16, bottom: 8),
+                child: Text(
+                  'Top recommendations',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
-              onSubmitted: (_) => _sendMessage(),
-            ),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: colorScheme.primary,
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white),
-              onPressed: _sendMessage,
-            ),
-          ),
-        ],
-      ),
+              RecommendationCard(
+                title: title,
+                description: description,
+                price: price,
+                category: category,
+                imageUrl: imageUrl,
+              ),
+            ],
+          );
+        }
+
+        final isUser = role == 'user';
+        return _ChatBubble(
+          text: msg['text'] as String,
+          isUser: isUser,
+        );
+      },
     );
   }
 }
@@ -172,42 +365,63 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 class _ChatBubble extends StatelessWidget {
   final String text;
   final bool isUser;
-  final ColorScheme colorScheme;
 
   const _ChatBubble({
     required this.text,
     required this.isUser,
-    required this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isUser
-              ? colorScheme.primary
-              : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isUser ? 16 : 0),
-            bottomRight: Radius.circular(isUser ? 0 : 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!isUser) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFB700),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.auto_awesome,
+                color: Colors.white,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isUser ? Colors.orange : const Color(0xFF1E262C),
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isUser ? 20 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 20),
+                ),
+              ),
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
+              ),
+              child: Text(
+                text,
+                style: GoogleFonts.poppins(
+                  color: isUser ? Colors.black87 : Colors.white,
+                  fontSize: 14,
+                  fontWeight: isUser ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ),
           ),
-        ),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        child: Text(
-          text,
-          style: GoogleFonts.poppins(
-            color: isUser ? Colors.white : colorScheme.onSurface,
-            fontSize: 14,
-          ),
-        ),
+        ],
       ),
     );
   }

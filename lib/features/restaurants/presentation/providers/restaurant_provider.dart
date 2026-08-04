@@ -103,11 +103,8 @@ class FilteredRestaurants extends _$FilteredRestaurants {
     if (_isLoadingMore || !_hasMore) return;
 
     _isLoadingMore = true;
-    // ignore: invalid_use_of_internal_member - This is a known Riverpod compatibility
-    // workaround for the state-copy API used in this project.
-    state = const AsyncValue<List<RestaurantModel>>.loading().copyWithPrevious(
-      state,
-    );
+    // Set loading state while preserving previous items manually below
+    state = const AsyncValue<List<RestaurantModel>>.loading();
 
     try {
       _page++;

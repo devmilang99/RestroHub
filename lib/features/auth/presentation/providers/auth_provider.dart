@@ -6,7 +6,7 @@ import 'package:restro_hub/infrastructure/supabase/supabase_service.dart';
 /// Provider for the [IAuthRepository] implementation.
 final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
-  return SupabaseAuthRepositoryImpl(supabase);
+  return SupabaseAuthRepositoryImpl(supabase, ref);
 });
 
 /// StateNotifier or other view models would go here to manage Auth UI state.

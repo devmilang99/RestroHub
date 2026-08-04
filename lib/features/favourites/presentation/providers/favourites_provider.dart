@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
+import 'package:riverpod/src/providers/provider.dart';
 
 class FavouritesNotifier extends AsyncNotifier<List<MenuItemModel>> {
   @override
@@ -18,42 +19,54 @@ class FavouritesNotifier extends AsyncNotifier<List<MenuItemModel>> {
     AppDatabase db,
   ) async {
     final results = <MenuItemModel>[];
-    for (final fav in favs) {
-      if (fav.type == 'restaurant') {
-        final r = await (db.select(
-          db.cachedRestaurants,
-        )..where((t) => t.id.equals(fav.id))).getSingleOrNull();
-        if (r != null) {
-          results.add(
-            MenuItemModel(
-              id: r.id,
-              categoryId: '', // dummy
-              name: r.name,
-              description: r.description ?? '',
-              imageUrl: r.logoUrl,
-              price: 0,
-            ),
-          );
-        }
-      } else {
-        final c = await (db.select(
-          db.cachedMenuItems,
-        )..where((t) => t.id.equals(fav.id))).getSingleOrNull();
-        if (c != null) {
-          results.add(
-            MenuItemModel(
-              id: c.id,
-              categoryId: c.categoryId,
-              name: c.name,
-              description: c.description ?? '',
-              imageUrl: c.imageUrl,
-              price: c.price,
-              dietaryFlags: c.dietaryFlags,
-            ),
-          );
-        }
+    if (favs.isEmpty) return results;
+
+    final restaurantIds = favs
+        .where((f) => f.type == 'restaurant')
+        .map((f) => f.id)
+        .toList();
+    final menuItemIds = favs
+        .where((f) => f.type == 'menu_item')
+        .map((f) => f.id)
+        .toList();
+
+    if (restaurantIds.isNotEmpty) {
+      final restaurants = await (db.select(
+        db.cachedRestaurants,
+      )..where((t) => t.id.isIn(restaurantIds))).get();
+      for (final r in restaurants) {
+        results.add(
+          MenuItemModel(
+            id: r.id,
+            categoryId: '', // dummy
+            name: r.name,
+            description: r.description ?? '',
+            imageUrl: r.logoUrl,
+            price: 0,
+          ),
+        );
       }
     }
+
+    if (menuItemIds.isNotEmpty) {
+      final menuItems = await (db.select(
+        db.cachedMenuItems,
+      )..where((t) => t.id.isIn(menuItemIds))).get();
+      for (final c in menuItems) {
+        results.add(
+          MenuItemModel(
+            id: c.id,
+            categoryId: c.categoryId,
+            name: c.name,
+            description: c.description ?? '',
+            imageUrl: c.imageUrl,
+            price: c.price,
+            dietaryFlags: c.dietaryFlags,
+          ),
+        );
+      }
+    }
+
     return results;
   }
 
@@ -103,3 +116,9 @@ final favouritesProvider =
     AsyncNotifierProvider<FavouritesNotifier, List<MenuItemModel>>(() {
       return FavouritesNotifier();
     });
+
+final ProviderFamily<bool, String?> isFavouriteProvider = Provider.family<bool, String?>((ref, id) {
+  if (id == null) return false;
+  final favourites = ref.watch(favouritesProvider).value ?? [];
+  return favourites.any((e) => e.id == id);
+});

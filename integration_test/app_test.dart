@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:restro_hub/features/explore/presentation/views/unified_explore_screen.dart';
+import 'package:restro_hub/features/explore/presentation/views/discovery_screen.dart';
 import 'package:restro_hub/main.dart' as app;
 
 void main() {
@@ -35,7 +35,7 @@ void main() {
       await tester.tap(exploreBtn);
       await tester.pumpAndSettle();
 
-      expect(find.byType(UnifiedExploreScreen), findsOneWidget);
+      expect(find.byType(DiscoveryScreen), findsOneWidget);
 
       // 3. Search for a restaurant (e.g., "RoadSide")
       await tester.enterText(find.byType(TextField), 'RoadSide');

@@ -72,6 +72,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               'Notifications',
               style: GoogleFonts.playfairDisplay(
                 fontSize: 22,
+                color: colorScheme.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'dart:ui';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -11,6 +11,7 @@ import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/providers/error_service.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
+import 'package:restro_hub/core/widgets/responsive_center.dart';
 import 'package:restro_hub/features/auth/data/datasources/google_auth_datasource.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
@@ -31,307 +32,293 @@ class _MainLoginScreenState extends ConsumerState<MainLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const LoginCard();
+    return const LoginView();
   }
 }
 
-class LoginCard extends ConsumerStatefulWidget {
-  const LoginCard({super.key});
+class LoginView extends ConsumerStatefulWidget {
+  const LoginView({super.key});
 
   @override
-  ConsumerState<LoginCard> createState() => _LoginCardState();
+  ConsumerState<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginCardState extends ConsumerState<LoginCard>
+class _LoginViewState extends ConsumerState<LoginView>
     with SingleTickerProviderStateMixin {
-  bool visibility = true;
-  bool rememberMe = false;
-  final loginFormKey = GlobalKey<FormState>();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final GoogleAuthService _googleAuthService = GoogleAuthService();
-  late AnimationController _animationController;
+  bool _obscurePassword = true;
+  bool _rememberMe = false;
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _googleAuthService = GoogleAuthService();
+
+  late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-
-  String _getBackgroundImageUrl() {
-    if (kIsWeb) {
-      return 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=1600&q=80';
-    } else {
-      return 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80';
-    }
-  }
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
     );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0, 0.65, curve: Curves.easeOut),
     );
+
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        Tween<Offset>(
+          begin: const Offset(0, 0.1),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0, 0.8, curve: Curves.fastOutSlowIn),
+          ),
         );
-    unawaited(_animationController.forward());
+
+    _controller.forward();
   }
 
   @override
   void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    _animationController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _controller.dispose();
     super.dispose();
+  }
+
+  String _getBackgroundImage() {
+    return 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop';
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeProvider);
     final colorScheme = context.colorScheme;
-    final primaryColor = colorScheme.primary;
-    final isDark = themeMode == ThemeMode.dark;
+    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
 
     return Scaffold(
       body: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage(_getBackgroundImageUrl()),
-                fit: BoxFit.cover,
+          // Background Image with Mesh Gradient
+          Positioned.fill(
+            child: Image.network(
+              _getBackgroundImage(),
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.black.withOpacity(0.6),
+                    colorScheme.primary.withOpacity(0.2),
+                    Colors.black.withOpacity(0.8),
+                  ],
+                ),
               ),
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withValues(alpha: 0.7),
-                  Colors.black.withValues(alpha: 0.85),
-                ],
-              ),
-            ),
-          ),
+
+          // Content
           SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ResponsiveCenter(
+                    maxWidth: 450,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 40,
+                    ),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            IconButton(
-                              onPressed: () {
-                                ref
-                                    .read(themeProvider.notifier)
-                                    .toggleTheme(isDark: !isDark);
-                              },
-                              icon: Icon(
-                                isDark ? Icons.light_mode : Icons.dark_mode,
-                                color: Colors.white,
-                              ),
-                            ),
+                            _buildHeader(colorScheme),
+                            const SizedBox(height: 40),
+                            _buildLoginCard(context, colorScheme, isDark),
+                            const SizedBox(height: 24),
+                            _buildFooter(context, colorScheme),
                           ],
                         ),
-                        const SizedBox(height: 50),
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: primaryColor.withValues(alpha: 0.5),
-                              width: 2,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.restaurant_menu,
-                            size: 60,
-                            color: primaryColor,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Restro Hub',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 42,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 60),
-                        Form(
-                          key: loginFormKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Welcome Back',
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-                              _buildTextField(
-                                controller: emailController,
-                                hint: 'Email Address',
-                                icon: Icons.email_outlined,
-                                colorScheme: colorScheme,
-                              ),
-                              const SizedBox(height: 20),
-                              _buildTextField(
-                                controller: passwordController,
-                                hint: 'Password',
-                                icon: Icons.lock_outline,
-                                isPassword: true,
-                                colorScheme: colorScheme,
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Checkbox(
-                                        value: rememberMe,
-                                        onChanged: (v) {
-                                          setState(() => rememberMe = v!);
-                                        },
-                                        activeColor: primaryColor,
-                                      ),
-                                      const Text(
-                                        'Remember me',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  TextButton(
-                                    onPressed: () async {
-                                      await context.pushNamed(
-                                        'forgotPasswordScreen',
-                                      );
-                                    },
-                                    child: Text(
-                                      'Forgot Password?',
-                                      style: TextStyle(
-                                        color: primaryColor,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 40),
-                              SizedBox(
-                                width: double.infinity,
-                                height: 56,
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    await _handleLogin(ref);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryColor,
-                                    foregroundColor: Colors.black,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'SIGN IN',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () async {
-                                        await _handleGoogleLogin(ref);
-                                      },
-                                      icon: const Icon(
-                                        Icons.login,
-                                        color: Colors.white,
-                                      ),
-                                      label: const Text(
-                                        'GOOGLE',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                      style: OutlinedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        side: const BorderSide(
-                                          color: Colors.white24,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 32),
-                              Center(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      "Don't have an account? ",
-                                      style: TextStyle(color: Colors.white70),
-                                    ),
-                                    GestureDetector(
-                                      onTap: () async {
-                                        await context.pushNamed(
-                                          'registerScreen',
-                                        );
-                                      },
-                                      child: Text(
-                                        'Sign Up',
-                                        style: TextStyle(
-                                          color: primaryColor,
-                                          fontWeight: FontWeight.bold,
-                                          decoration: TextDecoration.underline,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
+                );
+              },
+            ),
+          ),
+
+          // Theme Toggle
+          Positioned(
+            top: 10,
+            right: 10,
+            child: SafeArea(
+              child: IconButton(
+                onPressed: () {
+                  ref.read(themeProvider.notifier).toggleTheme(isDark: !isDark);
+                },
+                icon: Icon(
+                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: Colors.white,
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(ColorScheme colorScheme) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Icon(
+                Icons.restaurant_menu_rounded,
+                size: 36,
+                color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Restro Hub',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Welcome back',
+                  style: GoogleFonts.lato(
+                    fontSize: 12,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoginCard(
+    BuildContext context,
+    ColorScheme colorScheme,
+    bool isDark,
+  ) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(isDark ? 0.04 : 0.08),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.06),
+            ),
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Text(
+                    'Sign in to continue',
+                    style: GoogleFonts.montserrat(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Email Field
+                _buildTextField(
+                  controller: _emailController,
+                  hint: 'Email',
+                  icon: Icons.email_outlined,
+                  colorScheme: colorScheme,
+                ),
+                const SizedBox(height: 12),
+                // Password Field
+                _buildTextField(
+                  controller: _passwordController,
+                  hint: 'Password',
+                  icon: Icons.lock_outline_rounded,
+                  isPassword: true,
+                  colorScheme: colorScheme,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberMe,
+                          onChanged: (v) =>
+                              setState(() => _rememberMe = v ?? false),
+                          activeColor: colorScheme.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                        Text(
+                          'Remember me',
+                          style: GoogleFonts.lato(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          context.pushNamed('forgotPasswordScreen'),
+                      child: Text(
+                        'Forgot?',
+                        style: GoogleFonts.lato(color: colorScheme.primary),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _buildSignInButton(colorScheme),
+                const SizedBox(height: 14),
+                _buildSocialLogin(colorScheme),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -345,36 +332,170 @@ class _LoginCardState extends ConsumerState<LoginCard>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: Colors.white.withOpacity(0.07),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
       ),
       child: TextFormField(
         controller: controller,
-        obscureText: isPassword && visibility,
-        style: const TextStyle(color: Colors.white),
+        obscureText: isPassword && _obscurePassword,
+        style: GoogleFonts.lato(color: Colors.white),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white38),
-          prefixIcon: Icon(icon, color: colorScheme.primary, size: 20),
+          hintStyle: GoogleFonts.lato(color: Colors.white38, fontSize: 14),
+          prefixIcon: Icon(
+            icon,
+            color: colorScheme.primary.withOpacity(0.7),
+            size: 20,
+          ),
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    visibility ? Icons.visibility_off : Icons.visibility,
+                    _obscurePassword
+                        ? Icons.visibility_off_rounded
+                        : Icons.visibility_rounded,
                     color: Colors.white38,
+                    size: 20,
                   ),
-                  onPressed: () => setState(() => visibility = !visibility),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
                 )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.all(20),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildSignInButton(ColorScheme colorScheme) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primary,
+            colorScheme.primary.withRed(200),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: () => _handleLogin(ref),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Text(
+          'SIGN IN',
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+            color: Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialLogin(ColorScheme colorScheme) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Expanded(child: Divider(color: Colors.white10)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'OR CONTINUE WITH',
+                style: GoogleFonts.lato(
+                  fontSize: 10,
+                  color: Colors.white38,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+            const Expanded(child: Divider(color: Colors.white10)),
+          ],
+        ),
+        const SizedBox(height: 20),
+        OutlinedButton(
+          onPressed: () => _handleGoogleLogin(ref),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            side: const BorderSide(color: Colors.white10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            backgroundColor: Colors.white.withOpacity(0.03),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.network(
+                'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/1200px-Google_%22G%22_logo.svg.png',
+                height: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'GOOGLE',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(BuildContext context, ColorScheme colorScheme) {
+    return Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "Don't have an account? ",
+            style: GoogleFonts.lato(color: Colors.white70),
+          ),
+          TextButton(
+            onPressed: () => context.pushNamed('registerScreen'),
+            child: Text(
+              'Sign Up',
+              style: GoogleFonts.lato(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _handleLogin(WidgetRef ref) async {
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
       ref
@@ -386,12 +507,11 @@ class _LoginCardState extends ConsumerState<LoginCard>
       return;
     }
 
-    LoadingDialog.show(context, message: 'Logging in...');
+    LoadingDialog.show(context, message: 'Authenticating...');
     try {
       final user = await ref
           .read(authRepositoryProvider)
           .signIn(email, password);
-
       if (mounted) {
         LoadingDialog.hide(context);
         if (user != null) {
@@ -405,20 +525,18 @@ class _LoginCardState extends ConsumerState<LoginCard>
             .read(errorServiceProvider.notifier)
             .showError(message: e.message, type: ErrorType.auth);
       }
-    } on Object catch (_) {
+    } catch (e) {
       if (mounted) {
         LoadingDialog.hide(context);
         ref
             .read(errorServiceProvider.notifier)
-            .showError(
-              message: 'An unexpected error occurred',
-            );
+            .showError(message: 'An unexpected error occurred');
       }
     }
   }
 
   Future<void> _handleGoogleLogin(WidgetRef ref) async {
-    LoadingDialog.show(context, message: 'Signing in with Google...');
+    LoadingDialog.show(context, message: 'Connecting to Google...');
     try {
       final user = await _googleAuthService.signIn();
       if (mounted) {
@@ -440,13 +558,13 @@ class _LoginCardState extends ConsumerState<LoginCard>
         var message = 'Google Sign-In failed';
         if (e.code == 'network_error' || e.message?.contains('7') == true) {
           message =
-              'Network error or configuration mismatch (SHA-1). Please check your connection and app setup.';
+              'Network error or configuration mismatch. Please check your connection.';
         }
         ref
             .read(errorServiceProvider.notifier)
             .showError(message: message, type: ErrorType.auth);
       }
-    } on Object catch (_) {
+    } catch (e) {
       if (mounted) {
         LoadingDialog.hide(context);
         ref

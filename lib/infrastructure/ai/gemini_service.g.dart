@@ -33,7 +33,7 @@ final class GeminiServiceProvider
   GeminiService create() => GeminiService();
 }
 
-String _$geminiServiceHash() => r'149198463584e1e7daf43e7394b24d2ed32d53ca';
+String _$geminiServiceHash() => r'9bf566b78b6ddef38899e174a0fb33e206deebed';
 
 abstract class _$GeminiService extends $AsyncNotifier<void> {
   FutureOr<void> build();

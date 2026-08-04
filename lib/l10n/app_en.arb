@@ -3,9 +3,71 @@
   "findYourFavorite": "Find Your Favorite",
   "searchHint": "Search restaurants or cuisines...",
   "restaurants": "Restaurants",
+  "cuisines": "Cuisines",
+  "recommended": "Recommended",
   "all": "All",
   "topRated": "Top Rated",
   "fastDelivery": "Fast Delivery",
   "costEffective": "Cost Effective",
-  "premium": "Premium"
+  "premium": "Premium",
+  "viewCart": "VIEW CART",
+  "restaurant": "RESTAURANT",
+  "food": "FOOD",
+  "searchRestaurants": "Search restaurants...",
+  "searchCuisines": "Search cuisines...",
+  "searchRecommended": "Search recommended...",
+  "addedToCart": "{name} added to cart",
+  "@addedToCart": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "myOrders": "My Orders",
+  "inProgress": "In Progress",
+  "success": "Success",
+  "cancelled": "Cancelled",
+  "noOrdersFound": "No {status} orders found",
+  "@noOrdersFound": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "orderId": "Order #{id}",
+  "@orderId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "deliveredSuccessfully": "Delivered successfully",
+  "cancelledOrder": "Order Cancelled",
+  "refunded": "Refunded",
+  "reorder": "Reorder",
+  "viewDetails": "View Details",
+  "trackOrder": "Track Order",
+  "itemsCount": "{count} items",
+  "@itemsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "minOrder": "Min Order",
+  "deliveryTime": "Delivers in",
+  "reviews": "Reviews",
+  "writeAReview": "Write a review",
+  "shareExperience": "Share your experience",
+  "rating": "Rating",
+  "comment": "Comment",
+  "submit": "Submit",
+  "cancel": "Cancel",
+  "menu": "Menu",
+  "about": "About",
+  "searchMenu": "Search menu..."
 }

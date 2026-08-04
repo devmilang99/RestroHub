@@ -33,7 +33,7 @@ class MembershipRules {
   }
 
   static double getProgressToNext(int points) {
-    if (points >= 2000) return 1.0;
+    if (points >= 2000) return 1;
     if (points >= 1000) return (points - 1000) / 1000;
     if (points >= 500) return (points - 500) / 500;
     if (points >= 200) return (points - 200) / 300;

@@ -121,22 +121,20 @@ class _SliverOfferCardsState extends State<SliverOfferCards> {
                             fit: StackFit.expand,
                             children: [
                               // Background Image covering the entire card
-                              (item.imageUrl?.startsWith('http') ?? false)
-                                  ? Image.network(
+                              if (item.imageUrl?.startsWith('http') ?? false) Image.network(
                                       item.imageUrl!,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => Container(
+                                      errorBuilder: (_, _, _) => ColoredBox(
                                         color: colorScheme.primary,
                                         child: const Icon(
                                           Icons.broken_image,
                                           color: Colors.white,
                                         ),
                                       ),
-                                    )
-                                  : Image.asset(
+                                    ) else Image.asset(
                                       item.imageUrl ?? '',
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => Container(
+                                      errorBuilder: (_, _, _) => ColoredBox(
                                         color: colorScheme.primary,
                                         child: const Icon(
                                           Icons.fastfood,
@@ -326,7 +324,7 @@ class SliverRestaurantCards extends ConsumerWidget {
                 itemCount: displayItems.length,
                 itemBuilder: (context, index) {
                   final item = displayItems[index];
-                  String name = '';
+                  var name = '';
                   String? imageUrl = '';
                   double rating = 0.0;
                   Future<void> Function()? onTap;
@@ -548,7 +546,7 @@ class SliverRestaurantCards extends ConsumerWidget {
                                               : const SizedBox.shrink(),
                                           loading: () =>
                                               const SizedBox.shrink(),
-                                          error: (_, __) =>
+                                          error: (_, _) =>
                                               const SizedBox.shrink(),
                                         );
                                       },
@@ -796,7 +794,6 @@ class SliverFoodCards extends ConsumerWidget {
                                         return GestureDetector(
                                           onTap: () async {
                                             HapticFeedback.lightImpact();
-                                            // ignore: discarded_futures
                                             await ref
                                                 .read(
                                                   favouritesProvider.notifier,
@@ -881,7 +878,6 @@ class SliverFoodCards extends ConsumerWidget {
                                             price: item.price,
                                             quantity: 1,
                                           );
-                                          // ignore: discarded_futures
                                           await ref
                                               .read(cartProvider.notifier)
                                               .addItem(cartItem);

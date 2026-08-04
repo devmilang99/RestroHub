@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:restro_hub/core/models/enums.dart';
+import 'package:restro_hub/features/ai/presentation/views/ai_search_screen.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/auth/presentation/views/authenticated_password_screen.dart';
@@ -20,7 +21,7 @@ import 'package:restro_hub/features/dashboard/presentation/views/info_screens.da
 import 'package:restro_hub/features/dashboard/presentation/views/location_picker_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/main_dashboard_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
-import 'package:restro_hub/features/explore/presentation/views/unified_explore_screen.dart';
+import 'package:restro_hub/features/explore/presentation/views/discovery_screen.dart';
 import 'package:restro_hub/features/favourites/presentation/views/favourites_screen.dart';
 import 'package:restro_hub/features/notifications/presentation/views/notifications_screen.dart';
 import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
@@ -155,7 +156,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return buildPageWithTransition(
             context: context,
             state: state,
-            child: UnifiedExploreScreen(type: type),
+            child: DiscoveryScreen(type: type),
           );
         },
       ),
@@ -302,6 +303,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           context: context,
           state: state,
           child: const PolicyScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/aiSearch',
+        name: 'aiSearch',
+        pageBuilder: (context, state) => buildPageWithTransition(
+          context: context,
+          state: state,
+          child: const AiSearchScreen(),
         ),
       ),
     ],

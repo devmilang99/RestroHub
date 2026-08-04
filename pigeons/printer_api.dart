@@ -5,8 +5,8 @@ import 'package:pigeon/pigeon.dart';
     dartOut: 'lib/infrastructure/printer/printer_api.g.dart',
     dartOptions: DartOptions(),
     kotlinOut:
-        'android/app/src/main/kotlin/com/example/restro_hub/PrinterApi.g.kt',
-    kotlinOptions: KotlinOptions(package: 'com.example.restro_hub'),
+        'android/app/src/main/kotlin/com/portfolio/restrohub/PrinterApi.g.kt',
+    kotlinOptions: KotlinOptions(package: 'com.portfolio.restrohub'),
   ),
 )
 @HostApi()

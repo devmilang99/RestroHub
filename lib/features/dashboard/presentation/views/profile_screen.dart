@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/dashboard/logic/membership_rules.dart';
 import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
 
@@ -175,13 +176,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Column(
         children: [
           _buildInfoTile(
-            'Order History',
-            Icons.history,
-            () => context.pushNamed('ordersScreen'),
-            theme,
-          ),
-          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.1)),
-          _buildInfoTile(
             'Favourites',
             Icons.favorite_border,
             () => context.pushNamed('showFavourites'),
@@ -302,92 +296,114 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       expandedHeight: 280,
       pinned: true,
       backgroundColor: theme.colorScheme.primary,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primary.withValues(alpha: 0.8),
-                  ],
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final top = constraints.biggest.height;
+          final isCollapsed =
+              top <= (MediaQuery.of(context).padding.top + kToolbarHeight + 50);
+
+          return FlexibleSpaceBar(
+            centerTitle: true,
+            title: isCollapsed
+                ? Text(
+                    'Settings',
+                    style: GoogleFonts.playfairDisplay(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      fontSize: 18,
+                    ),
+                  )
+                : null,
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primary.withValues(alpha: 0.8),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Stack(
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                        ),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.white24,
-                          backgroundImage: _imageFile != null
-                              ? FileImage(_imageFile!)
-                              : null,
-                          child: _imageFile == null
-                              ? const Icon(
-                                  Icons.person,
-                                  size: 60,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: () => _showPickOptions(),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
+                      Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.secondary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                              border: Border.all(color: Colors.white, width: 3),
                             ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              size: 20,
-                              color: Colors.white,
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.white24,
+                              backgroundImage: _imageFile != null
+                                  ? FileImage(_imageFile!)
+                                  : null,
+                              child: _imageFile == null
+                                  ? const Icon(
+                                      Icons.person,
+                                      size: 60,
+                                      color: Colors.white,
+                                    )
+                                  : null,
                             ),
                           ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: _showPickOptions,
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.secondary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 20,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      Text(
+                        _nameController.text,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        widget.user?.email ?? 'guest@restrohub.com',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontSize: 14,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 15),
-                  Text(
-                    _nameController.text,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    widget.user?.email ?? 'guest@restrohub.com',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -565,7 +581,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () {},
+        onPressed: () async {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Logout'),
+              content: const Text('Are you sure you want to logout?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('CANCEL'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text(
+                    'LOGOUT',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm == true) {
+            if (mounted) {
+              // Show loading indicator
+              unawaited(
+                showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              );
+
+              await ref.read(authRepositoryProvider).signOut();
+
+              if (mounted) {
+                Navigator.pop(context); // Close loading indicator
+                context.goNamed('splash');
+              }
+            }
+          }
+        },
         icon: const Icon(Icons.logout, color: Colors.redAccent),
         label: Text(
           'LOGOUT',

@@ -45,6 +45,20 @@ class GeminiSearchRouter extends _$GeminiSearchRouter {
     ),
   );
 
+  final _applyCouponTool = FunctionDeclaration(
+    'apply_coupon',
+    'Check or apply restaurant discount coupons.',
+    Schema.object(
+      properties: {
+        'coupon_code': Schema.string(description: 'Coupon code.'),
+        'restaurant_id': Schema.string(
+          description: 'Restaurant ID (optional).',
+        ),
+      },
+      requiredProperties: ['coupon_code'],
+    ),
+  );
+
   late final List<Tool> _tools;
   late final Content _systemInstruction;
 
@@ -56,6 +70,7 @@ class GeminiSearchRouter extends _$GeminiSearchRouter {
           _searchRestaurantsTool,
           _searchCuisinesTool,
           _getRestaurantDetailsTool,
+          _applyCouponTool,
         ],
       ),
     ];
@@ -65,24 +80,13 @@ class GeminiSearchRouter extends _$GeminiSearchRouter {
 Role: Restro Hub AI Assistant.
 Goal: Help users find restaurants and food with brief, premium advice.
 
-Available Menu Summary:
-- Italian: Spaghetti Carbonara (Rs. 450), Margherita Pizza (Rs. 550), Lasagna Bolognese.
-- Indian: Chicken Tikka Masala (Rs. 450), Butter Chicken (Rs. 400), Paneer Butter Masala.
-- Chinese: Kung Pao Chicken (Rs. 550), Peking Duck, Mapo Tofu.
-- Mexican: Beef Tacos (Rs. 550), Enchiladas Verdes, Guacamole.
-- Japanese: Ramen Tonkotsu (Rs. 950), California Roll.
-- Thai: Tom Yum Goong (Rs. 550), Pad Thai.
-- USA: Classic Burger (Rs. 300), BBQ Ribs.
-
-Available Restaurants:
-- RoadSide Cafe (Lakeside): Italian, Budget-friendly.
-- Airakan Restro: Asian Fusion, Premium.
-- Tasty Heaven: Classic comfort food.
-
 Rules:
-- Be concise (max 2 sentences).
-- If asked for recommendations, suggest something from the list above.
-- Tone: Professional, helpful, food-expert.
+- Use 'search_restaurants' for any exploration, category mentions, or "Best/Top" queries.
+- Use 'apply_coupon' for discount or offer related queries.
+- Call tools before claiming no results.
+- Post-tool: Give a concise natural language response (max 2 sentences).
+- Do NOT list prices in text (already in UI cards).
+- Tone: Professional, Brief & Helpful.
 ''',
     );
   }
@@ -92,7 +96,12 @@ Rules:
     List<Content> history = const [],
   }) async {
     final contents = [...history, Content.text(query)];
+    return routeSearchWithContent(contents);
+  }
 
+  Future<GenerateContentResponse> routeSearchWithContent(
+    List<Content> contents,
+  ) async {
     return ref
         .read(geminiServiceProvider.notifier)
         .generateContent(
@@ -101,4 +110,7 @@ Rules:
           systemInstruction: _systemInstruction,
         );
   }
+
+  Future<dynamic> listAvailableModels() =>
+      ref.read(geminiServiceProvider.notifier).listModels();
 }
