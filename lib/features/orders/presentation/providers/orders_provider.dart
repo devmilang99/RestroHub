@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
@@ -110,37 +111,22 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
 
   Future<List<OrderModel>> _loadLocalOrders(AppDatabase db) async {
     final orderRows = await db.select(db.cachedOrders).get();
-    final orders = <OrderModel>[];
+    if (orderRows.isEmpty) return [];
+
+    final List<Map<String, dynamic>> ordersWithItems = [];
 
     for (final row in orderRows) {
       final itemRows = await (db.select(
         db.cachedOrderItems,
       )..where((t) => t.orderId.equals(row.id))).get();
-      orders.add(
-        OrderModel(
-          id: row.id,
-          restaurantId: row.restaurantId,
-          items: itemRows
-              .map(
-                (i) => CartModel(
-                  id: i.menuItemId,
-                  restaurantId: row.restaurantId,
-                  name: i.name,
-                  image: '',
-                  price: i.unitPrice,
-                  quantity: i.quantity,
-                ),
-              )
-              .toList(),
-          totalAmount: row.totalAmount,
-          subStatus: _parseStatus(row.status),
-          timestamp: row.createdAt,
-          paymentMethod: PaymentMethod.cod,
-          discount: row.discountAmount,
-        ),
-      );
+
+      ordersWithItems.add({
+        'order': row,
+        'items': itemRows,
+      });
     }
-    return orders.reversed.toList();
+
+    return compute(_mapOrdersDataToModels, ordersWithItems);
   }
 
   Future<void> _syncWithRemote(AppDatabase db) async {
@@ -196,13 +182,6 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     // Refresh state after sync
     final updatedOrders = await _loadLocalOrders(db);
     state = AsyncValue.data(updatedOrders);
-  }
-
-  OrderSubStatus _parseStatus(String status) {
-    return OrderSubStatus.values.firstWhere(
-      (e) => e.name == status,
-      orElse: () => OrderSubStatus.pending,
-    );
   }
 
   void _startGlobalTimer() {
@@ -344,7 +323,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     }
 
     // Push Transaction Record in background
-    syncManager
+    await syncManager
         .pushTransaction({
           'order_id': newOrder.id,
           'amount': newOrder.totalAmount,
@@ -352,7 +331,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
           'payment_method': newOrder.paymentMethod.name,
         })
         .catchError((e, st) {
-          logError('Failed to push transaction to remote', e, st);
+          logError('Failed to push transaction to remote', e);
         });
 
     if (newOrder.subStatus != OrderSubStatus.pending) {
@@ -408,10 +387,6 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     ]);
     _startOrderTracking(orderId);
     _triggerPrinter(orderId);
-  }
-
-  void _handleOrderConfirmation(String orderId) {
-    confirmOrder(orderId);
   }
 
   void _startOrderTracking(String orderId) {
@@ -521,6 +496,43 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
           order,
     ]);
   }
+}
+
+/// Top-level function for background mapping of orders and their items
+List<OrderModel> _mapOrdersDataToModels(List<Map<String, dynamic>> data) {
+  return data.map((entry) {
+    final row = entry['order'] as CachedOrder;
+    final itemRows = entry['items'] as List<CachedOrderItem>;
+
+    return OrderModel(
+      id: row.id,
+      restaurantId: row.restaurantId,
+      items: itemRows
+          .map(
+            (i) => CartModel(
+              id: i.menuItemId,
+              restaurantId: row.restaurantId,
+              name: i.name,
+              image: '',
+              price: i.unitPrice,
+              quantity: i.quantity,
+            ),
+          )
+          .toList(),
+      totalAmount: row.totalAmount,
+      subStatus: _parseStatusString(row.status),
+      timestamp: row.createdAt,
+      paymentMethod: PaymentMethod.cod,
+      discount: row.discountAmount,
+    );
+  }).toList().reversed.toList();
+}
+
+OrderSubStatus _parseStatusString(String status) {
+  return OrderSubStatus.values.firstWhere(
+    (e) => e.name == status,
+    orElse: () => OrderSubStatus.pending,
+  );
 }
 
 final ordersProvider = AsyncNotifierProvider<OrdersNotifier, List<OrderModel>>(

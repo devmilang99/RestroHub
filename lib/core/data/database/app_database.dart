@@ -172,7 +172,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -181,58 +181,98 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      logInfo('Database onUpgrade: Upgrading from $from to $to.');
-      if (from < 2) {
-        logInfo('Database onUpgrade: Adding v2 tables.');
-        await m.createTable(cachedRestaurants);
-        await m.createTable(cachedFavourites);
-        await m.createTable(cachedCartItems);
-        await m.createTable(syncMetadata);
-      }
-      if (from < 3) {
-        logInfo('Database onUpgrade: Adding v3 tables.');
-        // Recreate tables with proper schema
-        await m.drop(cachedRestaurants);
-        await m.createTable(cachedRestaurants);
-        await m.createTable(cachedMenuCategories);
-        await m.createTable(cachedMenuItems);
-        await m.createTable(cachedUserAddresses);
-        await m.createTable(cachedOrders);
-        await m.createTable(cachedOrderItems);
-      }
-      if (from < 4) {
-        logInfo('Database onUpgrade: Adding v4 tables with CASCADE.');
-        await m.drop(cachedMenuItems);
-        await m.drop(cachedMenuCategories);
-        await m.createTable(cachedMenuCategories);
-        await m.createTable(cachedMenuItems);
-      }
-      if (from < 5) {
-        logInfo('Database onUpgrade: Refreshing restaurant tables for v5.');
-        // Complete refresh to ensure all columns match Supabase
-        await m.drop(cachedMenuItems);
-        await m.drop(cachedMenuCategories);
-        await m.drop(cachedRestaurants);
-        await m.createTable(cachedRestaurants);
-        await m.createTable(cachedMenuCategories);
-        await m.createTable(cachedMenuItems);
-      }
-      if (from < 6) {
-        logInfo('Database onUpgrade: Adding rating to menu items for v6.');
-        await m.addColumn(cachedMenuItems, cachedMenuItems.rating);
-      }
-      if (from < 7) {
-        logInfo(
-          'Database onUpgrade: Adding minOrderAmount to restaurants for v7.',
-        );
-        await m.addColumn(cachedRestaurants, cachedRestaurants.minOrderAmount);
-      }
-      if (from < 8) {
-        logInfo(
-          'Database onUpgrade: Adding restaurantId to cart items for v8.',
-        );
-        await m.addColumn(cachedCartItems, cachedCartItems.restaurantId);
-      }
+      // logInfo('Database onUpgrade: Upgrading from $from to $to.');
+      // if (from < 2) {
+      //   logInfo('Database onUpgrade: Adding v2 tables.');
+      //   await m.createTable(cachedRestaurants);
+      //   await m.createTable(cachedFavourites);
+      //   await m.createTable(cachedCartItems);
+      //   await m.createTable(syncMetadata);
+      // }
+      // if (from < 3) {
+      //   logInfo('Database onUpgrade: Adding v3 tables.');
+      //   // Recreate tables with proper schema
+      //   await m.drop(cachedRestaurants);
+      //   await m.createTable(cachedRestaurants);
+      //   await m.createTable(cachedMenuCategories);
+      //   await m.createTable(cachedMenuItems);
+      //   await m.createTable(cachedUserAddresses);
+      //   await m.createTable(cachedOrders);
+      //   await m.createTable(cachedOrderItems);
+      // }
+      // if (from < 4) {
+      //   logInfo('Database onUpgrade: Adding v4 tables with CASCADE.');
+      //   await m.drop(cachedMenuItems);
+      //   await m.drop(cachedMenuCategories);
+      //   await m.createTable(cachedMenuCategories);
+      //   await m.createTable(cachedMenuItems);
+      // }
+      // if (from < 5) {
+      //   logInfo('Database onUpgrade: Refreshing restaurant tables for v5.');
+      //   // Complete refresh to ensure all columns match Supabase
+      //   await m.drop(cachedMenuItems);
+      //   await m.drop(cachedMenuCategories);
+      //   await m.drop(cachedRestaurants);
+      //   await m.createTable(cachedRestaurants);
+      //   await m.createTable(cachedMenuCategories);
+      //   await m.createTable(cachedMenuItems);
+      // }
+      // if (from < 6) {
+      //   logInfo('Database onUpgrade: Adding rating to menu items for v6.');
+      //   await m.addColumn(cachedMenuItems, cachedMenuItems.rating);
+      // }
+      // if (from < 7) {
+      //   logInfo(
+      //     'Database onUpgrade: Adding minOrderAmount to restaurants for v7.',
+      //   );
+      //   await m.addColumn(cachedRestaurants, cachedRestaurants.minOrderAmount);
+      // }
+      // if (from < 8) {
+      //   logInfo(
+      //     'Database onUpgrade: Adding restaurantId to cart items for v8.',
+      //   );
+      //   await m.addColumn(cachedCartItems, cachedCartItems.restaurantId);
+      // }
+      // if (from < 9) {
+      //   logInfo('Database onUpgrade: Running v9 migration safety checks.');
+      //   // We use a manual check because some devices might have columns added out of sync
+      //   // due to how m.createTable uses the current Dart definition.
+      //   try {
+      //     final favouritesTableInfo =
+      //         await customSelect("PRAGMA table_info('cached_favourites')")
+      //             .get();
+      //     final hasAddedAt = favouritesTableInfo.any(
+      //       (row) => row.data['name'] == 'added_at',
+      //     );
+      //     if (!hasAddedAt) {
+      //       logInfo('Migration: Adding missing added_at to cached_favourites.');
+      //       await m.addColumn(cachedFavourites, cachedFavourites.addedAt);
+      //     } else {
+      //       logInfo('Migration: Column added_at already exists, skipping.');
+      //     }
+      //   } catch (e) {
+      //     logError('Migration Error on cached_favourites', e);
+      //   }
+      //
+      //   try {
+      //     final restaurantsTableInfo =
+      //         await customSelect("PRAGMA table_info('cached_restaurants')")
+      //             .get();
+      //     final hasTaxPercent = restaurantsTableInfo.any(
+      //       (row) => row.data['name'] == 'tax_percent',
+      //     );
+      //     if (!hasTaxPercent) {
+      //       logInfo(
+      //         'Migration: Adding missing tax_percent to cached_restaurants.',
+      //       );
+      //       await m.addColumn(cachedRestaurants, cachedRestaurants.taxPercent);
+      //     } else {
+      //       logInfo('Migration: Column tax_percent already exists, skipping.');
+      //     }
+      //   } catch (e) {
+      //     logError('Migration Error on cached_restaurants', e);
+      //   }
+      // }
     },
   );
 
@@ -247,6 +287,15 @@ class AppDatabase extends _$AppDatabase {
       await delete(syncMetadata).go();
       // Optionally clear cached restaurants if you want a full reset
       // await delete(cachedRestaurants).go();
+    });
+  }
+
+  /// Clears restaurant and menu data to prepare for a fresh sync.
+  Future<void> clearRestaurantData() async {
+    await transaction(() async {
+      // Deleting restaurants will cascade to categories and items due to foreign keys
+      await delete(cachedRestaurants).go();
+      await delete(syncMetadata).go();
     });
   }
 

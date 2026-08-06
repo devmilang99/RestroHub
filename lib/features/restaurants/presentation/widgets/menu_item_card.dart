@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -65,19 +66,12 @@ class MenuItemCard extends ConsumerWidget {
                     topLeft: Radius.circular(20),
                     bottomLeft: Radius.circular(20),
                   ),
-                  child: (item.imageUrl?.startsWith('assets') ?? false)
-                      ? Image.asset(
-                          item.imageUrl!,
-                          width: 108,
-                          height: 108,
-                          fit: BoxFit.cover,
-                        )
-                      : CachedNetworkImage(
-                          imageUrl: item.imageUrl ?? '',
-                          width: 108,
-                          height: 108,
-                          fit: BoxFit.cover,
-                        ),
+                  child: AppImage(
+                    imagePath: item.imageUrl ?? '',
+                    width: 108,
+                    height: 108,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
@@ -225,7 +219,7 @@ class MenuItemCard extends ConsumerWidget {
                               padding: EdgeInsets.all(6),
                               child: Icon(
                                 Icons.add_rounded,
-                                color: Colors.black,
+                                color: Colors.white,
                                 size: 20,
                               ),
                             ),

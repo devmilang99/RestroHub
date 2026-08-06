@@ -21,10 +21,29 @@ class SupabaseService {
       return;
     }
 
-    await Supabase.initialize(
-      url: url,
-      publishableKey: anonKey,
-    );
+    try {
+      await Supabase.initialize(
+        url: url,
+        publishableKey: anonKey,
+      );
+    } on AuthException catch (e) {
+      if (e.message.contains('refresh_token_not_found') ||
+          e.message.contains('invalid refresh token')) {
+        debugPrint(
+          'Supabase: Previous session expired or invalid. User will need to log in.',
+        );
+      } else {
+        rethrow;
+      }
+    }
+  }
+
+  /// Verifies if the current session is valid.
+  /// Should be called during app resume or periodic checks.
+  static bool isSessionValid() {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) return false;
+    return !session.isExpired;
   }
 }
 

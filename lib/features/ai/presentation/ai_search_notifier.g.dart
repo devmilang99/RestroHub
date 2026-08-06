@@ -33,7 +33,7 @@ final class AiSearchNotifierProvider
   AiSearchNotifier create() => AiSearchNotifier();
 }
 
-String _$aiSearchNotifierHash() => r'd485dff5837ac1058cb7f93533d6d8ad1def5f93';
+String _$aiSearchNotifierHash() => r'e46829a5ee3815d01af21ae6b256c2e800d91cb0';
 
 abstract class _$AiSearchNotifier extends $AsyncNotifier<AiSearchState> {
   FutureOr<AiSearchState> build();

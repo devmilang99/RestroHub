@@ -36,6 +36,7 @@ dependencies:
   animations: ^2.0.11
   bonsoir: any
   cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
   connectivity_plus: ^6.1.0
   flutter_native_splash: ^2.4.0
   cupertino_icons: ^1.0.8
@@ -68,6 +69,9 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.0
   shared_preferences: ^2.5.2
   supabase_flutter: ^2.6.0
+  safe_device: ^1.2.0
+  flutter_secure_storage: ^9.2.2
+  http_certificate_pinning: ^3.0.0
   url_launcher: ^6.3.2
   web_socket_channel: any
   uuid: any

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -254,21 +255,11 @@ class CuisineSingleItem extends ConsumerWidget {
                 fit: StackFit.expand,
                 children: [
                   Hero(
-                    tag: item.name,
-                    child: (item.imageUrl?.startsWith('assets') ?? false)
-                        ? Image.asset(
-                            item.imageUrl!,
-                            fit: BoxFit.cover,
-                          )
-                        : CachedNetworkImage(
-                            imageUrl: item.imageUrl ?? '',
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) =>
-                                const ShimmerPlaceholder(
-                                  width: double.infinity,
-                                  height: 350,
-                                ),
-                          ),
+                    tag: 'food_${item.id}',
+                    child: AppImage(
+                      imagePath: item.imageUrl ?? '',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   const DecoratedBox(
                     decoration: BoxDecoration(

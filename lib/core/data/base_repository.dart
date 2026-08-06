@@ -1,20 +1,6 @@
+import 'package:restro_hub/core/models/result.dart';
+import 'package:restro_hub/core/utils/app_exception.dart';
 import 'package:restro_hub/core/utils/logger.dart';
-
-/// A generic result class to handle Success and Failure states
-abstract class Result<T> {
-  const Result();
-}
-
-class Success<T> extends Result<T> {
-  final T data;
-  const Success(this.data);
-}
-
-class Failure<T> extends Result<T> {
-  final Exception exception;
-  final String message;
-  const Failure(this.exception, [this.message = 'An error occurred']);
-}
 
 /// Base Repository implementing the 'Cache-First' strategy for offline-first support.
 ///
@@ -48,12 +34,15 @@ abstract class BaseRepository {
       await toCache(fresh);
       // 4. Yield fresh data
       yield Success(fresh);
-    } on Exception catch (e) {
+    } on AppException catch (e) {
       logError('Network Fetch Error', e);
-      yield Failure(e, 'Failed to sync with server. Showing offline data.');
+      yield Failure(e);
+    } on Exception catch (e) {
+      logError('Network Fetch Unknown Error', e);
+      yield Failure(ServerException(e.toString()));
     } on Object catch (e) {
       logError('Network Fetch Unknown Error', e);
-      yield Failure(Exception(e.toString()), 'Unknown error occurred.');
+      yield Failure(ServerException(e.toString()));
     }
   }
 }

@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 
 class ReviewCard extends StatelessWidget {
   final int index;
@@ -51,7 +53,7 @@ class ReviewCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundImage: NetworkImage(
+                backgroundImage: CachedNetworkImageProvider(
                   'https://i.pravatar.cc/150?u=user$index',
                 ),
               ),
@@ -174,12 +176,11 @@ class ReviewCard extends StatelessWidget {
                   child: Container(
                     width: 70,
                     margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
+                    child: AppImage(
+                      imagePath: images[i],
+                      width: 70,
+                      height: 70,
                       borderRadius: BorderRadius.circular(12),
-                      image: DecorationImage(
-                        image: NetworkImage(images[i]),
-                        fit: BoxFit.cover,
-                      ),
                     ),
                   ),
                 ),
@@ -240,7 +241,12 @@ class _ImageSliderDialogState extends State<ImageSliderDialog> {
           itemCount: widget.images.length,
           itemBuilder: (context, index) {
             return InteractiveViewer(
-              child: Image.network(widget.images[index]),
+              child: AppImage(
+                imagePath: widget.images[index],
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+                fit: BoxFit.contain,
+              ),
             );
           },
         ),

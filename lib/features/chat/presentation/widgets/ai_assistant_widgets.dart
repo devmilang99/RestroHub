@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 
 class QuickActionCard extends StatelessWidget {
   final IconData icon;
@@ -104,17 +105,11 @@ class RecommendationCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                imageUrl,
+              child: AppImage(
+                imagePath: imageUrl,
                 width: 100,
                 height: 120,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  width: 100,
-                  height: 120,
-                  color: Colors.grey[800],
-                  child: const Icon(Icons.image, color: Colors.white24),
-                ),
               ),
             ),
             const SizedBox(width: 16),

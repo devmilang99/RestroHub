@@ -86,6 +86,10 @@ class ErrorService extends _$ErrorService {
     if (message.contains('too many requests')) {
       return 'Too many attempts. Please try again later.';
     }
+    if (message.contains('refresh_token_not_found') ||
+        message.contains('invalid refresh token')) {
+      return 'Session expired. Please log in again.';
+    }
 
     return e.message;
   }

@@ -15,6 +15,7 @@ abstract class IRestaurantRepository {
     int offset = 0,
   });
   Stream<List<RestaurantModel>> watchRestaurants();
+  Stream<RestaurantModel?> watchRestaurant(String id);
 }
 
 class RestaurantRepositoryImpl implements IRestaurantRepository {
@@ -45,12 +46,70 @@ class RestaurantRepositoryImpl implements IRestaurantRepository {
   Stream<List<RestaurantModel>> watchRestaurants() {
     return _ref.watch(appDatabaseProvider.future).asStream().asyncExpand(
       (db) {
-        return db.select(db.cachedRestaurants).watch().asyncMap((list) {
-          return compute(_mapRowsToModels, list);
-        });
+        return db
+            .select(db.cachedRestaurants)
+            .watch()
+            .asyncMap<List<RestaurantModel>>((list) {
+              return compute<List<CachedRestaurant>, List<RestaurantModel>>(
+                _mapRowsToModels,
+                list,
+              );
+            })
+            .distinct((prev, next) {
+              if (prev.length != next.length) return false;
+              for (var i = 0; i < prev.length; i++) {
+                if (prev[i] != next[i]) return false;
+              }
+              return true;
+            }); // Prevent redundant UI updates
       },
     );
   }
+
+  @override
+  Stream<RestaurantModel?> watchRestaurant(String id) {
+    return _ref.watch(appDatabaseProvider.future).asStream().asyncExpand(
+      (db) {
+        return (db.select(
+              db.cachedRestaurants,
+            )..where((t) => t.id.equals(id)))
+            .watchSingleOrNull()
+            .asyncMap<RestaurantModel?>(
+              (row) async {
+                if (row == null) return null;
+                return compute<CachedRestaurant, RestaurantModel>(
+                  _mapRowToModel,
+                  row,
+                );
+              },
+            )
+            .distinct(); // Prevent redundant UI updates
+      },
+    );
+  }
+}
+
+/// Top-level function for background mapping of a single row
+RestaurantModel _mapRowToModel(CachedRestaurant row) {
+  return RestaurantModel(
+    id: row.id,
+    ownerId: row.ownerId,
+    name: row.name,
+    description: row.description ?? '',
+    logoUrl: row.logoUrl,
+    bannerUrl: row.bannerUrl,
+    phone: row.phone,
+    email: row.email,
+    website: row.website,
+    status: RestaurantStatus.fromString(row.status),
+    rating: row.rating,
+    priceRange: row.priceRange,
+    minOrderAmount: row.minOrderAmount,
+    taxPercent: row.taxPercent,
+    locationAddress: row.locationAddress,
+    latitude: row.latitude,
+    longitude: row.longitude,
+  );
 }
 
 /// Top-level function for background mapping
@@ -63,6 +122,9 @@ List<RestaurantModel> _mapRowsToModels(List<CachedRestaurant> rows) {
       description: row.description ?? '',
       logoUrl: row.logoUrl,
       bannerUrl: row.bannerUrl,
+      phone: row.phone,
+      email: row.email,
+      website: row.website,
       status: RestaurantStatus.fromString(row.status),
       rating: row.rating,
       priceRange: row.priceRange,

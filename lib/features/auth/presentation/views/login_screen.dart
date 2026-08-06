@@ -136,7 +136,10 @@ class _LoginViewState extends ConsumerState<LoginView>
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
+      resizeToAvoidBottomInset: false,
       body: Stack(
+        fit: StackFit.expand,
         children: [
           // Premium Background with ShaderMask
           Positioned.fill(
@@ -168,6 +171,7 @@ class _LoginViewState extends ConsumerState<LoginView>
 
           // Content
           SafeArea(
+            bottom: MediaQuery.of(context).viewPadding.bottom > 30,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(

@@ -11,7 +11,11 @@ class ErrorListenerWrapper extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(errorServiceProvider, (previous, next) {
       if (next != null) {
-        _showErrorSnackBar(context, next, ref);
+        if (next.type == ErrorType.unknown) {
+          _showErrorDialog(context, next, ref);
+        } else {
+          _showErrorSnackBar(context, next, ref);
+        }
       }
     });
 
@@ -57,6 +61,52 @@ class ErrorListenerWrapper extends ConsumerWidget {
           ),
         ),
       );
+  }
+
+  void _showErrorDialog(
+    BuildContext context,
+    ErrorState error,
+    WidgetRef ref,
+  ) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.error_outline_rounded, color: Colors.red.shade700),
+            const SizedBox(width: 8),
+            const Text('Application Error'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'An unexpected error occurred:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(error.message),
+            const SizedBox(height: 16),
+            const Text(
+              'The application will try to continue, but some features may not work correctly.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              ref.read(errorServiceProvider.notifier).clearError();
+            },
+            child: const Text('DISMISS'),
+          ),
+        ],
+      ),
+    );
   }
 
   IconData _getIconForType(ErrorType type) {

@@ -22,6 +22,7 @@ class AppTheme {
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
         primary: coffeeBrown,
+        onPrimary: Colors.white,
         secondary: tigersEye,
         onSurface: darkText,
         error: Colors.redAccent,

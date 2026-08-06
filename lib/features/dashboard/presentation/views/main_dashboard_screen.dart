@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/responsive_center.dart';
+import 'package:restro_hub/core/widgets/sync_progress_overlay.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cart/presentation/views/cart_screen.dart';
@@ -20,6 +21,7 @@ import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/presentation/providers/restaurant_provider.dart';
+import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 
 final dashboardTabIndexProvider = StateProvider<int>((ref) => 0);
 
@@ -84,10 +86,18 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
       ProfileScreen(user: widget.user),
     ];
 
-    return Scaffold(
-      extendBody: true,
-      body: screens[currentIndex],
-      bottomNavigationBar: _buildFloatingBottomNav(colorScheme, currentIndex),
+    return Stack(
+      children: [
+        Scaffold(
+          extendBody: true,
+          body: IndexedStack(
+            index: currentIndex,
+            children: screens,
+          ),
+          bottomNavigationBar: _buildFloatingBottomNav(colorScheme, currentIndex),
+        ),
+        const SyncProgressOverlay(),
+      ],
     );
   }
 
@@ -210,14 +220,21 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
   ) {
     const currentLocation = 'Kathmandu'; // Mock current location
 
-    // Filter by location for categories
-    final allRestaurants = (restaurantsAsync.value ?? <RestaurantModel>[])
-        .where(
-          (r) => r.locationAddress?.contains(currentLocation) ?? true,
-        )
-        .toList();
+    final recommendedRestaurants =
+        (restaurantsAsync.value ?? <RestaurantModel>[])
+            .where((r) => r.rating >= 4.0)
+            .take(5)
+            .toList();
 
-    final restaurants = allRestaurants.take(5).toList();
+    // Filter by location for categories
+    final allRestaurants =
+        (restaurantsAsync.value ?? <RestaurantModel>[]).toList()
+          ..sort((a, b) => b.rating.compareTo(a.rating));
+
+    final restaurants = allRestaurants
+        .where((r) => !recommendedRestaurants.any((rec) => rec.id == r.id))
+        .take(5)
+        .toList();
 
     final allCuisines = (allCuisinesAsync.value ?? <MenuItemModel>[]).where((
       c,
@@ -228,12 +245,6 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
     }).toList();
 
     final cuisines = allCuisines.take(5).toList();
-
-    final recommendedRestaurants =
-        (restaurantsAsync.value ?? <RestaurantModel>[])
-            .where((r) => r.rating >= 4.0)
-            .take(5)
-            .toList();
 
     final recommendedFood = allCuisines
         .where((f) => f.rating >= 4.5)
@@ -256,12 +267,23 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
         .where((n) => !n.isRead)
         .length;
 
-    final offers = allCuisines.where((c) => c.price < 500).take(5).toList();
+    final offers = ref.watch(dashboardOffersProvider).value ?? [];
 
-    return ResponsiveCenter(
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref
+            .read(supabaseSyncManagerProvider.notifier)
+            .syncRestaurants(force: true);
+        // Also invalidate providers to ensure UI updates immediately
+        ref.invalidate(filteredRestaurantsProvider);
+        ref.invalidate(allCuisinesStreamProvider);
+        ref.invalidate(dashboardOffersProvider);
+      },
+      child: ResponsiveCenter(
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          controller: _scrollController,
+          slivers: [
           SliverAppBar(
             floating: true,
             pinned: true,
@@ -390,7 +412,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                                 ),
                                 const SizedBox(width: 12),
                                 Text(
-                                  'Search for food, restaurants...',
+                                  'Search for foods...',
                                   style: GoogleFonts.poppins(
                                     color: colorScheme.onSurfaceVariant,
                                     fontSize: 14,
@@ -432,8 +454,9 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           ), // Space for floating nav
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class DashboardSlivers extends StatelessWidget {
@@ -471,6 +494,12 @@ class DashboardSlivers extends StatelessWidget {
             seeAll: true,
             exploreType: ExploreType.recommended,
           ),
+        SliverPopularCategories(
+          headingTitle: 'Popular Restaurants',
+          items: restaurants,
+          seeAll: true,
+          titleIcon: Icons.auto_graph_rounded,
+        ),
         if (offers.isNotEmpty)
           SliverOfferCards(
             headingTitle: 'Hot Deals',
@@ -482,13 +511,6 @@ class DashboardSlivers extends StatelessWidget {
             headingTitle: 'Best Pick Food Items',
             titleIcon: Icons.restaurant_menu_rounded,
             items: cuisines,
-            seeAll: true,
-          ),
-        if (restaurants.isNotEmpty)
-          SliverRestaurantCards(
-            headingTitle: 'Popular Restaurants',
-            titleIcon: Icons.storefront_rounded,
-            items: restaurants,
             seeAll: true,
           ),
       ],

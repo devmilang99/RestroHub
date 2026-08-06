@@ -12,6 +12,7 @@ class RestaurantModel extends Equatable {
   final String? bannerUrl;
   final String? phone;
   final String? email;
+  final String? website;
   final RestaurantStatus status;
   final double rating;
   final String priceRange;
@@ -31,6 +32,7 @@ class RestaurantModel extends Equatable {
     this.bannerUrl,
     this.phone,
     this.email,
+    this.website,
     this.status = RestaurantStatus.closed,
     this.rating = 0.0,
     this.priceRange = r'$$',
@@ -52,6 +54,7 @@ class RestaurantModel extends Equatable {
       bannerUrl: (json['banner_url'] ?? json['bannerUrl']) as String?,
       phone: (json['phone'] ?? json['phoneNumber']) as String?,
       email: json['email'] as String?,
+      website: json['website'] as String?,
       status: RestaurantStatus.fromString(
         (json['status'] ?? 'closed').toString(),
       ),
@@ -86,6 +89,7 @@ class RestaurantModel extends Equatable {
       'banner_url': bannerUrl,
       'phone': phone,
       'email': email,
+      'website': website,
       'status': status.toSnakeCase(),
       'rating': rating,
       'price_range': priceRange,
@@ -107,6 +111,7 @@ class RestaurantModel extends Equatable {
     bannerUrl,
     phone,
     email,
+    website,
     status,
     rating,
     priceRange,

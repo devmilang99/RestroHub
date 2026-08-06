@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -8,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/models/enums.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/core/widgets/searchable_sliver_app_layout.dart';
 import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
@@ -30,6 +30,8 @@ class DiscoveryScreen extends ConsumerStatefulWidget {
 }
 
 class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
+  bool _isLoadingMore = false;
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
@@ -65,7 +67,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
               backgroundColor: colorScheme.primary,
               icon: Stack(
                 children: [
-                  const Icon(Icons.shopping_bag_outlined, color: Colors.black),
+                  const Icon(Icons.shopping_bag_outlined, color: Colors.white),
                   Positioned(
                     right: 0,
                     top: 0,
@@ -97,7 +99,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.2,
-                  color: Colors.black,
+                  color: Colors.white,
                 ),
               ),
             )
@@ -106,14 +108,14 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         title: widget.type == ExploreType.restaurant
             ? AppLocalizations.of(context)!.restaurants
             : (widget.type == ExploreType.food
-                ? AppLocalizations.of(context)!.cuisines
-                : AppLocalizations.of(context)!.recommended),
+                  ? AppLocalizations.of(context)!.cuisines
+                  : AppLocalizations.of(context)!.recommended),
         expandedHeight: 0,
         hintText: widget.type == ExploreType.restaurant
             ? AppLocalizations.of(context)!.searchRestaurants
             : (widget.type == ExploreType.food
-                ? AppLocalizations.of(context)!.searchCuisines
-                : AppLocalizations.of(context)!.searchRecommended),
+                  ? AppLocalizations.of(context)!.searchCuisines
+                  : AppLocalizations.of(context)!.searchRecommended),
         items: items,
         isLoading: isLoading,
         filterPredicate: (item, query) {
@@ -144,6 +146,30 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         },
         skeleton: _buildLoadingState(),
         isGrid: true,
+        isLoadingMore: _isLoadingMore,
+        onLoadMore: () async {
+          if (_isLoadingMore) return;
+
+          bool hasMore = false;
+          if (widget.type == ExploreType.restaurant) {
+            hasMore = ref.read(filteredRestaurantsProvider.notifier).hasMore;
+          } else if (widget.type == ExploreType.food) {
+            hasMore = ref.read(filteredCuisinesProvider.notifier).hasMore;
+          }
+
+          if (!hasMore) return;
+
+          setState(() => _isLoadingMore = true);
+          try {
+            if (widget.type == ExploreType.restaurant) {
+              await ref.read(filteredRestaurantsProvider.notifier).loadMore();
+            } else if (widget.type == ExploreType.food) {
+              await ref.read(filteredCuisinesProvider.notifier).loadMore();
+            }
+          } finally {
+            if (mounted) setState(() => _isLoadingMore = false);
+          }
+        },
       ),
     );
   }
@@ -177,44 +203,38 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(20),
                   ),
-                  child: CachedNetworkImage(
-                    imageUrl: restaurant.bannerUrl ?? '',
+                  child: AppImage(
+                    imagePath: restaurant.bannerUrl ?? '',
                     height: 120,
-                    width: double.infinity,
+                    width:
+                        MediaQuery.of(context).size.width /
+                        (context.isMobile ? 2 : (context.isTablet ? 3 : 4)),
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: 120,
-                      color: Colors.grey[200],
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 120,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.restaurant),
-                    ),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.restaurant,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+                if (widget.type != ExploreType.restaurant)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.restaurant,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 Positioned(
                   top: 8,
                   right: 8,
@@ -340,20 +360,13 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(20),
                   ),
-                  child: CachedNetworkImage(
-                    imageUrl: item.imageUrl ?? '',
+                  child: AppImage(
+                    imagePath: item.imageUrl ?? '',
                     height: 120,
-                    width: double.infinity,
+                    width:
+                        MediaQuery.of(context).size.width /
+                        (context.isMobile ? 2 : (context.isTablet ? 3 : 4)),
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      height: 120,
-                      color: Colors.grey[200],
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 120,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.fastfood),
-                    ),
                   ),
                 ),
                 Positioned(
@@ -379,28 +392,29 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                     ),
                   ),
                 ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      AppLocalizations.of(context)!.food,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
+                if (widget.type != ExploreType.food)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        AppLocalizations.of(context)!.food,
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 Positioned(
                   bottom: 8,
                   left: 8,
@@ -473,8 +487,11 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                               );
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(AppLocalizations.of(context)!
-                                  .addedToCart(item.name)),
+                              content: Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.addedToCart(item.name),
+                              ),
                               duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
                             ),
@@ -489,7 +506,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                           child: const Icon(
                             Icons.shopping_cart,
                             size: 16,
-                            color: Colors.black,
+                            color: Colors.white,
                           ),
                         ),
                       ),

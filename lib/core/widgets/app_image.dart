@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/utils/image_utils.dart';
 
 class AppImage extends StatelessWidget {
   final String imagePath;
@@ -8,6 +9,7 @@ class AppImage extends StatelessWidget {
   final double? height;
   final BoxFit fit;
   final BorderRadius? borderRadius;
+  final bool optimize;
 
   const AppImage({
     required this.imagePath,
@@ -16,6 +18,7 @@ class AppImage extends StatelessWidget {
     this.height,
     this.fit = BoxFit.cover,
     this.borderRadius,
+    this.optimize = true,
   });
 
   @override
@@ -24,11 +27,21 @@ class AppImage extends StatelessWidget {
 
     Widget image;
     if (imagePath.startsWith('http') || imagePath.startsWith('https')) {
+      final effectiveUrl = optimize
+          ? ImageUtils.getOptimizedUrl(
+              imagePath,
+              width: width?.toInt(),
+              height: height?.toInt(),
+            )
+          : imagePath;
+
       image = CachedNetworkImage(
-        imageUrl: imagePath,
+        imageUrl: effectiveUrl,
         width: width,
         height: height,
         fit: fit,
+        memCacheWidth: width != null ? (width! * 2).toInt() : 1000,
+        memCacheHeight: height != null ? (height! * 2).toInt() : null,
         placeholder: (context, url) => Container(
           width: width,
           height: height,

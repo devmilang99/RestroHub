@@ -66,7 +66,7 @@ final class CuisinesStreamProvider
   }
 }
 
-String _$cuisinesStreamHash() => r'2cbd4e1f0c4add0e686ddbbf7e92ce7dcd2392b9';
+String _$cuisinesStreamHash() => r'4722569dd2a6a68b971bfa2455a4457e3369388b';
 
 final class CuisinesStreamFamily extends $Family
     with $FunctionalFamilyOverride<Stream<List<MenuItemModel>>, String> {
@@ -125,7 +125,7 @@ final class AllCuisinesStreamProvider
   }
 }
 
-String _$allCuisinesStreamHash() => r'9c1b002e48b6fc06df264d6ca806119850226fce';
+String _$allCuisinesStreamHash() => r'82b51c8b0152b2d05bd662a85c165c50c769f88b';
 
 @ProviderFor(restaurantIdFromCategory)
 final restaurantIdFromCategoryProvider = RestaurantIdFromCategoryFamily._();
@@ -178,7 +178,7 @@ final class RestaurantIdFromCategoryProvider
 }
 
 String _$restaurantIdFromCategoryHash() =>
-    r'52cec679e2801c0ce6b59f9867bcd3f32d580d5b';
+    r'cc82c50909b55a8c9e5f658ea3513e1dd24c8aef';
 
 final class RestaurantIdFromCategoryFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<String?>, String> {
@@ -253,7 +253,7 @@ final class RestaurantFromIdProvider
   }
 }
 
-String _$restaurantFromIdHash() => r'22290a2ea3d5e6ed3ba24a5e05f2e754d671737f';
+String _$restaurantFromIdHash() => r'98b9a87b4c999c40aa493e079c035403c5ea49d9';
 
 final class RestaurantFromIdFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<RestaurantModel?>, String> {
@@ -330,7 +330,7 @@ final class RestaurantFromCategoryIdProvider
 }
 
 String _$restaurantFromCategoryIdHash() =>
-    r'2c7b747e4a562d865ba029e61127b79ed1178d42';
+    r'3f3b0de7bc4f13b928c9db849f81ebbb4cf6756f';
 
 final class RestaurantFromCategoryIdFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<RestaurantModel?>, String> {
@@ -374,7 +374,7 @@ final class FilteredCuisinesProvider
   FilteredCuisines create() => FilteredCuisines();
 }
 
-String _$filteredCuisinesHash() => r'7b339b59cf9cd4030832ff104102b2cbf17b7d8a';
+String _$filteredCuisinesHash() => r'51538df5e221dd880a02cc1a8ea5113849ed2fb8';
 
 abstract class _$FilteredCuisines extends $AsyncNotifier<List<MenuItemModel>> {
   FutureOr<List<MenuItemModel>> build();

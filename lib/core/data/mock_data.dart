@@ -18,7 +18,6 @@ final List<CountryModel> countries = [
     historicalImage:
         'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?q=80&w=1000&auto=format&fit=crop',
   ),
-  // ... rest of countries can be added back if needed, but keeping it small for now
 ];
 
 final List<MenuItemModel> mockMenuItems = [
@@ -28,8 +27,10 @@ final List<MenuItemModel> mockMenuItems = [
     name: 'Spaghetti Carbonara',
     description: 'Authentic Italian pasta with homemade sauce and fresh herbs.',
     price: 450,
-    imageUrl: 'assets/food1.webp',
+    imageUrl:
+        'https://images.unsplash.com/photo-1612874742237-6526221588e3?q=80&w=1000&auto=format&fit=crop',
     dietaryFlags: ['non-vegetarian'],
+    rating: 4.8,
   ),
   const MenuItemModel(
     id: 'item2',
@@ -38,38 +39,36 @@ final List<MenuItemModel> mockMenuItems = [
     description:
         'Traditional thin-crust pizza with fresh basil and mozzarella.',
     price: 550,
-    imageUrl: 'assets/food1.webp',
+    imageUrl:
+        'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?q=80&w=1000&auto=format&fit=crop',
     dietaryFlags: ['vegetarian'],
+    rating: 4.7,
+  ),
+  const MenuItemModel(
+    id: 'item3',
+    categoryId: 'cat2',
+    name: 'Classic Cheeseburger',
+    description: 'Juicy beef patty with melted cheese, lettuce, and tomato.',
+    price: 350,
+    imageUrl:
+        'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1000&auto=format&fit=crop',
+    dietaryFlags: ['non-vegetarian'],
+    rating: 4.5,
   ),
 ];
 
 final List<MenuCategoryModel> mockCategories = [
-  const MenuCategoryModel(
+  MenuCategoryModel(
     id: 'cat1',
     restaurantId: 'rest1',
     name: 'Italian Classics',
-    items: [
-      MenuItemModel(
-        id: 'item1',
-        categoryId: 'cat1',
-        name: 'Spaghetti Carbonara',
-        description:
-            'Authentic Italian pasta with homemade sauce and fresh herbs.',
-        price: 450,
-        imageUrl: 'assets/food1.webp',
-        dietaryFlags: ['non-vegetarian'],
-      ),
-      MenuItemModel(
-        id: 'item2',
-        categoryId: 'cat1',
-        name: 'Margherita Pizza',
-        description:
-            'Traditional thin-crust pizza with fresh basil and mozzarella.',
-        price: 550,
-        imageUrl: 'assets/food1.webp',
-        dietaryFlags: ['vegetarian'],
-      ),
-    ],
+    items: [mockMenuItems[0], mockMenuItems[1]],
+  ),
+  MenuCategoryModel(
+    id: 'cat2',
+    restaurantId: 'rest1',
+    name: 'Burgers & Sides',
+    items: [mockMenuItems[2]],
   ),
 ];
 
@@ -78,19 +77,23 @@ final List<RestaurantModel> restaurantsList = [
     id: 'rest1',
     name: 'RoadSide Cafe',
     description: 'Friendly neighborhood cafe with great coffee and snacks.',
-    logoUrl: 'assets/food1.webp',
-    bannerUrl: 'assets/food1.webp',
-    rating: 4.8, // Increased for filtering
+    logoUrl:
+        'https://images.unsplash.com/photo-1517248135467-4c7ed9d42c77?q=80&w=1000&auto=format&fit=crop',
+    bannerUrl:
+        'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=1000&auto=format&fit=crop',
+    rating: 4.8,
     status: RestaurantStatus.open,
-    locationAddress: 'Sajha Chowk, Kathmandu', // Added Kathmandu
+    locationAddress: 'Sajha Chowk, Kathmandu',
     categories: mockCategories,
   ),
   RestaurantModel(
     id: 'rest2',
     name: 'Italian Bistro',
     description: 'Authentic Italian flavors in the heart of the city.',
-    logoUrl: 'assets/food1.webp',
-    bannerUrl: 'assets/food1.webp',
+    logoUrl:
+        'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1000&auto=format&fit=crop',
+    bannerUrl:
+        'https://images.unsplash.com/photo-1517248135467-4c7ed9d42c77?q=80&w=1000&auto=format&fit=crop',
     rating: 4.6,
     status: RestaurantStatus.open,
     locationAddress: 'New Road, Kathmandu',
@@ -101,4 +104,4 @@ final List<RestaurantModel> restaurantsList = [
 final List<RestaurantModel> exploreRestaurants = restaurantsList;
 final List<MenuItemModel> topRated = mockMenuItems;
 final List<MenuItemModel> latestOffers = mockMenuItems;
-final List<MenuItemModel> cuisines = mockMenuItems; // keeping name for compat
+final List<MenuItemModel> cuisines = mockMenuItems;

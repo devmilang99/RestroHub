@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
@@ -133,7 +134,32 @@ class SyncStatusSection extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           _buildStatusRow(syncState),
-          if (syncState.lastSync != null)
+          if (syncState.status == SyncStatus.syncing) ...[
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: syncState.progress,
+                backgroundColor: Colors.grey.shade200,
+                minHeight: 8,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  '${(syncState.progress * 100).toInt()}%',
+                  style: GoogleFonts.poppins(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (syncState.lastSync != null && syncState.status != SyncStatus.syncing)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(

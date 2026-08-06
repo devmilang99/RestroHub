@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/core/utils/background_worker.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
@@ -54,6 +55,12 @@ Stream<List<RestaurantModel>> restaurantsStream(Ref ref) {
   return ref.watch(restaurantRepositoryProvider).watchRestaurants();
 }
 
+/// Manual provider definition to bypass code generation issues
+final restaurantDetailProvider =
+    StreamProvider.family<RestaurantModel?, String>((ref, id) {
+      return ref.watch(restaurantRepositoryProvider).watchRestaurant(id);
+    });
+
 @riverpod
 class FilteredRestaurants extends _$FilteredRestaurants {
   int _page = 0;
@@ -103,8 +110,6 @@ class FilteredRestaurants extends _$FilteredRestaurants {
     if (_isLoadingMore || !_hasMore) return;
 
     _isLoadingMore = true;
-    // Set loading state while preserving previous items manually below
-    state = const AsyncValue<List<RestaurantModel>>.loading();
 
     try {
       _page++;

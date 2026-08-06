@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/models/enums.dart';
+import 'package:restro_hub/core/providers/error_service.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cuisines/presentation/providers/cuisine_provider.dart';
@@ -14,6 +16,145 @@ import 'package:restro_hub/features/favourites/presentation/providers/favourites
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/presentation/views/restaurant_menu_screen.dart';
+
+class SliverPopularCategories extends StatelessWidget {
+  final String headingTitle;
+  final List<RestaurantModel> items;
+  final bool seeAll;
+  final IconData? titleIcon;
+
+  const SliverPopularCategories({
+    required this.headingTitle,
+    required this.items,
+    this.seeAll = false,
+    this.titleIcon,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = context.colorScheme;
+    if (items.isEmpty)
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverToBoxAdapter(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      if (titleIcon != null) ...[
+                        Icon(titleIcon, color: colorScheme.primary, size: 20),
+                        const SizedBox(width: 8),
+                      ],
+                      Text(
+                        headingTitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (seeAll)
+                    TextButton(
+                      onPressed: () async {
+                        await context.pushNamed(
+                          'unifiedExplore',
+                          extra: ExploreType.restaurant,
+                        );
+                      },
+                      child: Text(
+                        'See All',
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 140,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(left: 8),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final restaurant = items[index];
+                  return Padding(
+                    key: ValueKey('pop_cat_${restaurant.id}'),
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            await Navigator.push<void>(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => RestaurantMenuScreen(
+                                  restaurant: restaurant,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.2,
+                                ),
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: AppImage(
+                                imagePath: restaurant.logoUrl ?? '',
+                                width: 80,
+                                height: 80,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: 80,
+                          child: Text(
+                            restaurant.name,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class SliverOfferCards extends StatefulWidget {
   final String headingTitle;
@@ -94,6 +235,7 @@ class _SliverOfferCardsState extends State<SliverOfferCards> {
                 itemBuilder: (context, index) {
                   final item = displayItems[index];
                   return Padding(
+                    key: ValueKey('offer_${item.id}'),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: RepaintBoundary(
                       child: GestureDetector(
@@ -121,28 +263,12 @@ class _SliverOfferCardsState extends State<SliverOfferCards> {
                             fit: StackFit.expand,
                             children: [
                               // Background Image covering the entire card
-                              if (item.imageUrl?.startsWith('http') ?? false) Image.network(
-                                      item.imageUrl!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => ColoredBox(
-                                        color: colorScheme.primary,
-                                        child: const Icon(
-                                          Icons.broken_image,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ) else Image.asset(
-                                      item.imageUrl ?? '',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => ColoredBox(
-                                        color: colorScheme.primary,
-                                        child: const Icon(
-                                          Icons.fastfood,
-                                          color: Colors.white,
-                                          size: 40,
-                                        ),
-                                      ),
-                                    ),
+                              AppImage(
+                                imagePath: item.imageUrl ?? '',
+                                width: MediaQuery.of(context).size.width,
+                                height: 180,
+                                fit: BoxFit.cover,
+                              ),
                               // Dark gradient overlay for text readability
                               const DecoratedBox(
                                 decoration: BoxDecoration(
@@ -247,6 +373,7 @@ class SliverRestaurantCards extends ConsumerWidget {
   final bool seeAll;
   final IconData? titleIcon;
   final ExploreType exploreType;
+  final bool showTypeLabel;
 
   const SliverRestaurantCards({
     required this.headingTitle,
@@ -256,6 +383,7 @@ class SliverRestaurantCards extends ConsumerWidget {
     this.seeAll = false,
     this.titleIcon,
     this.exploreType = ExploreType.restaurant,
+    this.showTypeLabel = true,
   });
 
   @override
@@ -324,6 +452,10 @@ class SliverRestaurantCards extends ConsumerWidget {
                 itemCount: displayItems.length,
                 itemBuilder: (context, index) {
                   final item = displayItems[index];
+                  final itemId = item is RestaurantModel
+                      ? item.id
+                      : (item as MenuItemModel).id;
+                  
                   var name = '';
                   String? imageUrl = '';
                   double rating = 0.0;
@@ -347,32 +479,39 @@ class SliverRestaurantCards extends ConsumerWidget {
                     imageUrl = item.imageUrl;
                     rating = item.rating;
                     onTap = () async {
-                      final restaurantId = await ref.read(
-                        restaurantIdFromCategoryProvider(
-                          item.categoryId,
-                        ).future,
-                      );
-                      if (restaurantId != null) {
-                        final restaurant = await ref.read(
-                          restaurantFromIdProvider(restaurantId).future,
+                      try {
+                        final restaurantId = await ref.read(
+                          restaurantIdFromCategoryProvider(
+                            item.categoryId,
+                          ).future,
                         );
-                        if (restaurant != null && context.mounted) {
-                          unawaited(
-                            Navigator.push<void>(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => RestaurantMenuScreen(
-                                  restaurant: restaurant,
+                        if (restaurantId != null) {
+                          final restaurant = await ref.read(
+                            restaurantFromIdProvider(restaurantId).future,
+                          );
+                          if (restaurant != null && context.mounted) {
+                            unawaited(
+                              Navigator.push<void>(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) => RestaurantMenuScreen(
+                                    restaurant: restaurant,
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
+                            );
+                          }
                         }
+                      } catch (e, st) {
+                        ref
+                            .read(errorServiceProvider.notifier)
+                            .handleException(e, st);
                       }
                     };
                   }
 
                   return RepaintBoundary(
+                    key: ValueKey('res_card_$itemId'),
                     child: GestureDetector(
                       onTap: onTap,
                       child: Container(
@@ -399,20 +538,12 @@ class SliverRestaurantCards extends ConsumerWidget {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            if (imageUrl?.startsWith('http') ?? false)
-                              Image.network(
-                                imageUrl!,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) =>
-                                    const Icon(Icons.broken_image),
-                              )
-                            else
-                              Image.asset(
-                                imageUrl ?? '',
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) =>
-                                    const Icon(Icons.restaurant, size: 40),
-                              ),
+                            AppImage(
+                              imagePath: imageUrl ?? '',
+                              width: cardWidth,
+                              height: containerHeight,
+                              fit: BoxFit.cover,
+                            ),
                             const DecoratedBox(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
@@ -423,38 +554,39 @@ class SliverRestaurantCards extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            Positioned(
-                              top: 12,
-                              left: 12,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
+                            if (showTypeLabel)
+                              Positioned(
+                                top: 12,
+                                left: 12,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Text(
+                                    item is RestaurantModel
+                                        ? 'RESTAURANT'
+                                        : 'FOOD',
+                                    style: GoogleFonts.poppins(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
                                     ),
-                                  ],
-                                ),
-                                child: Text(
-                                  item is RestaurantModel
-                                      ? 'RESTAURANT'
-                                      : 'FOOD',
-                                  style: GoogleFonts.poppins(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.5,
                                   ),
                                 ),
                               ),
-                            ),
                             Positioned(
                               top: 12,
                               right: 12,
@@ -633,6 +765,7 @@ class SliverFoodCards extends ConsumerWidget {
   final bool seeAll;
   final IconData? titleIcon;
   final ExploreType exploreType;
+  final bool showTypeLabel;
 
   const SliverFoodCards({
     required this.headingTitle,
@@ -642,6 +775,7 @@ class SliverFoodCards extends ConsumerWidget {
     this.seeAll = false,
     this.titleIcon,
     this.exploreType = ExploreType.food,
+    this.showTypeLabel = true,
   });
 
   @override
@@ -712,29 +846,36 @@ class SliverFoodCards extends ConsumerWidget {
                   final item = displayItems[index];
 
                   return RepaintBoundary(
+                    key: ValueKey('food_card_${item.id}'),
                     child: GestureDetector(
                       onTap: () async {
-                        final restaurantId = await ref.read(
-                          restaurantIdFromCategoryProvider(
-                            item.categoryId,
-                          ).future,
-                        );
-                        if (restaurantId != null) {
-                          final restaurant = await ref.read(
-                            restaurantFromIdProvider(restaurantId).future,
+                        try {
+                          final restaurantId = await ref.read(
+                            restaurantIdFromCategoryProvider(
+                              item.categoryId,
+                            ).future,
                           );
-                          if (restaurant != null && context.mounted) {
-                            unawaited(
-                              Navigator.push<void>(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => RestaurantMenuScreen(
-                                    restaurant: restaurant,
+                          if (restaurantId != null) {
+                            final restaurant = await ref.read(
+                              restaurantFromIdProvider(restaurantId).future,
+                            );
+                            if (restaurant != null && context.mounted) {
+                              unawaited(
+                                Navigator.push<void>(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => RestaurantMenuScreen(
+                                      restaurant: restaurant,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
                           }
+                        } catch (e, st) {
+                          ref
+                              .read(errorServiceProvider.notifier)
+                              .handleException(e, st);
                         }
                       },
                       child: Container(
@@ -765,24 +906,12 @@ class SliverFoodCards extends ConsumerWidget {
                               child: Stack(
                                 fit: StackFit.expand,
                                 children: [
-                                  if (item.imageUrl?.startsWith('http') ??
-                                      false)
-                                    Image.network(
-                                      item.imageUrl!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => const Icon(
-                                        Icons.broken_image,
-                                      ),
-                                    )
-                                  else
-                                    Image.asset(
-                                      item.imageUrl ?? '',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => const Icon(
-                                        Icons.fastfood,
-                                        size: 40,
-                                      ),
-                                    ),
+                                  AppImage(
+                                    imagePath: item.imageUrl ?? '',
+                                    width: cardWidth,
+                                    height: containerHeight,
+                                    fit: BoxFit.cover,
+                                  ),
                                   Positioned(
                                     top: 8,
                                     right: 8,

@@ -6,8 +6,9 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
+import 'package:restro_hub/features/favourites/data/models/favourite_item.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
-import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 
 final favouriteSearchProvider = StateProvider<String>((ref) => '');
 
@@ -60,7 +61,7 @@ class ShowFavourites extends ConsumerWidget {
 }
 
 class _FavouritesList extends ConsumerWidget {
-  final List<MenuItemModel> favs;
+  final List<FavouriteItem> favs;
   const _FavouritesList({required this.favs});
 
   @override
@@ -82,23 +83,34 @@ class _FavouritesList extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         itemCount: filtered.length,
         itemBuilder: (context, index) {
+          final item = filtered[index];
           return AnimationConfiguration.staggeredList(
             position: index,
             duration: const Duration(milliseconds: 375),
             child: SlideAnimation(
               verticalOffset: 50,
               child: FadeInAnimation(
-                child: _FavouriteCard(
-                  item: filtered[index],
-                  index: index,
-                  onRemove: () {
-                    unawaited(
-                      ref
-                          .read(favouritesProvider.notifier)
-                          .toggleFavourite(filtered[index]),
-                    );
-                  },
-                ),
+                child: item is RestaurantFavourite
+                    ? _RestaurantFavouriteCard(
+                        item: item,
+                        onRemove: () {
+                          unawaited(
+                            ref
+                                .read(favouritesProvider.notifier)
+                                .toggleFavourite(item),
+                          );
+                        },
+                      )
+                    : _MenuItemFavouriteCard(
+                        item: item as MenuItemFavourite,
+                        onRemove: () {
+                          unawaited(
+                            ref
+                                .read(favouritesProvider.notifier)
+                                .toggleFavourite(item),
+                          );
+                        },
+                      ),
               ),
             ),
           );
@@ -108,21 +120,17 @@ class _FavouritesList extends ConsumerWidget {
   }
 }
 
-class _FavouriteCard extends StatelessWidget {
-  final MenuItemModel item;
-  final int index;
+class _RestaurantFavouriteCard extends StatelessWidget {
+  final RestaurantFavourite item;
   final VoidCallback onRemove;
 
-  const _FavouriteCard({
-    required this.item,
-    required this.index,
-    required this.onRemove,
-  });
+  const _RestaurantFavouriteCard({required this.item, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final restaurant = item.restaurant;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -143,15 +151,170 @@ class _FavouriteCard extends StatelessWidget {
           children: [
             // Image
             Hero(
-              tag: 'item_${item.name}_${item.imageUrl}',
+              tag: 'restaurant_${restaurant.id}',
               child: SizedBox(
                 width: 100,
-                child: (item.imageUrl?.startsWith('http') ?? false)
-                    ? Image.network(item.imageUrl!, fit: BoxFit.cover)
-                    : Image.asset(
-                        item.imageUrl ?? '',
-                        fit: BoxFit.cover,
+                child: AppImage(
+                  imagePath: restaurant.logoUrl ?? '',
+                  width: 100,
+                  height: 120, // Reasonable height for the card
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            // Info
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            restaurant.name,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.star,
+                                size: 12,
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                restaurant.rating.toString(),
+                                style: textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      restaurant.description,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            restaurant.locationAddress ?? 'No address',
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Actions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.favorite, color: Colors.red),
+                    onPressed: onRemove,
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 18,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    onPressed: () {
+                      // Navigate to restaurant detail
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuItemFavouriteCard extends StatelessWidget {
+  final MenuItemFavourite item;
+  final VoidCallback onRemove;
+
+  const _MenuItemFavouriteCard({required this.item, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final menuItem = item.menuItem;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            // Image
+            Hero(
+              tag: 'food_${menuItem.id}',
+              child: SizedBox(
+                width: 100,
+                child: AppImage(
+                  imagePath: menuItem.imageUrl ?? '',
+                  width: 100,
+                  height: 120,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             // Info
@@ -163,7 +326,7 @@ class _FavouriteCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      item.name,
+                      menuItem.name,
                       style: textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -172,7 +335,7 @@ class _FavouriteCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item.description,
+                      menuItem.description,
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -181,7 +344,7 @@ class _FavouriteCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Rs. ${item.price}',
+                      'Rs. ${menuItem.price}',
                       style: TextStyle(
                         color: colorScheme.primary,
                         fontWeight: FontWeight.bold,
@@ -192,25 +355,27 @@ class _FavouriteCard extends StatelessWidget {
               ),
             ),
             // Actions
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.favorite, color: Colors.red),
-                  onPressed: onRemove,
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.add_shopping_cart,
-                    color: colorScheme.primary,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.favorite, color: Colors.red),
+                    onPressed: onRemove,
                   ),
-                  onPressed: () {
-                    // Add to cart logic
-                  },
-                ),
-              ],
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_shopping_cart,
+                      color: colorScheme.primary,
+                    ),
+                    onPressed: () {
+                      // Add to cart logic
+                    },
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
           ],
         ),
       ),

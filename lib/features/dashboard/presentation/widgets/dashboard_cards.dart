@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 
 class RestaurantCard extends StatelessWidget {
   final String name;
@@ -51,44 +52,12 @@ class RestaurantCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (image.startsWith('http'))
-                  Image.network(
-                    image,
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const ShimmerPlaceholder(
-                      width: double.infinity,
-                      height: 160,
-                    ),
-                  )
-                else if (image.isNotEmpty)
-                  Image.asset(
-                    image,
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    cacheWidth: 400, // Optimization: downscale cache
-                    frameBuilder:
-                        (context, child, frame, wasSynchronouslyLoaded) {
-                          if (wasSynchronouslyLoaded) return child;
-                          return frame != null
-                              ? child
-                              : const ShimmerPlaceholder(
-                                  width: double.infinity,
-                                  height: 160,
-                                );
-                        },
-                    errorBuilder: (_, _, _) => const ShimmerPlaceholder(
-                      width: double.infinity,
-                      height: 160,
-                    ),
-                  )
-                else
-                  const ShimmerPlaceholder(
-                    width: double.infinity,
-                    height: 160,
-                  ),
+                AppImage(
+                  imagePath: image,
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(

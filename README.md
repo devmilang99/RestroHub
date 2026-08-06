@@ -4,6 +4,8 @@
 <img src="https://img.shields.io/badge/Riverpod-3.1.0-FFEB3B?style=for-the-badge&logo=riverpod&logoColor=black" />
 <img src="https://img.shields.io/badge/Supabase-Database-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" />
 <img src="https://img.shields.io/badge/Platform-Android%20%7C%20iOS%20%7C%20Web-blue?style=for-the-badge" />
+<img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white" />
+<img src="https://img.shields.io/badge/Security-Hardened-red?style=for-the-badge&logo=google-cloud&logoColor=white" />
 <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge" />
 
 <br /><br />
@@ -84,6 +86,13 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 - **Cross-Platform Excellence** — Unified codebase for Android, iOS, and Web with responsive design.
 - **Local Network Sync** — Uses `bonsoir` (mDNS) and `shelf` for innovative local discovery and synchronization.
 
+### 🔒 Security & DevOps
+- **Hardened Security** — Integrated **Root/Jailbreak detection** and mandatory device integrity checks using `safe_device`.
+- **Advanced Encryption** — Secure handling of sensitive data using **Strongbox (Android)** and **Secure Enclave (iOS)** via `flutter_secure_storage`.
+- **SSL Pinning** — Mitigates MITM attacks by enforcing certificate pinning on all network requests.
+- **CI/CD Pipeline** — Automated testing, static analysis, and multi-platform build verification powered by **GitHub Actions** with an optimized caching system.
+- **Code Obfuscation** — Production builds are hardened with R8/Proguard obfuscation to prevent reverse engineering.
+
 ---
 
 ## 🛠 Tech Stack
@@ -94,7 +103,9 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 | **Architecture**   | Clean/Layered Architecture, Riverpod (UDF), GoRouter                         |
 | **AI / ML**        | Google Generative AI (Gemini)                                                |
 | **Backend & Sync** | Supabase (Auth, Postgres, Realtime, Storage), Dio                            |
+| **Security**       | Safe Device (Root/Jailbreak), Flutter Secure Storage, SSL Pinning             |
 | **Local Data**     | Drift (SQLite), Shared Preferences                                           |
+| **DevOps**         | GitHub Actions (CI/CD), R8/Proguard Obfuscation                              |
 | **Utility**        | Bonsoir (mDNS), Shelf (Web Server), Connectivity Plus                        |
 
 ---

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/data/mock_data.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/cart/presentation/cart_bottom_sheet.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
@@ -75,7 +76,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => const CartBottomSheet(isInsideModal: true),
+                    builder: (context) =>
+                        const CartBottomSheet(isInsideModal: true),
                   ),
                 );
               },
@@ -169,8 +171,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(
-                      selectedCountryData.historicalImage,
+                    AppImage(
+                      imagePath: selectedCountryData.historicalImage,
                       fit: BoxFit.cover,
                     ),
                     const DecoratedBox(
@@ -253,9 +255,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 children: [
                   Hero(
                     tag: 'cuisine-${item.name}',
-                    child: (item.imageUrl?.startsWith('http') ?? false)
-                        ? Image.network(item.imageUrl!, fit: BoxFit.cover)
-                        : Image.asset(item.imageUrl ?? '', fit: BoxFit.cover),
+                    child: AppImage(
+                      imagePath: item.imageUrl ?? '',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                   const DecoratedBox(
                     decoration: BoxDecoration(

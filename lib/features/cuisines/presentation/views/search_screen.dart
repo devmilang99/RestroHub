@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -354,92 +355,72 @@ class SearchFoodCard extends ConsumerWidget {
         ),
         child: Column(
           children: [
-            if (restaurantAsync.value != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.storefront_rounded,
-                      size: 14,
-                      color: colorScheme.primary,
-                    ),
-                    const SizedBox(width: 4),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (restaurantAsync.value != null)
                     Expanded(
-                      child: Text(
-                        restaurantAsync.value!.name,
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.primary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.storefront_rounded,
+                            size: 14,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              restaurantAsync.value!.name,
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
+                    )
+                  else
+                    const Spacer(),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final isFavourited = ref.watch(
+                        isFavouriteProvider(item.id),
+                      );
+                      return GestureDetector(
+                        onTap: () async {
+                          await ref
+                              .read(favouritesProvider.notifier)
+                              .toggleFavourite(item);
+                        },
+                        child: Icon(
+                          isFavourited
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 20,
+                          color: isFavourited ? Colors.red : Colors.grey,
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
+            ),
             Row(
               children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: (item.imageUrl?.startsWith('assets') ?? false)
-                          ? Image.asset(
-                              item.imageUrl!,
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                            )
-                          : CachedNetworkImage(
-                              imageUrl: item.imageUrl ?? '',
-                              height: 100,
-                              width: 100,
-                              fit: BoxFit.cover,
-                              placeholder: (context, url) =>
-                                  const ShimmerPlaceholder(
-                                    width: 100,
-                                    height: 100,
-                                  ),
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.fastfood),
-                            ),
-                    ),
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final isFavourited = ref.watch(
-                            isFavouriteProvider(item.id),
-                          );
-                          return GestureDetector(
-                            onTap: () async {
-                              await ref
-                                  .read(favouritesProvider.notifier)
-                                  .toggleFavourite(item);
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                isFavourited
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                size: 14,
-                                color: isFavourited ? Colors.red : Colors.white,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: AppImage(
+                    imagePath: item.imageUrl ?? '',
+                    height: 100,
+                    width: 100,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Expanded(
                   child: Padding(

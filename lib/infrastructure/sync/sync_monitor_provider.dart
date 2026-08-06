@@ -11,21 +11,32 @@ class GlobalSyncStatus extends _$GlobalSyncStatus {
   }
 
   void startSync() {
-    state = state.copyWith(status: SyncStatus.syncing);
+    state = state.copyWith(status: SyncStatus.syncing, progress: 0.0);
+  }
+
+  void updateProgress(double progress) {
+    if (state.status == SyncStatus.syncing) {
+      state = state.copyWith(progress: progress.clamp(0.0, 1.0));
+    }
   }
 
   void completeSync() {
     state = state.copyWith(
       status: SyncStatus.success,
       lastSync: DateTime.now(),
+      progress: 1.0,
     );
   }
 
   void failSync(String error) {
-    state = state.copyWith(status: SyncStatus.error, errorMessage: error);
+    state = state.copyWith(
+      status: SyncStatus.error,
+      errorMessage: error,
+      progress: 0.0,
+    );
   }
 
   void reset() {
-    state = state.copyWith(status: SyncStatus.idle);
+    state = state.copyWith(status: SyncStatus.idle, progress: 0.0);
   }
 }

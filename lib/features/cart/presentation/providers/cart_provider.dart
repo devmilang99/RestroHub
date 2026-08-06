@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
@@ -12,9 +13,8 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
   FutureOr<List<CartModel>> build() async {
     final db = await ref.watch(appDatabaseProvider.future);
 
-    // Initial sync check could be here, but let's keep it simple for now
     final items = await db.select(db.cachedCartItems).get();
-    return items.map(_mapToModel).toList();
+    return compute(_mapCartRowsToModels, items);
   }
 
   /// Syncs local cart with Supabase. Call this after login.
@@ -44,7 +44,7 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
 
     state = await AsyncValue.guard(() async {
       final items = await db.select(db.cachedCartItems).get();
-      return items.map(_mapToModel).toList();
+      return compute(_mapCartRowsToModels, items);
     });
   }
 
@@ -111,7 +111,7 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
 
     state = await AsyncValue.guard(() async {
       final items = await db.select(db.cachedCartItems).get();
-      return items.map(_mapToModel).toList();
+      return compute(_mapCartRowsToModels, items);
     });
   }
 
@@ -144,7 +144,7 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
 
     state = await AsyncValue.guard(() async {
       final items = await db.select(db.cachedCartItems).get();
-      return items.map(_mapToModel).toList();
+      return compute(_mapCartRowsToModels, items);
     });
   }
 
@@ -160,7 +160,7 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
 
     state = await AsyncValue.guard(() async {
       final items = await db.select(db.cachedCartItems).get();
-      return items.map(_mapToModel).toList();
+      return compute(_mapCartRowsToModels, items);
     });
   }
 
@@ -170,6 +170,22 @@ class CartNotifier extends AsyncNotifier<List<CartModel>> {
     unawaited(ref.read(supabaseSyncManagerProvider.notifier).clearRemoteCart());
     state = const AsyncValue.data([]);
   }
+}
+
+/// Top-level function for background mapping of cart items
+List<CartModel> _mapCartRowsToModels(List<CachedCartItem> rows) {
+  return rows
+      .map(
+        (row) => CartModel(
+          id: row.menuItemId,
+          restaurantId: row.restaurantId,
+          name: row.name,
+          image: row.imageUrl ?? '',
+          price: row.price,
+          quantity: row.quantity,
+        ),
+      )
+      .toList();
 }
 
 final cartProvider = AsyncNotifierProvider<CartNotifier, List<CartModel>>(() {

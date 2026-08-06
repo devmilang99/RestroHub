@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
@@ -27,12 +28,16 @@ class CuisineRepositoryImpl implements ICuisineRepository {
           ),
         ])..where(db.cachedMenuCategories.restaurantId.equals(restaurantId));
 
-        return query.watch().map((rows) {
-          return rows.map((row) {
-            final item = row.readTable(db.cachedMenuItems);
-            return _mapToModel(item);
-          }).toList();
-        });
+        return query.watch().asyncMap<List<MenuItemModel>>((rows) async {
+          // Offload mapping to background isolate for potential large menu lists
+          final items = rows
+              .map((row) => row.readTable(db.cachedMenuItems))
+              .toList();
+          return compute<List<CachedMenuItem>, List<MenuItemModel>>(
+            _mapRowsToModels,
+            items,
+          );
+        }).distinct(); // Prevent redundant UI updates if data hasn't changed
       },
     );
   }
@@ -48,25 +53,31 @@ class CuisineRepositoryImpl implements ICuisineRepository {
     ])..where(db.cachedMenuCategories.restaurantId.equals(restaurantId));
 
     final rows = await query.get();
-    return rows.map((row) {
-      final item = row.readTable(db.cachedMenuItems);
-      return _mapToModel(item);
-    }).toList();
-  }
-
-  MenuItemModel _mapToModel(CachedMenuItem row) {
-    return MenuItemModel(
-      id: row.id,
-      categoryId: row.categoryId,
-      name: row.name,
-      description: row.description ?? '',
-      imageUrl: row.imageUrl,
-      price: row.price,
-      isAvailable: row.isAvailable,
-      calories: row.calories,
-      dietaryFlags: row.dietaryFlags,
+    return compute(
+      _mapRowsToModels,
+      rows.map((row) => row.readTable(db.cachedMenuItems)).toList(),
     );
   }
+}
+
+/// Top-level function for background mapping
+List<MenuItemModel> _mapRowsToModels(List<CachedMenuItem> rows) {
+  return rows
+      .map(
+        (row) => MenuItemModel(
+          id: row.id,
+          categoryId: row.categoryId,
+          name: row.name,
+          description: row.description ?? '',
+          imageUrl: row.imageUrl,
+          price: row.price,
+          isAvailable: row.isAvailable,
+          calories: row.calories,
+          rating: row.rating ?? 4.5,
+          dietaryFlags: row.dietaryFlags,
+        ),
+      )
+      .toList();
 }
 
 @riverpod

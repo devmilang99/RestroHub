@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/core/providers/error_service.dart';
@@ -35,10 +37,10 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       return;
     }
 
-    // Skip if last sync was successful and recent (within 5 minutes)
+    // Skip if last sync was successful and recent (within 1 minute)
     if (!force && syncState.lastSync != null) {
       final timeSinceLastSync = DateTime.now().difference(syncState.lastSync!);
-      if (timeSinceLastSync.inMinutes < 5) {
+      if (timeSinceLastSync.inMinutes < 1) {
         logInfo(
           'SYNC: Data is fresh (last synced ${timeSinceLastSync.inMinutes}m ago). Skipping...',
         );
@@ -50,6 +52,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     await Future.microtask(() {
       if (ref.mounted) {
         ref.read(globalSyncStatusProvider.notifier).startSync();
+        ref.read(globalSyncStatusProvider.notifier).updateProgress(0.05);
       }
     });
 
@@ -59,6 +62,21 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
 
       if (!ref.mounted) return;
 
+      // 1. Clear local database data and image cache
+      logInfo(
+        'SYNC: Clearing local restaurant data and cache for a fresh start...',
+      );
+      await db.clearRestaurantData();
+      try {
+        await DefaultCacheManager().emptyCache();
+      } catch (e) {
+        logWarning('SYNC: Failed to clear image cache: $e');
+      }
+
+      if (ref.mounted) {
+        ref.read(globalSyncStatusProvider.notifier).updateProgress(0.1);
+      }
+
       logInfo('SYNC: Fetching restaurants from Supabase...');
       // Fetch from Supabase with deep nesting
       final response = await _client
@@ -66,18 +84,39 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           .select('*, menu_categories(*, menu_items(*))');
       final data = response as List<dynamic>;
 
+      if (ref.mounted) {
+        ref.read(globalSyncStatusProvider.notifier).updateProgress(0.3);
+      }
+
       if (data.isEmpty) {
         logWarning('SYNC: No restaurants found in Supabase.');
+        if (ref.mounted) {
+          ref.read(globalSyncStatusProvider.notifier).completeSync();
+        }
         return;
       }
 
       logInfo('SYNC: Fetched ${data.length} raw restaurant records.');
 
-      if (data.isNotEmpty) {
-        logInfo(
-          'SYNC DIAGNOSTIC: Raw sample keys: ${(data.first as Map).keys.toList()}',
-        );
+      int totalCategories = 0;
+      int totalItems = 0;
+
+      for (final rJson in data) {
+        final categories = rJson['menu_categories'] as List?;
+        if (categories != null) {
+          totalCategories += categories.length;
+          for (final cJson in categories) {
+            final items = cJson['menu_items'] as List?;
+            if (items != null) {
+              totalItems += items.length;
+            }
+          }
+        }
       }
+
+      logInfo(
+        'SYNC DIAGNOSTIC: Found $totalCategories categories and $totalItems items in raw response.',
+      );
 
       if (!ref.mounted) return;
 
@@ -88,78 +127,125 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         data,
       );
 
+      if (ref.mounted) {
+        ref.read(globalSyncStatusProvider.notifier).updateProgress(0.5);
+      }
+
       logInfo('SYNC: Parsed ${restaurants.length} restaurants successfully.');
+
+      for (final r in restaurants) {
+        logInfo(
+          'SYNC DATA: Restaurant "${r.name}" (ID: ${r.id}) -> logo: ${r.logoUrl}, banner: ${r.bannerUrl}',
+        );
+      }
 
       if (!ref.mounted) return;
 
-      // Efficient Batch Insertion
+      // Efficient Chunked Batch Insertion to avoid memory spikes and UI lag
       logInfo(
         'SYNC: Starting Drift batch insertion for ${restaurants.length} restaurants...',
       );
 
-      await db.batch((batch) {
-        for (final restaurant in restaurants) {
-          if (restaurant.id == null || restaurant.id!.isEmpty) continue;
+      const chunkSize = 20; // Reduced from 50 for smoother UI during sync
+      final totalChunks = (restaurants.length / chunkSize).ceil();
 
-          // Insert Restaurant
-          batch.insert(
-            db.cachedRestaurants,
-            CachedRestaurantsCompanion(
-              id: Value(restaurant.id!),
-              ownerId: Value(restaurant.ownerId),
-              name: Value(restaurant.name),
-              description: Value(restaurant.description),
-              logoUrl: Value(restaurant.logoUrl),
-              bannerUrl: Value(restaurant.bannerUrl),
-              status: Value(restaurant.status.toSnakeCase()),
-              rating: Value(restaurant.rating),
-              priceRange: Value(restaurant.priceRange),
-              taxPercent: Value(restaurant.taxPercent),
-              locationAddress: Value(restaurant.locationAddress),
-              latitude: Value(restaurant.latitude),
-              longitude: Value(restaurant.longitude),
-            ),
-            mode: InsertMode.insertOrReplace,
-          );
+      for (var i = 0; i < restaurants.length; i += chunkSize) {
+        final currentChunkIdx = i ~/ chunkSize;
+        final end = (i + chunkSize < restaurants.length)
+            ? i + chunkSize
+            : restaurants.length;
+        final chunk = restaurants.sublist(i, end);
 
-          // Insert Categories
-          for (final category in restaurant.categories) {
-            if (category.id == null || category.id!.isEmpty) continue;
+        logInfo(
+          'SYNC: Processing chunk ${currentChunkIdx + 1} of $totalChunks (${chunk.length} items)...',
+        );
 
+        // Update progress during insertion (from 0.5 to 0.9)
+        if (ref.mounted) {
+          final insertionProgress =
+              0.5 + (0.4 * (currentChunkIdx / totalChunks));
+          ref
+              .read(globalSyncStatusProvider.notifier)
+              .updateProgress(insertionProgress);
+        }
+
+        await db.batch((batch) {
+          for (final restaurant in chunk) {
+            if (restaurant.id == null || restaurant.id!.isEmpty) continue;
+
+            // Insert Restaurant
             batch.insert(
-              db.cachedMenuCategories,
-              CachedMenuCategoriesCompanion(
-                id: Value(category.id!),
-                restaurantId: Value(restaurant.id!),
-                name: Value(category.name),
-                priority: Value(category.priority),
+              db.cachedRestaurants,
+              CachedRestaurantsCompanion(
+                id: Value(restaurant.id!),
+                ownerId: Value(restaurant.ownerId),
+                name: Value(restaurant.name),
+                description: Value(restaurant.description),
+                logoUrl: Value(restaurant.logoUrl),
+                bannerUrl: Value(restaurant.bannerUrl),
+                phone: Value(restaurant.phone),
+                email: Value(restaurant.email),
+                website: Value(restaurant.website),
+                status: Value(restaurant.status.toSnakeCase()),
+                rating: Value(restaurant.rating),
+                priceRange: Value(restaurant.priceRange),
+                minOrderAmount: Value(restaurant.minOrderAmount),
+                taxPercent: Value(restaurant.taxPercent),
+                locationAddress: Value(restaurant.locationAddress),
+                latitude: Value(restaurant.latitude),
+                longitude: Value(restaurant.longitude),
               ),
               mode: InsertMode.insertOrReplace,
             );
 
-            // Insert Items
-            for (final item in category.items) {
-              if (item.id == null || item.id!.isEmpty) continue;
+            // Insert Categories
+            for (final category in restaurant.categories) {
+              if (category.id == null || category.id!.isEmpty) continue;
 
               batch.insert(
-                db.cachedMenuItems,
-                CachedMenuItemsCompanion(
-                  id: Value(item.id!),
-                  categoryId: Value(category.id!),
-                  name: Value(item.name),
-                  price: Value(item.price),
-                  description: Value(item.description),
-                  imageUrl: Value(item.imageUrl),
-                  isAvailable: Value(item.isAvailable),
-                  calories: Value(item.calories),
-                  dietaryFlags: Value(item.dietaryFlags),
+                db.cachedMenuCategories,
+                CachedMenuCategoriesCompanion(
+                  id: Value(category.id!),
+                  restaurantId: Value(restaurant.id!),
+                  name: Value(category.name),
+                  priority: Value(category.priority),
                 ),
                 mode: InsertMode.insertOrReplace,
               );
+
+              // Insert Items
+              for (final item in category.items) {
+                if (item.id == null || item.id!.isEmpty) continue;
+
+                batch.insert(
+                  db.cachedMenuItems,
+                  CachedMenuItemsCompanion(
+                    id: Value(item.id!),
+                    categoryId: Value(category.id!),
+                    name: Value(item.name),
+                    price: Value(item.price),
+                    description: Value(item.description),
+                    imageUrl: Value(item.imageUrl),
+                    isAvailable: Value(item.isAvailable),
+                    calories: Value(item.calories),
+                    rating: Value(item.rating),
+                    dietaryFlags: Value(item.dietaryFlags),
+                  ),
+                  mode: InsertMode.insertOrReplace,
+                );
+              }
             }
           }
-        }
-      });
+        });
+
+        // Give breathing room to the event loop between chunks
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.microtask(() {}); // Ensure UI events are processed
+      }
+
+      if (ref.mounted) {
+        ref.read(globalSyncStatusProvider.notifier).updateProgress(0.95);
+      }
 
       logInfo('SYNC COMPLETE: Batch insertion finished successfully.');
 
@@ -286,15 +372,20 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     if (userId == null) return;
 
     try {
-      // Specify onConflict to ensure it updates existing items for this user
-      await _client.from('cart_items').upsert(
-        {
-          ...cartItemJson,
-          'user_id': userId,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
-        onConflict: 'user_id, menu_item_id',
-      );
+      final menuItemId = cartItemJson['menu_item_id'];
+
+      // We use a delete-then-insert pattern to avoid "ON CONFLICT" specification errors
+      // if the remote table doesn't have a unique constraint on (user_id, menu_item_id).
+      await _client.from('cart_items').delete().match(<String, Object>{
+        'user_id': userId,
+        'menu_item_id': menuItemId as Object,
+      });
+
+      await _client.from('cart_items').insert({
+        ...cartItemJson,
+        'user_id': userId,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
     } on PostgrestException catch (e) {
       logError(
         'SYNC ERROR: Supabase Database Error in pushCartItem',
@@ -356,14 +447,18 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     if (userId == null) return;
 
     try {
-      await _client.from('favourites').upsert(
-        {
-          'user_id': userId,
-          'item_id': itemId,
-          'type': type,
-        },
-        onConflict: 'user_id, item_id',
-      );
+      // We use a delete-then-insert pattern to avoid "ON CONFLICT" specification errors
+      // if the remote table doesn't have a unique constraint on (user_id, item_id).
+      await _client.from('favourites').delete().match({
+        'user_id': userId,
+        'item_id': itemId,
+      });
+
+      await _client.from('favourites').insert({
+        'user_id': userId,
+        'item_id': itemId,
+        'type': type,
+      });
     } on PostgrestException catch (e) {
       logError('SYNC ERROR: Failed to push favourite', e.message);
     }
@@ -423,12 +518,14 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           'image_url': row.imageUrl,
           'quantity': row.quantity,
         });
+        await Future<void>.delayed(Duration.zero); // Throttle
       }
 
       // 2. Export Favourites
       final favRows = await db.select(db.cachedFavourites).get();
       for (final row in favRows) {
         await pushFavourite(row.id, row.type);
+        await Future<void>.delayed(Duration.zero);
       }
 
       // 3. Export Orders
@@ -438,27 +535,17 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           db.cachedOrderItems,
         )..where((t) => t.orderId.equals(row.id))).get();
 
+        // Offload mapping to background isolate for potential complex order histories
+        final payload = await compute(_prepareOrderExportPayload, {
+          'order': row,
+          'items': itemRows,
+        });
+
         await pushOrderToRemote(
-          {
-            'id': row.id,
-            'restaurant_id': row.restaurantId,
-            'status': row.status,
-            'total_amount': row.totalAmount,
-            'created_at': row.createdAt.toIso8601String(),
-            'discount_amount': row.discountAmount,
-          },
-          itemRows
-              .map(
-                (i) => {
-                  'menu_item_id': i.menuItemId,
-                  'name': i.name,
-                  'quantity': i.quantity,
-                  'unit_price': i.unitPrice,
-                  'total_price': i.totalPrice,
-                },
-              )
-              .toList(),
+          payload['order'] as Map<String, dynamic>,
+          payload['items'] as List<Map<String, dynamic>>,
         );
+        await Future<void>.delayed(Duration.zero);
       }
 
       logInfo('SYNC COMPLETE: Full export finished successfully.');
@@ -471,6 +558,9 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
   /// Diagnoses schema mismatches for critical tables
   Future<void> diagnoseSchemaMismatch() async {
     final tables = [
+      'restaurants',
+      'menu_categories',
+      'menu_items',
       'orders',
       'order_items',
       'cart_items',
@@ -488,6 +578,17 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         if (response.isNotEmpty) {
           final keys = (response.first as Map).keys.toList();
           logInfo('DIAGNOSTICS: Table "$table" sample keys: $keys');
+
+          // Deep diagnostic for menu hierarchy
+          if (table == 'restaurants') {
+            final deepResponse = await _client
+                .from('restaurants')
+                .select('name, menu_categories(name, menu_items(count))')
+                .limit(1);
+            logInfo('DIAGNOSTICS: Deep menu hierarchy check: $deepResponse');
+          }
+        } else {
+          logWarning('DIAGNOSTICS: Table "$table" is empty.');
         }
       } on PostgrestException catch (e) {
         logError(
@@ -506,4 +607,32 @@ List<RestaurantModel> _parseRestaurants(List<dynamic> data) {
   return data
       .map((json) => RestaurantModel.fromJson(json as Map<String, dynamic>))
       .toList();
+}
+
+/// Top-level function for background mapping of order export payload
+Map<String, dynamic> _prepareOrderExportPayload(Map<String, dynamic> params) {
+  final row = params['order'] as CachedOrder;
+  final itemRows = params['items'] as List<CachedOrderItem>;
+
+  return {
+    'order': {
+      'id': row.id,
+      'restaurant_id': row.restaurantId,
+      'status': row.status,
+      'total_amount': row.totalAmount,
+      'created_at': row.createdAt.toIso8601String(),
+      'discount_amount': row.discountAmount,
+    },
+    'items': itemRows
+        .map(
+          (i) => {
+            'menu_item_id': i.menuItemId,
+            'name': i.name,
+            'quantity': i.quantity,
+            'unit_price': i.unitPrice,
+            'total_price': i.totalPrice,
+          },
+        )
+        .toList(),
+  };
 }

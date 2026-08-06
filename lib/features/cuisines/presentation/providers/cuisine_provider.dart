@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/core/models/enums.dart';
@@ -9,21 +10,32 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'cuisine_provider.g.dart';
 
-@Riverpod()
+@riverpod
 Stream<List<MenuItemModel>> cuisinesStream(Ref ref, String restaurantId) {
   return ref.watch(cuisineRepositoryProvider).watchCuisines(restaurantId);
 }
 
-@Riverpod()
+@riverpod
 Stream<List<MenuItemModel>> allCuisinesStream(Ref ref) {
   return ref.watch(appDatabaseProvider.future).asStream().asyncExpand((db) {
-    return db.select(db.cachedMenuItems).watch().asyncMap((list) async {
-      return compute(_mapMenuItemRowsToModels, list);
-    });
+    return db
+        .select(db.cachedMenuItems)
+        .watch()
+        .asyncMap((list) async {
+          return compute(_mapMenuItemRowsToModels, list);
+        })
+        .distinct((prev, next) {
+          // Custom equality check to prevent redundant UI updates
+          if (prev.length != next.length) return false;
+          for (var i = 0; i < prev.length; i++) {
+            if (prev[i] != next[i]) return false;
+          }
+          return true;
+        });
   });
 }
 
-@Riverpod()
+@riverpod
 Future<String?> restaurantIdFromCategory(Ref ref, String categoryId) async {
   final db = await ref.watch(appDatabaseProvider.future);
   final query = db.select(db.cachedMenuCategories)
@@ -32,7 +44,7 @@ Future<String?> restaurantIdFromCategory(Ref ref, String categoryId) async {
   return row?.restaurantId;
 }
 
-@Riverpod()
+@riverpod
 Future<RestaurantModel?> restaurantFromId(Ref ref, String restaurantId) async {
   final db = await ref.watch(appDatabaseProvider.future);
   final query = db.select(db.cachedRestaurants)
@@ -57,7 +69,7 @@ Future<RestaurantModel?> restaurantFromId(Ref ref, String restaurantId) async {
   );
 }
 
-@Riverpod()
+@riverpod
 Future<RestaurantModel?> restaurantFromCategoryId(
   Ref ref,
   String categoryId,
@@ -92,11 +104,16 @@ class FilteredCuisines extends _$FilteredCuisines {
   int _page = 0;
   static const int _pageSize = 20;
   bool _hasMore = true;
+  bool _isLoadingMore = false;
+
+  bool get hasMore => _hasMore;
+  bool get isLoadingMore => _isLoadingMore;
 
   @override
   Future<List<MenuItemModel>> build() async {
     _page = 0;
     _hasMore = true;
+    _isLoadingMore = false;
     return _fetchCuisines();
   }
 
@@ -110,20 +127,32 @@ class FilteredCuisines extends _$FilteredCuisines {
       _hasMore = false;
     }
 
-    return _mapMenuItemRowsToModels(rows);
+    return compute(_mapMenuItemRowsToModels, rows);
   }
 
   Future<void> loadMore() async {
-    if (!_hasMore || (state.isLoading)) return;
+    if (!_hasMore || _isLoadingMore) return;
 
-    state = const AsyncValue.loading();
+    _isLoadingMore = true;
+    final previousState = state;
     try {
       _page++;
       final next = await _fetchCuisines();
-      final current = state.value ?? [];
+      final current = previousState.value ?? [];
       state = AsyncValue.data([...current, ...next]);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
+    } finally {
+      _isLoadingMore = false;
     }
   }
 }
+
+// Manual provider to avoid build_runner delays for dashboard integration
+final dashboardOffersProvider = FutureProvider<List<MenuItemModel>>((
+  ref,
+) async {
+  final allCuisines = await ref.watch(allCuisinesStreamProvider.future);
+  // Filter for hot deals (e.g., price < 500)
+  return allCuisines.where((c) => c.price < 500).take(5).toList();
+});
