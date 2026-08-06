@@ -1,7 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:restro_hub/core/widgets/app_image.dart';
 
 class RestaurantCard extends StatelessWidget {
@@ -57,6 +54,7 @@ class RestaurantCard extends StatelessWidget {
                   height: 160,
                   width: double.infinity,
                   fit: BoxFit.cover,
+                  type: AppImageType.banner,
                 ),
                 Padding(
                   padding: const EdgeInsets.all(12),
@@ -139,24 +137,12 @@ class CircularRestaurantCard extends StatelessWidget {
         children: [
           GestureDetector(
             onTap: onClick,
-            child: CachedNetworkImage(
-              imageUrl: 'https://picsum.photos/seed/${index + 200}/100/100',
-              memCacheWidth: 200, // Optimization
-              imageBuilder: (context, imageProvider) =>
-                  CircleAvatar(radius: radius, backgroundImage: imageProvider),
-              placeholder: (context, url) => Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: CircleAvatar(
-                  radius: radius,
-                  backgroundColor: Colors.white,
-                ),
-              ),
-              errorWidget: (context, url, error) => CircleAvatar(
-                radius: radius,
-                backgroundColor: Colors.grey[200],
-                child: const Icon(Icons.error),
-              ),
+            child: AppImage(
+              imagePath: 'https://picsum.photos/seed/${index + 200}/200/200',
+              width: radius * 2,
+              height: radius * 2,
+              borderRadius: BorderRadius.circular(radius),
+              type: AppImageType.thumbnail,
             ),
           ),
           const SizedBox(height: 4),

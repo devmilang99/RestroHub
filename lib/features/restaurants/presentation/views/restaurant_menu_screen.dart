@@ -126,15 +126,6 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
         ? ref.watch(cuisinesStreamProvider(r.id!))
         : AsyncValue.data(r.categories.expand((c) => c.items).toList());
 
-    final favItem = MenuItemModel(
-      id: r.id,
-      categoryId: '',
-      name: r.name,
-      description: r.description,
-      imageUrl: r.logoUrl,
-      price: 0,
-    );
-
     final isFav = ref.watch(isFavouriteProvider(r.id));
 
     final menu = menuAsync.maybeWhen(
@@ -215,9 +206,7 @@ class _RestaurantMenuScreenState extends ConsumerState<RestaurantMenuScreen> {
                         : Icons.favorite_border_rounded,
                     iconColor: Colors.red,
                     onTap: () => unawaited(
-                      ref
-                          .read(favouritesProvider.notifier)
-                          .toggleFavourite(favItem, isRestaurant: true),
+                      ref.read(favouritesProvider.notifier).toggleFavourite(r),
                     ),
                   ),
                 ),

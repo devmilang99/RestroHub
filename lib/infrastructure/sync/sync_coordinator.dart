@@ -41,7 +41,7 @@ class SyncCoordinator extends _$SyncCoordinator {
       );
       final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
       unawaited(syncManager.diagnoseSchemaMismatch());
-      unawaited(syncManager.syncRestaurants());
+      unawaited(syncManager.syncAllInitialData());
     }
   }
 
@@ -49,7 +49,7 @@ class SyncCoordinator extends _$SyncCoordinator {
     try {
       if (ref.mounted) {
         unawaited(
-          ref.read(supabaseSyncManagerProvider.notifier).syncRestaurants(),
+          ref.read(supabaseSyncManagerProvider.notifier).syncAllInitialData(),
         );
       }
     } on Object catch (e, stack) {

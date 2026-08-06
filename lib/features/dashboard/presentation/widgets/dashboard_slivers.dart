@@ -15,7 +15,6 @@ import 'package:restro_hub/features/cuisines/presentation/providers/cuisine_prov
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
-import 'package:restro_hub/features/restaurants/presentation/views/restaurant_menu_screen.dart';
 
 class SliverPopularCategories extends StatelessWidget {
   final String headingTitle;
@@ -98,13 +97,9 @@ class SliverPopularCategories extends StatelessWidget {
                       children: [
                         GestureDetector(
                           onTap: () async {
-                            await Navigator.push<void>(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => RestaurantMenuScreen(
-                                  restaurant: restaurant,
-                                ),
-                              ),
+                            await context.pushNamed(
+                              'restaurantMenu',
+                              extra: restaurant,
                             );
                           },
                           child: Container(
@@ -125,6 +120,7 @@ class SliverPopularCategories extends StatelessWidget {
                                 width: 80,
                                 height: 80,
                                 fit: BoxFit.cover,
+                                type: AppImageType.thumbnail,
                               ),
                             ),
                           ),
@@ -268,6 +264,7 @@ class _SliverOfferCardsState extends State<SliverOfferCards> {
                                 width: MediaQuery.of(context).size.width,
                                 height: 180,
                                 fit: BoxFit.cover,
+                                type: AppImageType.menuItem,
                               ),
                               // Dark gradient overlay for text readability
                               const DecoratedBox(
@@ -455,7 +452,7 @@ class SliverRestaurantCards extends ConsumerWidget {
                   final itemId = item is RestaurantModel
                       ? item.id
                       : (item as MenuItemModel).id;
-                  
+
                   var name = '';
                   String? imageUrl = '';
                   double rating = 0.0;
@@ -466,12 +463,9 @@ class SliverRestaurantCards extends ConsumerWidget {
                     imageUrl = item.logoUrl;
                     rating = item.rating;
                     onTap = () async {
-                      await Navigator.push<void>(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              RestaurantMenuScreen(restaurant: item),
-                        ),
+                      await context.pushNamed(
+                        'restaurantMenu',
+                        extra: item,
                       );
                     };
                   } else if (item is MenuItemModel) {
@@ -491,13 +485,9 @@ class SliverRestaurantCards extends ConsumerWidget {
                           );
                           if (restaurant != null && context.mounted) {
                             unawaited(
-                              Navigator.push<void>(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => RestaurantMenuScreen(
-                                    restaurant: restaurant,
-                                  ),
-                                ),
+                              context.pushNamed(
+                                'restaurantMenu',
+                                extra: restaurant,
                               ),
                             );
                           }
@@ -601,23 +591,9 @@ class SliverRestaurantCards extends ConsumerWidget {
                                   return GestureDetector(
                                     onTap: () async {
                                       HapticFeedback.lightImpact();
-                                      final favItem = item is RestaurantModel
-                                          ? MenuItemModel(
-                                              id: item.id,
-                                              categoryId: '',
-                                              name: item.name,
-                                              description: item.description,
-                                              price: 0,
-                                              imageUrl: item.logoUrl,
-                                            )
-                                          : item as MenuItemModel;
                                       await ref
                                           .read(favouritesProvider.notifier)
-                                          .toggleFavourite(
-                                            favItem,
-                                            isRestaurant:
-                                                item is RestaurantModel,
-                                          );
+                                          .toggleFavourite(item);
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.all(4),
@@ -861,13 +837,9 @@ class SliverFoodCards extends ConsumerWidget {
                             );
                             if (restaurant != null && context.mounted) {
                               unawaited(
-                                Navigator.push<void>(
-                                  context,
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => RestaurantMenuScreen(
-                                      restaurant: restaurant,
-                                    ),
-                                  ),
+                                context.pushNamed(
+                                  'restaurantMenu',
+                                  extra: restaurant,
                                 ),
                               );
                             }

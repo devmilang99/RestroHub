@@ -209,9 +209,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             Icons.cloud_upload_outlined,
             () async {
               try {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Syncing data to Supabase...')),
-                );
                 await ref
                     .read(supabaseSyncManagerProvider.notifier)
                     .performFullExport();

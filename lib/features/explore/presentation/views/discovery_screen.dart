@@ -206,10 +206,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   child: AppImage(
                     imagePath: restaurant.bannerUrl ?? '',
                     height: 120,
-                    width:
-                        MediaQuery.of(context).size.width /
-                        (context.isMobile ? 2 : (context.isTablet ? 3 : 4)),
+                    width: double.infinity,
                     fit: BoxFit.cover,
+                    type: AppImageType.thumbnail,
                   ),
                 ),
                 if (widget.type != ExploreType.restaurant)
@@ -240,17 +239,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   right: 8,
                   child: GestureDetector(
                     onTap: () async {
-                      final dummyItem = MenuItemModel(
-                        id: restaurant.id,
-                        categoryId: '',
-                        name: restaurant.name,
-                        description: restaurant.description,
-                        price: 0,
-                        imageUrl: restaurant.logoUrl,
-                      );
                       await ref
                           .read(favouritesProvider.notifier)
-                          .toggleFavourite(dummyItem, isRestaurant: true);
+                          .toggleFavourite(restaurant);
                     },
                     child: Container(
                       padding: const EdgeInsets.all(6),
@@ -363,10 +354,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   child: AppImage(
                     imagePath: item.imageUrl ?? '',
                     height: 120,
-                    width:
-                        MediaQuery.of(context).size.width /
-                        (context.isMobile ? 2 : (context.isTablet ? 3 : 4)),
+                    width: double.infinity,
                     fit: BoxFit.cover,
+                    type: AppImageType.menuItem,
                   ),
                 ),
                 Positioned(

@@ -10,8 +10,12 @@ class GlobalSyncStatus extends _$GlobalSyncStatus {
     return SyncState(status: SyncStatus.idle);
   }
 
-  void startSync() {
-    state = state.copyWith(status: SyncStatus.syncing, progress: 0.0);
+  void startSync({bool isManual = false}) {
+    state = state.copyWith(
+      status: SyncStatus.syncing,
+      progress: 0.0,
+      isManual: isManual,
+    );
   }
 
   void updateProgress(double progress) {
@@ -25,6 +29,7 @@ class GlobalSyncStatus extends _$GlobalSyncStatus {
       status: SyncStatus.success,
       lastSync: DateTime.now(),
       progress: 1.0,
+      isManual: false,
     );
   }
 
@@ -33,10 +38,15 @@ class GlobalSyncStatus extends _$GlobalSyncStatus {
       status: SyncStatus.error,
       errorMessage: error,
       progress: 0.0,
+      isManual: false,
     );
   }
 
   void reset() {
-    state = state.copyWith(status: SyncStatus.idle, progress: 0.0);
+    state = state.copyWith(
+      status: SyncStatus.idle,
+      progress: 0.0,
+      isManual: false,
+    );
   }
 }

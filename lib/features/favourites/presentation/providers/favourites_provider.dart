@@ -126,7 +126,7 @@ class FavouritesNotifier extends AsyncNotifier<List<FavouriteItem>> {
     } else if (item is MenuItemModel) {
       if (item.id == null) return;
       id = item.id!;
-      type = 'menu_item';
+      type = isRestaurant ? 'restaurant' : 'menu_item';
     } else if (item is RestaurantModel) {
       if (item.id == null) return;
       id = item.id!;

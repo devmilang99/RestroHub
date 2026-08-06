@@ -76,6 +76,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         FlutterNativeSplash.remove();
+        unawaited(_preloadImages());
       }
     });
 
@@ -109,7 +110,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _backgroundProvider = const AssetImage('assets/food1.webp');
 
     unawaited(_iconController.forward());
-    unawaited(_preloadImages());
   }
 
   Future<void> _preloadImages() async {
@@ -155,11 +155,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       await Future.wait(preloadingTasks);
 
-      // Start Data Sync in the background to avoid blocking the user
+      // Start Global Data Sync concurrently in the background
+      // This populates restaurants, orders, cart, and favourites before the user hits the dashboard
       if (mounted) {
-        debugPrint('SPLASH: Starting data sync in background...');
+        debugPrint('SPLASH: Starting global data sync in background...');
         unawaited(
-          ref.read(supabaseSyncManagerProvider.notifier).syncRestaurants(),
+          ref.read(supabaseSyncManagerProvider.notifier).syncAllInitialData(),
         );
       }
     } on Object catch (e) {

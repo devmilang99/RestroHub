@@ -26,6 +26,8 @@ import 'package:restro_hub/features/favourites/presentation/views/favourites_scr
 import 'package:restro_hub/features/notifications/presentation/views/notifications_screen.dart';
 import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
+import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
+import 'package:restro_hub/features/restaurants/presentation/views/restaurant_menu_screen.dart';
 import 'package:restro_hub/features/splash/presentation/views/splash_screen.dart';
 import 'package:restro_hub/screens/permission_screen.dart';
 
@@ -160,6 +162,18 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           child: const ForgotPasswordScreen(),
         ),
+      ),
+      GoRoute(
+        path: '/restaurantMenu',
+        name: 'restaurantMenu',
+        pageBuilder: (context, state) {
+          final restaurant = state.extra! as RestaurantModel;
+          return buildPageWithTransition(
+            context: context,
+            state: state,
+            child: RestaurantMenuScreen(restaurant: restaurant),
+          );
+        },
       ),
       GoRoute(
         path: '/unifiedExplore',

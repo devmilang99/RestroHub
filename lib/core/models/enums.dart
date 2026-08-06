@@ -75,6 +75,9 @@ enum RestaurantStatus {
   String toSnakeCase() => _toSnakeCase(name);
 }
 
+/// Image types for standardization and pre-caching.
+enum AppImageType { banner, thumbnail, menuItem, cuisine, profile, custom }
+
 /// Helper to convert camelCase to snake_case for DB compatibility.
 String _toSnakeCase(String text) {
   final exp = RegExp('(?<=[a-z])[A-Z]');

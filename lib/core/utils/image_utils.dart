@@ -22,8 +22,15 @@ class ImageUtils {
     final uri = Uri.parse(url);
     final queryParams = Map<String, String>.from(uri.queryParameters);
 
-    if (width != null) queryParams['width'] = width.toString();
-    if (height != null) queryParams['height'] = height.toString();
+    // BUCKETING: Round width to nearest 100 to increase cache hits across different screen sizes
+    if (width != null) {
+      final bucketedWidth = ((width + 50) ~/ 100) * 100;
+      queryParams['width'] = bucketedWidth.clamp(100, 1200).toString();
+    }
+    if (height != null) {
+      final bucketedHeight = ((height + 50) ~/ 100) * 100;
+      queryParams['height'] = bucketedHeight.clamp(100, 1200).toString();
+    }
     queryParams['quality'] = quality.toString();
     queryParams['format'] = format;
 
@@ -42,12 +49,12 @@ class ImageUtils {
   /// Convenience method for restaurant logos/thumbnails
   static String getRestaurantThumbnail(String? url) {
     if (url == null || url.isEmpty) return '';
-    return getOptimizedUrl(url, width: 300, quality: 80);
+    return getOptimizedUrl(url, width: 300);
   }
 
   /// Convenience method for menu items
   static String getMenuItemImage(String? url) {
     if (url == null || url.isEmpty) return '';
-    return getOptimizedUrl(url, width: 400, quality: 80);
+    return getOptimizedUrl(url, width: 400);
   }
 }

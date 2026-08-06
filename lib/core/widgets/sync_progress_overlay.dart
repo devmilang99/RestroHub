@@ -11,7 +11,8 @@ class SyncProgressOverlay extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final syncState = ref.watch(globalSyncStatusProvider);
 
-    if (syncState.status != SyncStatus.syncing) {
+    // Only show the overlay if it's a manual sync initiated by the user
+    if (syncState.status != SyncStatus.syncing || !syncState.isManual) {
       return const SizedBox.shrink();
     }
 
@@ -44,7 +45,7 @@ class SyncProgressOverlay extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'Synchronizing Data',
+                syncState.isManual ? 'Cloud Backup' : 'Synchronizing Data',
                 style: GoogleFonts.playfairDisplay(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -52,7 +53,9 @@ class SyncProgressOverlay extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Please wait while we refresh your local database with the latest cloud data.',
+                syncState.isManual
+                    ? 'Securing your personal data and preferences to our cloud servers.'
+                    : 'Please wait while we refresh your local database with the latest cloud data.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
@@ -80,7 +83,7 @@ class SyncProgressOverlay extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    _getProgressMessage(syncState.progress),
+                    _getProgressMessage(syncState.progress, syncState.isManual),
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
@@ -96,7 +99,15 @@ class SyncProgressOverlay extends ConsumerWidget {
     );
   }
 
-  String _getProgressMessage(double progress) {
+  String _getProgressMessage(double progress, bool isManual) {
+    if (isManual) {
+      if (progress < 0.2) return 'Preparing data...';
+      if (progress < 0.5) return 'Syncing your cart...';
+      if (progress < 0.7) return 'Syncing favourites...';
+      if (progress < 0.95) return 'Syncing order history...';
+      return 'Finalizing...';
+    }
+
     if (progress < 0.1) return 'Preparing...';
     if (progress < 0.3) return 'Clearing local data...';
     if (progress < 0.5) return 'Fetching from Cloud...';
