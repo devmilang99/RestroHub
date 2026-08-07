@@ -24,9 +24,9 @@ Discover local flavors, chat with AI assistants, and track your orders in real-t
 
 ## 📖 Overview
 
-**RestroHub** is a production-ready Flutter application that redefines the food delivery experience. It blends modern mobile architecture with agentic AI workflows and real-time synchronization to provide a fast, intelligent, and reliable platform for both customers and restaurants.
+**RestroHub** is a production-ready Flutter application that redefines the food delivery experience. It blends modern mobile architecture with agentic AI workflows and real-time synchronization to[...]
 
-Built with a feature-first architecture, RestroHub leverages **Google Gemini AI** for smart assistance, **Supabase** for robust backend services, and **Drift (SQLite)** for a seamless offline-first experience.
+Built with a feature-first architecture, RestroHub leverages **Google Gemini AI** for smart assistance, **Supabase** for robust backend services, and **Drift (SQLite)** for a seamless offline-firs[...]
 
 ---
 
@@ -43,6 +43,18 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 |                 AI Initial Page                 |                 AI Search Results                  |
 |:-----------------------------------------------:|:--------------------------------------------------:|
 | ![AI Initial](screenshots/04_ai_initial.png)    | ![AI Search Results](screenshots/05_ai_search.png) |
+
+### 🍽️ Restaurant
+
+|             Restaurant Details             |                 Restaurant Menu                 |                   Restaurant Reviews                   |
+|:------------------------------------------:|:-----------------------------------------------:|:------------------------------------------------------:|
+| ![Restaurant Details](screenshots/12_restaurant_details.png) | ![Restaurant Menu](screenshots/13_restaurant_menu.png) | ![Restaurant Reviews](screenshots/14_restaurant_reviews.png) |
+
+### 🍲 Food
+
+|             Food Details             |                 Food Customization                 |                   Food Reviews                   |
+|:-------------------------------------:|:--------------------------------------------------:|:------------------------------------------------:|
+| ![Food Details](screenshots/15_food_details.png) | ![Food Customization](screenshots/16_food_customization.png) | ![Food Reviews](screenshots/17_food_reviews.png) |
 
 ### 🛒 Shopping Flow
 
