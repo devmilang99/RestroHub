@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/providers/error_service.dart';
 import 'package:restro_hub/core/widgets/app_image.dart';
+import 'package:restro_hub/features/auth/data/models/user_address_model.dart';
+import 'package:restro_hub/features/auth/presentation/providers/address_provider.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
@@ -27,6 +29,8 @@ class _ProcessCheckOutState extends ConsumerState<ProcessCheckOut> {
       (sum, item) => sum + (item.price * item.quantity),
     );
     final checkoutState = ref.watch(checkoutProvider);
+    final defaultAddress = ref.watch(defaultAddressProvider);
+    final displayAddress = checkoutState.selectedAddress ?? defaultAddress;
     final colorScheme = context.colorScheme;
     final textTheme = context.textTheme;
 
@@ -80,16 +84,37 @@ class _ProcessCheckOutState extends ConsumerState<ProcessCheckOut> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      TextButton(onPressed: () {}, child: const Text('Change')),
+                      TextButton(
+                        onPressed: () async {
+                          final result = await context.pushNamed<String>(
+                            'locationPicker',
+                          );
+                          if (result != null) {
+                            ref
+                                .read(checkoutProvider.notifier)
+                                .setSelectedAddress(
+                                  UserAddressModel(
+                                    userId: '',
+                                    label: 'Selected',
+                                    addressLine1: result,
+                                    city: '',
+                                  ),
+                                );
+                          }
+                        },
+                        child: const Text('Change'),
+                      ),
                     ],
                   ),
                   const Divider(),
-                  const Text(
-                    'Home',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                  Text(
+                    displayAddress.label,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    '123 Street Name, City, Country',
+                    displayAddress.city.isEmpty
+                        ? displayAddress.addressLine1
+                        : '${displayAddress.addressLine1}, ${displayAddress.city}',
                     style: textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

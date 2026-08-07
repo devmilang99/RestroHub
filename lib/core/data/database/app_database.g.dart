@@ -2686,6 +2686,18 @@ class $CachedOrdersTable extends CachedOrders
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _lastUpdatedMeta = const VerificationMeta(
+    'lastUpdated',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastUpdated = GeneratedColumn<DateTime>(
+    'last_updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2698,6 +2710,7 @@ class $CachedOrdersTable extends CachedOrders
     discountAmount,
     totalAmount,
     createdAt,
+    lastUpdated,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2803,6 +2816,15 @@ class $CachedOrdersTable extends CachedOrders
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
+    if (data.containsKey('last_updated')) {
+      context.handle(
+        _lastUpdatedMeta,
+        lastUpdated.isAcceptableOrUnknown(
+          data['last_updated']!,
+          _lastUpdatedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2852,6 +2874,10 @@ class $CachedOrdersTable extends CachedOrders
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      lastUpdated: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_updated'],
+      )!,
     );
   }
 
@@ -2872,6 +2898,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
   final double discountAmount;
   final double totalAmount;
   final DateTime createdAt;
+  final DateTime lastUpdated;
   const CachedOrder({
     required this.id,
     required this.restaurantId,
@@ -2883,6 +2910,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     required this.discountAmount,
     required this.totalAmount,
     required this.createdAt,
+    required this.lastUpdated,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2897,6 +2925,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     map['discount_amount'] = Variable<double>(discountAmount);
     map['total_amount'] = Variable<double>(totalAmount);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['last_updated'] = Variable<DateTime>(lastUpdated);
     return map;
   }
 
@@ -2912,6 +2941,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
       discountAmount: Value(discountAmount),
       totalAmount: Value(totalAmount),
       createdAt: Value(createdAt),
+      lastUpdated: Value(lastUpdated),
     );
   }
 
@@ -2931,6 +2961,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
       discountAmount: serializer.fromJson<double>(json['discountAmount']),
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastUpdated: serializer.fromJson<DateTime>(json['lastUpdated']),
     );
   }
   @override
@@ -2947,6 +2978,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
       'discountAmount': serializer.toJson<double>(discountAmount),
       'totalAmount': serializer.toJson<double>(totalAmount),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastUpdated': serializer.toJson<DateTime>(lastUpdated),
     };
   }
 
@@ -2961,6 +2993,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     double? discountAmount,
     double? totalAmount,
     DateTime? createdAt,
+    DateTime? lastUpdated,
   }) => CachedOrder(
     id: id ?? this.id,
     restaurantId: restaurantId ?? this.restaurantId,
@@ -2972,6 +3005,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     discountAmount: discountAmount ?? this.discountAmount,
     totalAmount: totalAmount ?? this.totalAmount,
     createdAt: createdAt ?? this.createdAt,
+    lastUpdated: lastUpdated ?? this.lastUpdated,
   );
   CachedOrder copyWithCompanion(CachedOrdersCompanion data) {
     return CachedOrder(
@@ -2995,6 +3029,9 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
           ? data.totalAmount.value
           : this.totalAmount,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastUpdated: data.lastUpdated.present
+          ? data.lastUpdated.value
+          : this.lastUpdated,
     );
   }
 
@@ -3010,7 +3047,8 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
           ..write('taxAmount: $taxAmount, ')
           ..write('discountAmount: $discountAmount, ')
           ..write('totalAmount: $totalAmount, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastUpdated: $lastUpdated')
           ..write(')'))
         .toString();
   }
@@ -3027,6 +3065,7 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     discountAmount,
     totalAmount,
     createdAt,
+    lastUpdated,
   );
   @override
   bool operator ==(Object other) =>
@@ -3041,7 +3080,8 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
           other.taxAmount == this.taxAmount &&
           other.discountAmount == this.discountAmount &&
           other.totalAmount == this.totalAmount &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.lastUpdated == this.lastUpdated);
 }
 
 class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
@@ -3055,6 +3095,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
   final Value<double> discountAmount;
   final Value<double> totalAmount;
   final Value<DateTime> createdAt;
+  final Value<DateTime> lastUpdated;
   final Value<int> rowid;
   const CachedOrdersCompanion({
     this.id = const Value.absent(),
@@ -3067,6 +3108,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     this.discountAmount = const Value.absent(),
     this.totalAmount = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.lastUpdated = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CachedOrdersCompanion.insert({
@@ -3080,6 +3122,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     required double discountAmount,
     required double totalAmount,
     required DateTime createdAt,
+    this.lastUpdated = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        restaurantId = Value(restaurantId),
@@ -3102,6 +3145,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     Expression<double>? discountAmount,
     Expression<double>? totalAmount,
     Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastUpdated,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3115,6 +3159,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
       if (discountAmount != null) 'discount_amount': discountAmount,
       if (totalAmount != null) 'total_amount': totalAmount,
       if (createdAt != null) 'created_at': createdAt,
+      if (lastUpdated != null) 'last_updated': lastUpdated,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3130,6 +3175,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     Value<double>? discountAmount,
     Value<double>? totalAmount,
     Value<DateTime>? createdAt,
+    Value<DateTime>? lastUpdated,
     Value<int>? rowid,
   }) {
     return CachedOrdersCompanion(
@@ -3143,6 +3189,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
       discountAmount: discountAmount ?? this.discountAmount,
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3180,6 +3227,9 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (lastUpdated.present) {
+      map['last_updated'] = Variable<DateTime>(lastUpdated.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3199,6 +3249,7 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
           ..write('discountAmount: $discountAmount, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('createdAt: $createdAt, ')
+          ..write('lastUpdated: $lastUpdated, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3714,8 +3765,20 @@ class $CachedFavouritesTable extends CachedFavourites
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _lastUpdatedMeta = const VerificationMeta(
+    'lastUpdated',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, type, addedAt];
+  late final GeneratedColumn<DateTime> lastUpdated = GeneratedColumn<DateTime>(
+    'last_updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, type, addedAt, lastUpdated];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3747,6 +3810,15 @@ class $CachedFavouritesTable extends CachedFavourites
         addedAt.isAcceptableOrUnknown(data['added_at']!, _addedAtMeta),
       );
     }
+    if (data.containsKey('last_updated')) {
+      context.handle(
+        _lastUpdatedMeta,
+        lastUpdated.isAcceptableOrUnknown(
+          data['last_updated']!,
+          _lastUpdatedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3768,6 +3840,10 @@ class $CachedFavouritesTable extends CachedFavourites
         DriftSqlType.dateTime,
         data['${effectivePrefix}added_at'],
       )!,
+      lastUpdated: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_updated'],
+      )!,
     );
   }
 
@@ -3781,10 +3857,12 @@ class CachedFavourite extends DataClass implements Insertable<CachedFavourite> {
   final String id;
   final String type;
   final DateTime addedAt;
+  final DateTime lastUpdated;
   const CachedFavourite({
     required this.id,
     required this.type,
     required this.addedAt,
+    required this.lastUpdated,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3792,6 +3870,7 @@ class CachedFavourite extends DataClass implements Insertable<CachedFavourite> {
     map['id'] = Variable<String>(id);
     map['type'] = Variable<String>(type);
     map['added_at'] = Variable<DateTime>(addedAt);
+    map['last_updated'] = Variable<DateTime>(lastUpdated);
     return map;
   }
 
@@ -3800,6 +3879,7 @@ class CachedFavourite extends DataClass implements Insertable<CachedFavourite> {
       id: Value(id),
       type: Value(type),
       addedAt: Value(addedAt),
+      lastUpdated: Value(lastUpdated),
     );
   }
 
@@ -3812,6 +3892,7 @@ class CachedFavourite extends DataClass implements Insertable<CachedFavourite> {
       id: serializer.fromJson<String>(json['id']),
       type: serializer.fromJson<String>(json['type']),
       addedAt: serializer.fromJson<DateTime>(json['addedAt']),
+      lastUpdated: serializer.fromJson<DateTime>(json['lastUpdated']),
     );
   }
   @override
@@ -3821,20 +3902,29 @@ class CachedFavourite extends DataClass implements Insertable<CachedFavourite> {
       'id': serializer.toJson<String>(id),
       'type': serializer.toJson<String>(type),
       'addedAt': serializer.toJson<DateTime>(addedAt),
+      'lastUpdated': serializer.toJson<DateTime>(lastUpdated),
     };
   }
 
-  CachedFavourite copyWith({String? id, String? type, DateTime? addedAt}) =>
-      CachedFavourite(
-        id: id ?? this.id,
-        type: type ?? this.type,
-        addedAt: addedAt ?? this.addedAt,
-      );
+  CachedFavourite copyWith({
+    String? id,
+    String? type,
+    DateTime? addedAt,
+    DateTime? lastUpdated,
+  }) => CachedFavourite(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    addedAt: addedAt ?? this.addedAt,
+    lastUpdated: lastUpdated ?? this.lastUpdated,
+  );
   CachedFavourite copyWithCompanion(CachedFavouritesCompanion data) {
     return CachedFavourite(
       id: data.id.present ? data.id.value : this.id,
       type: data.type.present ? data.type.value : this.type,
       addedAt: data.addedAt.present ? data.addedAt.value : this.addedAt,
+      lastUpdated: data.lastUpdated.present
+          ? data.lastUpdated.value
+          : this.lastUpdated,
     );
   }
 
@@ -3843,37 +3933,42 @@ class CachedFavourite extends DataClass implements Insertable<CachedFavourite> {
     return (StringBuffer('CachedFavourite(')
           ..write('id: $id, ')
           ..write('type: $type, ')
-          ..write('addedAt: $addedAt')
+          ..write('addedAt: $addedAt, ')
+          ..write('lastUpdated: $lastUpdated')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, type, addedAt);
+  int get hashCode => Object.hash(id, type, addedAt, lastUpdated);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CachedFavourite &&
           other.id == this.id &&
           other.type == this.type &&
-          other.addedAt == this.addedAt);
+          other.addedAt == this.addedAt &&
+          other.lastUpdated == this.lastUpdated);
 }
 
 class CachedFavouritesCompanion extends UpdateCompanion<CachedFavourite> {
   final Value<String> id;
   final Value<String> type;
   final Value<DateTime> addedAt;
+  final Value<DateTime> lastUpdated;
   final Value<int> rowid;
   const CachedFavouritesCompanion({
     this.id = const Value.absent(),
     this.type = const Value.absent(),
     this.addedAt = const Value.absent(),
+    this.lastUpdated = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CachedFavouritesCompanion.insert({
     required String id,
     required String type,
     this.addedAt = const Value.absent(),
+    this.lastUpdated = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        type = Value(type);
@@ -3881,12 +3976,14 @@ class CachedFavouritesCompanion extends UpdateCompanion<CachedFavourite> {
     Expression<String>? id,
     Expression<String>? type,
     Expression<DateTime>? addedAt,
+    Expression<DateTime>? lastUpdated,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (type != null) 'type': type,
       if (addedAt != null) 'added_at': addedAt,
+      if (lastUpdated != null) 'last_updated': lastUpdated,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3895,12 +3992,14 @@ class CachedFavouritesCompanion extends UpdateCompanion<CachedFavourite> {
     Value<String>? id,
     Value<String>? type,
     Value<DateTime>? addedAt,
+    Value<DateTime>? lastUpdated,
     Value<int>? rowid,
   }) {
     return CachedFavouritesCompanion(
       id: id ?? this.id,
       type: type ?? this.type,
       addedAt: addedAt ?? this.addedAt,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3917,6 +4016,9 @@ class CachedFavouritesCompanion extends UpdateCompanion<CachedFavourite> {
     if (addedAt.present) {
       map['added_at'] = Variable<DateTime>(addedAt.value);
     }
+    if (lastUpdated.present) {
+      map['last_updated'] = Variable<DateTime>(lastUpdated.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3929,6 +4031,7 @@ class CachedFavouritesCompanion extends UpdateCompanion<CachedFavourite> {
           ..write('id: $id, ')
           ..write('type: $type, ')
           ..write('addedAt: $addedAt, ')
+          ..write('lastUpdated: $lastUpdated, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -4004,6 +4107,18 @@ class $CachedCartItemsTable extends CachedCartItems
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
+  static const VerificationMeta _lastUpdatedMeta = const VerificationMeta(
+    'lastUpdated',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastUpdated = GeneratedColumn<DateTime>(
+    'last_updated',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     menuItemId,
@@ -4012,6 +4127,7 @@ class $CachedCartItemsTable extends CachedCartItems
     imageUrl,
     price,
     quantity,
+    lastUpdated,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4073,6 +4189,15 @@ class $CachedCartItemsTable extends CachedCartItems
         quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta),
       );
     }
+    if (data.containsKey('last_updated')) {
+      context.handle(
+        _lastUpdatedMeta,
+        lastUpdated.isAcceptableOrUnknown(
+          data['last_updated']!,
+          _lastUpdatedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -4106,6 +4231,10 @@ class $CachedCartItemsTable extends CachedCartItems
         DriftSqlType.int,
         data['${effectivePrefix}quantity'],
       )!,
+      lastUpdated: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_updated'],
+      )!,
     );
   }
 
@@ -4122,6 +4251,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
   final String? imageUrl;
   final double price;
   final int quantity;
+  final DateTime lastUpdated;
   const CachedCartItem({
     required this.menuItemId,
     this.restaurantId,
@@ -4129,6 +4259,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
     this.imageUrl,
     required this.price,
     required this.quantity,
+    required this.lastUpdated,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4143,6 +4274,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
     }
     map['price'] = Variable<double>(price);
     map['quantity'] = Variable<int>(quantity);
+    map['last_updated'] = Variable<DateTime>(lastUpdated);
     return map;
   }
 
@@ -4158,6 +4290,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
           : Value(imageUrl),
       price: Value(price),
       quantity: Value(quantity),
+      lastUpdated: Value(lastUpdated),
     );
   }
 
@@ -4173,6 +4306,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
       imageUrl: serializer.fromJson<String?>(json['imageUrl']),
       price: serializer.fromJson<double>(json['price']),
       quantity: serializer.fromJson<int>(json['quantity']),
+      lastUpdated: serializer.fromJson<DateTime>(json['lastUpdated']),
     );
   }
   @override
@@ -4185,6 +4319,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
       'imageUrl': serializer.toJson<String?>(imageUrl),
       'price': serializer.toJson<double>(price),
       'quantity': serializer.toJson<int>(quantity),
+      'lastUpdated': serializer.toJson<DateTime>(lastUpdated),
     };
   }
 
@@ -4195,6 +4330,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
     Value<String?> imageUrl = const Value.absent(),
     double? price,
     int? quantity,
+    DateTime? lastUpdated,
   }) => CachedCartItem(
     menuItemId: menuItemId ?? this.menuItemId,
     restaurantId: restaurantId.present ? restaurantId.value : this.restaurantId,
@@ -4202,6 +4338,7 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
     imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
     price: price ?? this.price,
     quantity: quantity ?? this.quantity,
+    lastUpdated: lastUpdated ?? this.lastUpdated,
   );
   CachedCartItem copyWithCompanion(CachedCartItemsCompanion data) {
     return CachedCartItem(
@@ -4215,6 +4352,9 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
       imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
       price: data.price.present ? data.price.value : this.price,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      lastUpdated: data.lastUpdated.present
+          ? data.lastUpdated.value
+          : this.lastUpdated,
     );
   }
 
@@ -4226,14 +4366,22 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
           ..write('name: $name, ')
           ..write('imageUrl: $imageUrl, ')
           ..write('price: $price, ')
-          ..write('quantity: $quantity')
+          ..write('quantity: $quantity, ')
+          ..write('lastUpdated: $lastUpdated')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(menuItemId, restaurantId, name, imageUrl, price, quantity);
+  int get hashCode => Object.hash(
+    menuItemId,
+    restaurantId,
+    name,
+    imageUrl,
+    price,
+    quantity,
+    lastUpdated,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4243,7 +4391,8 @@ class CachedCartItem extends DataClass implements Insertable<CachedCartItem> {
           other.name == this.name &&
           other.imageUrl == this.imageUrl &&
           other.price == this.price &&
-          other.quantity == this.quantity);
+          other.quantity == this.quantity &&
+          other.lastUpdated == this.lastUpdated);
 }
 
 class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
@@ -4253,6 +4402,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
   final Value<String?> imageUrl;
   final Value<double> price;
   final Value<int> quantity;
+  final Value<DateTime> lastUpdated;
   final Value<int> rowid;
   const CachedCartItemsCompanion({
     this.menuItemId = const Value.absent(),
@@ -4261,6 +4411,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
     this.imageUrl = const Value.absent(),
     this.price = const Value.absent(),
     this.quantity = const Value.absent(),
+    this.lastUpdated = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CachedCartItemsCompanion.insert({
@@ -4270,6 +4421,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
     this.imageUrl = const Value.absent(),
     required double price,
     this.quantity = const Value.absent(),
+    this.lastUpdated = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : menuItemId = Value(menuItemId),
        name = Value(name),
@@ -4281,6 +4433,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
     Expression<String>? imageUrl,
     Expression<double>? price,
     Expression<int>? quantity,
+    Expression<DateTime>? lastUpdated,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -4290,6 +4443,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
       if (imageUrl != null) 'image_url': imageUrl,
       if (price != null) 'price': price,
       if (quantity != null) 'quantity': quantity,
+      if (lastUpdated != null) 'last_updated': lastUpdated,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -4301,6 +4455,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
     Value<String?>? imageUrl,
     Value<double>? price,
     Value<int>? quantity,
+    Value<DateTime>? lastUpdated,
     Value<int>? rowid,
   }) {
     return CachedCartItemsCompanion(
@@ -4310,6 +4465,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
       imageUrl: imageUrl ?? this.imageUrl,
       price: price ?? this.price,
       quantity: quantity ?? this.quantity,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -4335,6 +4491,9 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
     if (quantity.present) {
       map['quantity'] = Variable<int>(quantity.value);
     }
+    if (lastUpdated.present) {
+      map['last_updated'] = Variable<DateTime>(lastUpdated.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -4350,6 +4509,7 @@ class CachedCartItemsCompanion extends UpdateCompanion<CachedCartItem> {
           ..write('imageUrl: $imageUrl, ')
           ..write('price: $price, ')
           ..write('quantity: $quantity, ')
+          ..write('lastUpdated: $lastUpdated, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -6415,6 +6575,7 @@ typedef $$CachedOrdersTableCreateCompanionBuilder =
       required double discountAmount,
       required double totalAmount,
       required DateTime createdAt,
+      Value<DateTime> lastUpdated,
       Value<int> rowid,
     });
 typedef $$CachedOrdersTableUpdateCompanionBuilder =
@@ -6429,6 +6590,7 @@ typedef $$CachedOrdersTableUpdateCompanionBuilder =
       Value<double> discountAmount,
       Value<double> totalAmount,
       Value<DateTime> createdAt,
+      Value<DateTime> lastUpdated,
       Value<int> rowid,
     });
 
@@ -6519,6 +6681,11 @@ class $$CachedOrdersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> cachedOrderItemsRefs(
     Expression<bool> Function($$CachedOrderItemsTableFilterComposer f) f,
   ) {
@@ -6603,6 +6770,11 @@ class $$CachedOrdersTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedOrdersTableAnnotationComposer
@@ -6653,6 +6825,11 @@ class $$CachedOrdersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => column,
+  );
 
   Expression<T> cachedOrderItemsRefs<T extends Object>(
     Expression<T> Function($$CachedOrderItemsTableAnnotationComposer a) f,
@@ -6718,6 +6895,7 @@ class $$CachedOrdersTableTableManager
                 Value<double> discountAmount = const Value.absent(),
                 Value<double> totalAmount = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> lastUpdated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedOrdersCompanion(
                 id: id,
@@ -6730,6 +6908,7 @@ class $$CachedOrdersTableTableManager
                 discountAmount: discountAmount,
                 totalAmount: totalAmount,
                 createdAt: createdAt,
+                lastUpdated: lastUpdated,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -6744,6 +6923,7 @@ class $$CachedOrdersTableTableManager
                 required double discountAmount,
                 required double totalAmount,
                 required DateTime createdAt,
+                Value<DateTime> lastUpdated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedOrdersCompanion.insert(
                 id: id,
@@ -6756,6 +6936,7 @@ class $$CachedOrdersTableTableManager
                 discountAmount: discountAmount,
                 totalAmount: totalAmount,
                 createdAt: createdAt,
+                lastUpdated: lastUpdated,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7191,6 +7372,7 @@ typedef $$CachedFavouritesTableCreateCompanionBuilder =
       required String id,
       required String type,
       Value<DateTime> addedAt,
+      Value<DateTime> lastUpdated,
       Value<int> rowid,
     });
 typedef $$CachedFavouritesTableUpdateCompanionBuilder =
@@ -7198,6 +7380,7 @@ typedef $$CachedFavouritesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> type,
       Value<DateTime> addedAt,
+      Value<DateTime> lastUpdated,
       Value<int> rowid,
     });
 
@@ -7222,6 +7405,11 @@ class $$CachedFavouritesTableFilterComposer
 
   ColumnFilters<DateTime> get addedAt => $composableBuilder(
     column: $table.addedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7249,6 +7437,11 @@ class $$CachedFavouritesTableOrderingComposer
     column: $table.addedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedFavouritesTableAnnotationComposer
@@ -7268,6 +7461,11 @@ class $$CachedFavouritesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get addedAt =>
       $composableBuilder(column: $table.addedAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => column,
+  );
 }
 
 class $$CachedFavouritesTableTableManager
@@ -7310,11 +7508,13 @@ class $$CachedFavouritesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<DateTime> addedAt = const Value.absent(),
+                Value<DateTime> lastUpdated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedFavouritesCompanion(
                 id: id,
                 type: type,
                 addedAt: addedAt,
+                lastUpdated: lastUpdated,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7322,11 +7522,13 @@ class $$CachedFavouritesTableTableManager
                 required String id,
                 required String type,
                 Value<DateTime> addedAt = const Value.absent(),
+                Value<DateTime> lastUpdated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedFavouritesCompanion.insert(
                 id: id,
                 type: type,
                 addedAt: addedAt,
+                lastUpdated: lastUpdated,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7362,6 +7564,7 @@ typedef $$CachedCartItemsTableCreateCompanionBuilder =
       Value<String?> imageUrl,
       required double price,
       Value<int> quantity,
+      Value<DateTime> lastUpdated,
       Value<int> rowid,
     });
 typedef $$CachedCartItemsTableUpdateCompanionBuilder =
@@ -7372,6 +7575,7 @@ typedef $$CachedCartItemsTableUpdateCompanionBuilder =
       Value<String?> imageUrl,
       Value<double> price,
       Value<int> quantity,
+      Value<DateTime> lastUpdated,
       Value<int> rowid,
     });
 
@@ -7411,6 +7615,11 @@ class $$CachedCartItemsTableFilterComposer
 
   ColumnFilters<int> get quantity => $composableBuilder(
     column: $table.quantity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -7453,6 +7662,11 @@ class $$CachedCartItemsTableOrderingComposer
     column: $table.quantity,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedCartItemsTableAnnotationComposer
@@ -7485,6 +7699,11 @@ class $$CachedCartItemsTableAnnotationComposer
 
   GeneratedColumn<int> get quantity =>
       $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastUpdated => $composableBuilder(
+    column: $table.lastUpdated,
+    builder: (column) => column,
+  );
 }
 
 class $$CachedCartItemsTableTableManager
@@ -7530,6 +7749,7 @@ class $$CachedCartItemsTableTableManager
                 Value<String?> imageUrl = const Value.absent(),
                 Value<double> price = const Value.absent(),
                 Value<int> quantity = const Value.absent(),
+                Value<DateTime> lastUpdated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedCartItemsCompanion(
                 menuItemId: menuItemId,
@@ -7538,6 +7758,7 @@ class $$CachedCartItemsTableTableManager
                 imageUrl: imageUrl,
                 price: price,
                 quantity: quantity,
+                lastUpdated: lastUpdated,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -7548,6 +7769,7 @@ class $$CachedCartItemsTableTableManager
                 Value<String?> imageUrl = const Value.absent(),
                 required double price,
                 Value<int> quantity = const Value.absent(),
+                Value<DateTime> lastUpdated = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedCartItemsCompanion.insert(
                 menuItemId: menuItemId,
@@ -7556,6 +7778,7 @@ class $$CachedCartItemsTableTableManager
                 imageUrl: imageUrl,
                 price: price,
                 quantity: quantity,
+                lastUpdated: lastUpdated,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

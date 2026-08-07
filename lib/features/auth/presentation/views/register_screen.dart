@@ -128,9 +128,7 @@ class _RegisterState extends ConsumerState<Register>
             child: Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(
-                    'https://images.unsplash.com/photo-1550966841-3ee32281831c?q=80&w=2070&auto=format&fit=crop',
-                  ),
+                  image: AssetImage('assets/food7.webp'),
                   fit: BoxFit.cover,
                 ),
               ),

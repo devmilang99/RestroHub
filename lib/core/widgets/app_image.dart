@@ -70,37 +70,31 @@ class AppImage extends StatelessWidget {
         fit: fit,
         // Using the base imagePath as the cacheKey ensures that if we've downloaded
         // any version of this image, we can potentially reuse it or avoid redundant lookups.
-        // Note: Only use this if you want to prioritize speed over getting the absolute
-        // latest optimized version for the specific dimensions.
         cacheKey: optimize ? null : imagePath,
         memCacheWidth: effectiveWidth != null
-            ? ((effectiveWidth * 2 / 100).ceil() * 100) // Round to nearest 100
-            : 800,
+            ? ((effectiveWidth * 2 / 200).ceil() * 200) // Align with bucketing
+            : (type == AppImageType.banner ? 1200 : 800),
         memCacheHeight: effectiveHeight != null
-            ? ((effectiveHeight * 2 / 100).ceil() * 100)
+            ? ((effectiveHeight * 2 / 200).ceil() * 200)
             : null,
-        fadeOutDuration: const Duration(milliseconds: 300),
-        fadeInDuration: const Duration(milliseconds: 300),
-        placeholder: (context, url) => Container(
-          width: width,
-          height: height,
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
-          child: Center(
-            child: Opacity(
-              opacity: 0.5,
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 1.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    colorScheme.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+        maxWidthDiskCache: type == AppImageType.banner ? 1200 : 800,
+        fadeOutDuration: const Duration(milliseconds: 150),
+        fadeInDuration: const Duration(milliseconds: 150),
+        placeholder: (context, url) {
+          // Progressive Loading: Use a low-res thumbnail as a placeholder for banners
+          if (type == AppImageType.banner &&
+              imagePath.contains('supabase.co')) {
+            return CachedNetworkImage(
+              imageUrl: ImageUtils.getRestaurantThumbnail(imagePath),
+              width: width,
+              height: height,
+              fit: fit,
+              placeholder: (context, url) =>
+                  _buildBasicPlaceholder(colorScheme),
+            );
+          }
+          return _buildBasicPlaceholder(colorScheme);
+        },
         errorWidget: (context, url, error) => Container(
           width: width,
           height: height,
@@ -143,5 +137,28 @@ class AppImage extends StatelessWidget {
       return ClipRRect(borderRadius: borderRadius!, child: image);
     }
     return image;
+  }
+
+  Widget _buildBasicPlaceholder(ColorScheme colorScheme) {
+    return Container(
+      width: width,
+      height: height,
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+      child: Center(
+        child: Opacity(
+          opacity: 0.5,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                colorScheme.primary.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

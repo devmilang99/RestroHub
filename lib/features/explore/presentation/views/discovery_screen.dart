@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
@@ -146,6 +144,12 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         },
         skeleton: _buildLoadingState(),
         isGrid: true,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.65,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+        ),
         isLoadingMore: _isLoadingMore,
         onLoadMore: () async {
           if (_isLoadingMore) return;
@@ -176,6 +180,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
   Widget _buildRestaurantCard(RestaurantModel restaurant) {
     final isFavourited = ref.watch(isFavouriteProvider(restaurant.id));
+    final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTap: () {
@@ -221,7 +226,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Colors.amber,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -302,15 +307,34 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                       fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Text(
-                    'Min - Max : Rs.${(restaurant.minOrderAmount > 0 ? restaurant.minOrderAmount : (Random().nextInt(1001) + 500)).toStringAsFixed(0)} - 1500',
-                    maxLines: 1,
+                    restaurant.description,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.poppins(
                       fontSize: 10,
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade600,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: () {
+                      context.push('/restaurantMenu', extra: restaurant);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'Explore more',
+                      style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -392,7 +416,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Colors.amber,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -450,7 +474,18 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                       fontSize: 14,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: Colors.grey.shade600,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -515,7 +550,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     return SliverGrid(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.65,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),

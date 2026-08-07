@@ -27,6 +27,8 @@ void main() {
         name: 'Test Restaurant',
         status: const Value('open'),
         rating: const Value(4.5),
+        minOrderAmount: const Value(15.0),
+        taxPercent: const Value(13.0),
       );
 
       await db.into(db.cachedRestaurants).insert(restaurant);
@@ -39,6 +41,8 @@ void main() {
       expect(result.name, 'Test Restaurant');
       expect(result.status, 'open');
       expect(result.rating, 4.5);
+      expect(result.minOrderAmount, 15.0);
+      expect(result.taxPercent, 13.0);
     });
 
     test('should update a restaurant', () async {
@@ -129,12 +133,14 @@ void main() {
               name: 'Burger',
               price: 9.99,
               quantity: const Value(1),
+              restaurantId: const Value('res_1'),
             ),
           );
 
       var cart = await db.select(db.cachedCartItems).get();
       expect(cart.length, 1);
       expect(cart.first.quantity, 1);
+      expect(cart.first.restaurantId, 'res_1');
 
       // Update quantity
       await (db.update(db.cachedCartItems)
@@ -172,6 +178,30 @@ void main() {
         db.cachedFavourites,
       )..where((t) => t.id.equals('res_1'))).go();
       expect(await db.select(db.cachedFavourites).get(), isEmpty);
+    });
+  });
+
+  group('CachedUserAddresses', () {
+    test('should insert and retrieve addresses', () async {
+      await db
+          .into(db.cachedUserAddresses)
+          .insert(
+            CachedUserAddressesCompanion.insert(
+              id: 'addr_1',
+              label: const Value('Work'),
+              addressLine1: '123 Tech Park',
+              city: 'Kathmandu',
+              isDefault: const Value(true),
+            ),
+          );
+
+      final result = await (db.select(
+        db.cachedUserAddresses,
+      )..where((t) => t.id.equals('addr_1'))).getSingle();
+
+      expect(result.label, 'Work');
+      expect(result.addressLine1, '123 Tech Park');
+      expect(result.isDefault, isTrue);
     });
   });
 
@@ -345,6 +375,32 @@ void main() {
         expect((await db.select(db.cachedRestaurants).get()).length, 1);
       },
     );
+  });
+
+  group('Sync Maintenance (clearRestaurantData)', () {
+    test('should clear restaurants and sync metadata', () async {
+      await db
+          .into(db.cachedRestaurants)
+          .insert(
+            CachedRestaurantsCompanion.insert(id: 'res_1', name: 'Res 1'),
+          );
+      await db
+          .into(db.syncMetadata)
+          .insert(
+            SyncMetadataCompanion.insert(
+              tableIdentifier: 'res',
+              lastSync: DateTime.now(),
+            ),
+          );
+
+      expect((await db.select(db.cachedRestaurants).get()).length, 1);
+      expect((await db.select(db.syncMetadata).get()).length, 1);
+
+      await db.clearRestaurantData();
+
+      expect(await db.select(db.cachedRestaurants).get(), isEmpty);
+      expect(await db.select(db.syncMetadata).get(), isEmpty);
+    });
   });
 
   group('SyncMetadata', () {

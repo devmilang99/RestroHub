@@ -322,6 +322,17 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
+                  Text(
+                    item.description,
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: Colors.grey.shade600,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Icon(

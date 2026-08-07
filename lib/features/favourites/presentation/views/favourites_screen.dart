@@ -7,6 +7,9 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/widgets/app_image.dart';
+import 'package:restro_hub/features/cart/data/models/cart_model.dart';
+import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
+import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_skeletons.dart';
 import 'package:restro_hub/features/favourites/data/models/favourite_item.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
 
@@ -53,7 +56,14 @@ class ShowFavourites extends ConsumerWidget {
           }
           return _FavouritesList(favs: favs);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.all(16),
+              sliver: SliverListSkeleton(itemCount: 5),
+            ),
+          ],
+        ),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
@@ -131,142 +141,172 @@ class _RestaurantFavouriteCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     final restaurant = item.restaurant;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final cardBgColor = isDark ? const Color(0xFF1A1F24) : colorScheme.surface;
+    final highlightColor = isDark
+        ? const Color(0xFFFFB74D)
+        : colorScheme.primary;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
-      clipBehavior: Clip.antiAlias,
       child: IntrinsicHeight(
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image
             Hero(
               tag: 'restaurant_${restaurant.id}',
-              child: SizedBox(
-                width: 100,
-                child: AppImage(
-                  imagePath: restaurant.logoUrl ?? '',
-                  width: 100,
-                  height: 120, // Reasonable height for the card
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            restaurant.name,
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.star,
-                                size: 12,
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                restaurant.rating.toString(),
-                                style: textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      restaurant.description,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: colorScheme.primary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            restaurant.locationAddress ?? 'No address',
-                            style: textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: AppImage(
+                    imagePath: restaurant.logoUrl ?? '',
+                    width: 100,
+                    height: 110,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
-            // Actions
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+            const SizedBox(width: 16),
+            // Info
+            Expanded(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.favorite, color: Colors.red),
-                    onPressed: onRemove,
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        restaurant.name,
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: highlightColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.star, size: 12, color: highlightColor),
+                            const SizedBox(width: 2),
+                            Text(
+                              restaurant.rating.toString(),
+                              style: textTheme.labelSmall?.copyWith(
+                                color: highlightColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 18,
-                      color: colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 6),
+                  Text(
+                    restaurant.description,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: isDark ? Colors.white60 : Colors.grey.shade600,
                     ),
-                    onPressed: () {
-                      // Navigate to restaurant detail
-                    },
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: highlightColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          restaurant.locationAddress ?? 'No address',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: isDark
+                                ? Colors.white60
+                                : Colors.grey.shade600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
+            // Actions
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                GestureDetector(
+                  onTap: onRemove,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.1)
+                          : Colors.black.withOpacity(0.05),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.favorite,
+                      size: 20,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: isDark ? Colors.white38 : Colors.grey,
+                ),
+                const SizedBox(height: 8),
+              ],
             ),
           ],
         ),
@@ -275,110 +315,250 @@ class _RestaurantFavouriteCard extends StatelessWidget {
   }
 }
 
-class _MenuItemFavouriteCard extends StatelessWidget {
+class _MenuItemFavouriteCard extends ConsumerWidget {
   final MenuItemFavourite item;
   final VoidCallback onRemove;
 
   const _MenuItemFavouriteCard({required this.item, required this.onRemove});
 
   @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = context.colorScheme;
+    final textTheme = context.textTheme;
     final menuItem = item.menuItem;
+    final restaurant = item.restaurant;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Use dark colors from image if possible, or theme colors
+    final cardBgColor = isDark ? const Color(0xFF1A1F24) : colorScheme.surface;
+    final highlightColor = isDark
+        ? const Color(0xFFFFB74D)
+        : colorScheme.primary;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            // Image
-            Hero(
-              tag: 'food_${menuItem.id}',
-              child: SizedBox(
-                width: 100,
-                child: AppImage(
-                  imagePath: menuItem.imageUrl ?? '',
-                  width: 100,
-                  height: 120,
-                  fit: BoxFit.cover,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Restaurant Info & Heart
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: highlightColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.storefront, size: 14, color: highlightColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  restaurant?.name ?? 'Restaurant',
+                  style: textTheme.labelLarge?.copyWith(
+                    color: isDark ? highlightColor : colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
-            ),
-            // Info
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
+              GestureDetector(
+                onTap: onRemove,
+                child: const Icon(
+                  Icons.favorite,
+                  color: Colors.red,
+                  size: 22,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Middle Row: Image & Details
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Food Image
+              Hero(
+                tag: 'food_${menuItem.id}',
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: AppImage(
+                      imagePath: menuItem.imageUrl ?? '',
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              // Details
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       menuItem.name,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : colorScheme.onSurface,
+                        fontSize: 18,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
                       menuItem.description,
                       style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                        color: isDark ? Colors.white60 : Colors.grey.shade600,
+                        height: 1.4,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
-                      'Rs. ${menuItem.price}',
-                      style: TextStyle(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
+                      'Rs. ${menuItem.price.toStringAsFixed(0)}',
+                      style: textTheme.headlineSmall?.copyWith(
+                        color: isDark ? highlightColor : colorScheme.primary,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            // Actions
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.favorite, color: Colors.red),
-                    onPressed: onRemove,
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.add_shopping_cart,
-                      color: colorScheme.primary,
-                    ),
-                    onPressed: () {
-                      // Add to cart logic
-                    },
-                  ),
-                ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Bottom Row: Stats & Add to Cart
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _StatItem(
+                icon: Icons.star_rounded,
+                label: menuItem.rating.toStringAsFixed(1),
+                color: highlightColor,
+                isDark: isDark,
               ),
-            ),
-          ],
-        ),
+              _StatItem(
+                icon: Icons.access_time_rounded,
+                label: '25 min',
+                color: isDark ? Colors.white60 : Colors.grey.shade600,
+                isDark: isDark,
+              ),
+              _StatItem(
+                icon: Icons.location_on_outlined,
+                label: '1.2 km',
+                color: isDark ? Colors.white60 : Colors.grey.shade600,
+                isDark: isDark,
+              ),
+              GestureDetector(
+                onTap: () async {
+                  final cartItem = CartModel(
+                    id: menuItem.id ?? menuItem.name,
+                    name: menuItem.name,
+                    image: menuItem.imageUrl ?? '',
+                    price: menuItem.price,
+                    quantity: 1,
+                    restaurantId: menuItem.categoryId, // Fallback
+                  );
+                  await ref.read(cartProvider.notifier).addItem(cartItem);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('${menuItem.name} added to cart'),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: highlightColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: highlightColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.add_shopping_cart_rounded,
+                    color: highlightColor,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isDark;
+
+  const _StatItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: color,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

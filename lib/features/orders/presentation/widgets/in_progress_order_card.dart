@@ -383,7 +383,7 @@ class _InProgressOrderCardState extends ConsumerState<InProgressOrderCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Order Initiating...',
+                  'Cancel Window...',
                   style: textTheme.labelLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.error,

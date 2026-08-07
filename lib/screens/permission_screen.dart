@@ -111,8 +111,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           title: 'Smart Location',
           description: 'Helps us find the nearest culinary gems around you.',
           icon: Icons.location_on_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
+          imageUrl: 'assets/food5.webp',
         ),
       );
     } else if (Platform.isAndroid) {
@@ -127,8 +126,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           description:
               'Receive real-time updates on your order status and exclusive offers.',
           icon: Icons.notifications_active_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1579389083046-e3df9c2b3325?q=80&w=1974&auto=format&fit=crop',
+          imageUrl: 'assets/food6.webp',
         ),
       );
 
@@ -141,8 +139,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           description:
               'Needed to access your gallery for profile pictures and food memories.',
           icon: Icons.photo_library_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
+          imageUrl: 'assets/food7.webp',
         ),
       );
 
@@ -152,8 +149,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           title: 'Smart Location',
           description: 'Helps us find the nearest culinary gems around you.',
           icon: Icons.location_on_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
+          imageUrl: 'assets/food5.webp',
         ),
         PermissionItem(
           permission: Permission.contacts,
@@ -161,16 +157,14 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           description:
               'Invite and share your favorite meals with friends effortlessly.',
           icon: Icons.people_alt_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop',
+          imageUrl: 'assets/food3.webp',
         ),
         PermissionItem(
           permission: Permission.camera,
           title: 'Camera Access',
           description: 'Capture photos of dishes and create food memories.',
           icon: Icons.camera_alt_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?q=80&w=2070&auto=format&fit=crop',
+          imageUrl: 'assets/food4.webp',
         ),
       ]);
     } else if (Platform.isIOS) {
@@ -181,8 +175,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           description:
               'Receive real-time updates on your order status and exclusive offers.',
           icon: Icons.notifications_active_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1579389083046-e3df9c2b3325?q=80&w=1974&auto=format&fit=crop',
+          imageUrl: 'assets/food6.webp',
         ),
         PermissionItem(
           permission: Permission.photos,
@@ -190,16 +183,14 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           description:
               'Needed to save your receipts and download digital menus.',
           icon: Icons.folder_open_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=2070&auto=format&fit=crop',
+          imageUrl: 'assets/food7.webp',
         ),
         PermissionItem(
           permission: Permission.location,
           title: 'Smart Location',
           description: 'Helps us find the nearest culinary gems around you.',
           icon: Icons.location_on_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=2068&auto=format&fit=crop',
+          imageUrl: 'assets/food5.webp',
         ),
         PermissionItem(
           permission: Permission.contacts,
@@ -207,16 +198,14 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
           description:
               'Invite and share your favorite meals with friends effortlessly.',
           icon: Icons.people_alt_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop',
+          imageUrl: 'assets/food3.webp',
         ),
         PermissionItem(
           permission: Permission.camera,
           title: 'Camera Access',
           description: 'Capture photos of dishes and create food memories.',
           icon: Icons.camera_alt_rounded,
-          imageUrl:
-              'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?q=80&w=2070&auto=format&fit=crop',
+          imageUrl: 'assets/food4.webp',
         ),
       ]);
     }
@@ -510,7 +499,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
               key: ValueKey(currentImageUrl),
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(currentImageUrl),
+                  image: AssetImage(currentImageUrl),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
                     Colors.black.withValues(alpha: 0.7),

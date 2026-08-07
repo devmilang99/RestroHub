@@ -11,6 +11,7 @@ class DashboardSkeleton extends StatelessWidget {
         SliverCountryCardsSkeleton(),
         SliverOfferCardsSkeleton(),
         SliverRestaurantCardsSkeleton(),
+        SliverFoodCardsSkeleton(),
       ],
     );
   }
@@ -38,24 +39,24 @@ class SliverCountryCardsSkeleton extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 148,
+              height: 140,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
+                padding: const EdgeInsets.only(left: 8),
                 itemCount: 6,
                 itemBuilder: (context, index) {
                   return const Padding(
-                    padding: EdgeInsets.only(right: 12),
+                    padding: EdgeInsets.only(right: 16),
                     child: Column(
                       children: [
                         ShimmerPlaceholder(
-                          width: 100,
-                          height: 100,
-                          borderRadius: 12,
+                          width: 80,
+                          height: 80,
+                          borderRadius: 40,
                         ),
                         SizedBox(height: 8),
                         ShimmerPlaceholder(
-                          width: 80,
+                          width: 60,
                           height: 12,
                           borderRadius: 6,
                         ),
@@ -152,6 +153,52 @@ class SliverRestaurantCardsSkeleton extends StatelessWidget {
                       width: 200,
                       height: 200,
                       borderRadius: 15,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SliverFoodCardsSkeleton extends StatelessWidget {
+  const SliverFoodCardsSkeleton({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverMainAxisGroup(
+        slivers: [
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(8, 24, 8, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ShimmerPlaceholder(width: 200, height: 20, borderRadius: 8),
+                  ShimmerPlaceholder(width: 50, height: 20, borderRadius: 8),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 340,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+                itemCount: 5,
+                itemBuilder: (context, index) {
+                  return const Padding(
+                    padding: EdgeInsets.only(right: 16),
+                    child: ShimmerPlaceholder(
+                      width: 160,
+                      height: 340,
+                      borderRadius: 20,
                     ),
                   );
                 },

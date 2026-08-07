@@ -1,13 +1,12 @@
 import 'dart:async';
 
-import 'package:restro_hub/core/widgets/app_image.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
-import 'package:restro_hub/core/widgets/shimmer_placeholder.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart'
     as cart_model;
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
@@ -174,15 +173,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(
+                alpha: colorScheme.brightness == Brightness.dark ? 0.8 : 0.3,
+              ),
+            ),
           ),
           child: TextField(
             controller: _searchController,
             autofocus: true,
             onChanged: (val) => setState(() => _query = val),
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search, size: 20),
+            decoration: InputDecoration(
+              suffixIcon: Icon(
+                Icons.search,
+                size: 20,
+                color: colorScheme.primary,
+              ),
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(vertical: 10),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 10,
+                horizontal: 12,
+              ),
             ),
           ),
         ),
@@ -304,30 +315,6 @@ class SearchFoodCard extends ConsumerWidget {
   final MenuItemModel item;
   const SearchFoodCard({required this.item, super.key});
 
-  Future<void> _navigateToRestaurant(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
-    final restaurantId = await ref.read(
-      restaurantIdFromCategoryProvider(item.categoryId).future,
-    );
-    if (restaurantId != null) {
-      final restaurant = await ref.read(
-        restaurantFromIdProvider(restaurantId).future,
-      );
-      if (restaurant != null && context.mounted) {
-        unawaited(
-          Navigator.push<void>(
-            context,
-            MaterialPageRoute<void>(
-              builder: (_) => RestaurantMenuScreen(restaurant: restaurant),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
@@ -336,8 +323,11 @@ class SearchFoodCard extends ConsumerWidget {
     );
 
     return GestureDetector(
-      onTap: () async {
-        await _navigateToRestaurant(context, ref);
+      onTap: () {
+        context.pushNamed(
+          'cuisineSingleItem',
+          extra: item,
+        );
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -345,6 +335,11 @@ class SearchFoodCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(
+              alpha: colorScheme.brightness == Brightness.dark ? 0.8 : 0.5,
+            ),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),

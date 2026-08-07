@@ -123,9 +123,7 @@ class _AuthenticatedPasswordScreenState
             child: Container(
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(
-                    'https://images.unsplash.com/photo-1517248135467-4c7ed9d42c77?q=80&w=2070&auto=format&fit=crop',
-                  ),
+                  image: AssetImage('assets/food2.webp'),
                   fit: BoxFit.cover,
                 ),
               ),

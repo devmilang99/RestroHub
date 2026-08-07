@@ -41,7 +41,7 @@ final class GlobalSyncStatusProvider
   }
 }
 
-String _$globalSyncStatusHash() => r'eae1773c3c752bc366b881aa0088bca1034f530d';
+String _$globalSyncStatusHash() => r'ff3f3bea9bbf498c12532cda0337d3ab33b6f758';
 
 abstract class _$GlobalSyncStatus extends $Notifier<SyncState> {
   SyncState build();

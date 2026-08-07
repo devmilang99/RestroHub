@@ -1,11 +1,15 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
+import 'package:restro_hub/core/models/result.dart';
 import 'package:restro_hub/core/providers/error_service.dart';
+import 'package:restro_hub/core/utils/app_exception.dart';
 import 'package:restro_hub/core/utils/background_worker.dart';
 import 'package:restro_hub/core/utils/image_utils.dart';
 import 'package:restro_hub/core/utils/logger.dart';
@@ -13,8 +17,9 @@ import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dar
 import 'package:restro_hub/infrastructure/supabase/supabase_service.dart';
 import 'package:restro_hub/infrastructure/sync/models/sync_status.dart';
 import 'package:restro_hub/infrastructure/sync/sync_monitor_provider.dart';
+import 'package:restro_hub/router/router_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 
 part 'supabase_sync_manager.g.dart';
 
@@ -30,30 +35,49 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
   User? get currentUser => _client.auth.currentUser;
 
   /// Runs all core sync tasks concurrently for maximum efficiency during startup.
-  Future<void> syncAllInitialData() async {
-    logInfo('SYNC: Initiating concurrent global synchronization...');
+  /// Modified to use a phased approach:
+  /// 1. Metadata only (Restaurants, Orders, Cart, Favs) for fast splash transition.
+  /// 2. Detailed hierarchy (Menu Categories, Items) in the background.
+  Future<void> syncAllInitialData({bool metadataOnly = true}) async {
+    logInfo(
+      'SYNC: Initiating concurrent global synchronization (metadataOnly: $metadataOnly)...',
+    );
 
     // Fire all sync tasks in parallel to saturate the network and IO pipes
-    await Future.wait([
-      syncRestaurants(force: false),
+    final results = await Future.wait([
+      syncRestaurants(force: false, metadataOnly: metadataOnly),
       syncRemoteOrders(),
       syncRemoteCart(),
       syncRemoteFavourites(),
     ]);
 
-    logInfo('SYNC: Concurrent global synchronization completed.');
+    // Log summarizing the results of parallel syncs
+    final failures = results.where((r) => r.isFailure).length;
+    if (failures > 0) {
+      logWarning(
+        'SYNC: Phased global synchronization completed with $failures failures.',
+      );
+    } else {
+      logInfo('SYNC: Phased global synchronization completed successfully.');
+    }
+
+    // If we just finished metadata, trigger the detailed sync in background
+    if (metadataOnly) {
+      unawaited(syncDetailedHierarchy());
+    }
   }
 
   /// Initiates a background sync of restaurants, categories, and items into Drift.
-  Future<void> syncRestaurants({
+  Future<Result<void>> syncRestaurants({
     bool force = false,
     bool clearCache = false,
+    bool metadataOnly = false,
   }) async {
     final syncState = ref.read(globalSyncStatusProvider);
 
     if (syncState.status == SyncStatus.syncing) {
       logInfo('SYNC: Sync already in progress, skipping...');
-      return;
+      return Result.success(null);
     }
 
     // Skip if last sync was successful and recent (within 1 minute)
@@ -63,11 +87,13 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         logInfo(
           'SYNC: Data is fresh (last synced ${timeSinceLastSync.inMinutes}m ago). Skipping...',
         );
-        return;
+        return Result.success(null);
       }
     }
 
-    logInfo('SYNC: Starting restaurant synchronization...');
+    logInfo(
+      'SYNC: Starting restaurant synchronization (metadataOnly: $metadataOnly)...',
+    );
     await Future.microtask(() {
       if (ref.mounted) {
         ref.read(globalSyncStatusProvider.notifier).startSync();
@@ -76,7 +102,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     });
 
     try {
-      if (!ref.mounted) return;
+      if (!ref.mounted) return Result.failure(ServerException('Ref unmounted'));
       final db = await ref.read(appDatabaseProvider.future);
 
       if (clearCache) {
@@ -93,10 +119,13 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       }
 
       logInfo('SYNC: Fetching restaurants from Supabase...');
-      // Fetch from Supabase with deep nesting
-      final response = await _client
+      // Fetch from Supabase - metadata only or deep nesting
+      final query = _client
           .from('restaurants')
-          .select('*, menu_categories(*, menu_items(*))');
+          .select(
+            metadataOnly ? '*' : '*, menu_categories(*, menu_items(*))',
+          );
+      final response = await query;
       final data = response as List<dynamic>;
 
       if (ref.mounted) {
@@ -108,12 +137,12 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         if (ref.mounted) {
           ref.read(globalSyncStatusProvider.notifier).completeSync();
         }
-        return;
+        return Result.success(null);
       }
 
       logInfo('SYNC: Fetched ${data.length} raw restaurant records.');
 
-      if (!ref.mounted) return;
+      if (!ref.mounted) return Result.failure(ServerException('Ref unmounted'));
 
       // Heavy JSON parsing in background isolate
       logInfo('SYNC: Parsing restaurant data in background...');
@@ -135,29 +164,26 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         );
       }
 
-      if (!ref.mounted) return;
+      if (!ref.mounted) return Result.failure(ServerException('Ref unmounted'));
 
       // ATOMIC SYNC: We use a transaction to clear old data and insert new data
       // This ensures the database is NEVER empty or in a partial state for the user.
       logInfo(
-        'SYNC: Starting atomic database swap for ${restaurants.length} restaurants...',
+        'SYNC: Starting atomic database sync for ${restaurants.length} restaurants (metadataOnly: $metadataOnly)...',
       );
 
-      await db.transaction(() async {
-        // 1. Clear old data
-        await db.clearRestaurantData();
+      // CHUNKED SYNC: Process in smaller chunks with separate transactions
+      // to keep memory usage low and prevent long UI blocks.
+      const chunkSize = 50;
+      final totalChunks = (restaurants.length / chunkSize).ceil();
 
-        // 2. Perform Batch Insertion
-        // We use a larger chunk size for high efficiency in transactions
-        const chunkSize = 50;
-        final totalChunks = (restaurants.length / chunkSize).ceil();
+      for (var i = 0; i < restaurants.length; i += chunkSize) {
+        final end = (i + chunkSize < restaurants.length)
+            ? i + chunkSize
+            : restaurants.length;
+        final chunk = restaurants.sublist(i, end);
 
-        for (var i = 0; i < restaurants.length; i += chunkSize) {
-          final end = (i + chunkSize < restaurants.length)
-              ? i + chunkSize
-              : restaurants.length;
-          final chunk = restaurants.sublist(i, end);
-
+        await db.transaction(() async {
           await db.batch((batch) {
             for (final restaurant in chunk) {
               if (restaurant.id == null || restaurant.id!.isEmpty) continue;
@@ -187,58 +213,65 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
                 mode: InsertMode.insertOrReplace,
               );
 
-              // Insert Categories
-              for (final category in restaurant.categories) {
-                if (category.id == null || category.id!.isEmpty) continue;
-
-                batch.insert(
-                  db.cachedMenuCategories,
-                  CachedMenuCategoriesCompanion(
-                    id: Value(category.id!),
-                    restaurantId: Value(restaurant.id!),
-                    name: Value(category.name),
-                    priority: Value(category.priority),
-                  ),
-                  mode: InsertMode.insertOrReplace,
-                );
-
-                // Insert Items
-                for (final item in category.items) {
-                  if (item.id == null || item.id!.isEmpty) continue;
+              // Insert Categories only if not metadataOnly
+              if (!metadataOnly) {
+                for (final category in restaurant.categories) {
+                  if (category.id == null || category.id!.isEmpty) continue;
 
                   batch.insert(
-                    db.cachedMenuItems,
-                    CachedMenuItemsCompanion(
-                      id: Value(item.id!),
-                      categoryId: Value(category.id!),
-                      name: Value(item.name),
-                      price: Value(item.price),
-                      description: Value(item.description),
-                      imageUrl: Value(item.imageUrl),
-                      isAvailable: Value(item.isAvailable),
-                      calories: Value(item.calories),
-                      rating: Value(item.rating),
-                      dietaryFlags: Value(item.dietaryFlags),
+                    db.cachedMenuCategories,
+                    CachedMenuCategoriesCompanion(
+                      id: Value(category.id!),
+                      restaurantId: Value(restaurant.id!),
+                      name: Value(category.name),
+                      priority: Value(category.priority),
                     ),
                     mode: InsertMode.insertOrReplace,
                   );
+
+                  // Insert Items
+                  for (final item in category.items) {
+                    if (item.id == null || item.id!.isEmpty) continue;
+
+                    batch.insert(
+                      db.cachedMenuItems,
+                      CachedMenuItemsCompanion(
+                        id: Value(item.id!),
+                        categoryId: Value(category.id!),
+                        name: Value(item.name),
+                        price: Value(item.price),
+                        description: Value(item.description),
+                        imageUrl: Value(item.imageUrl),
+                        isAvailable: Value(item.isAvailable),
+                        calories: Value(item.calories),
+                        rating: Value(item.rating),
+                        dietaryFlags: Value(item.dietaryFlags),
+                      ),
+                      mode: InsertMode.insertOrReplace,
+                    );
+                  }
                 }
               }
             }
           });
+        });
 
-          // Update progress during insertion (from 0.5 to 0.9)
-          if (ref.mounted) {
-            final currentChunkIdx = i ~/ chunkSize;
-            final insertionProgress =
-                0.5 + (0.4 * (currentChunkIdx / totalChunks));
-            ref
-                .read(globalSyncStatusProvider.notifier)
-                .updateProgress(insertionProgress);
-          }
+        // Update progress during insertion (from 0.5 to 0.9)
+        if (ref.mounted) {
+          final currentChunkIdx = i ~/ chunkSize;
+          final insertionProgress =
+              0.5 + (0.4 * (currentChunkIdx / totalChunks));
+          ref
+              .read(globalSyncStatusProvider.notifier)
+              .updateProgress(insertionProgress);
         }
 
-        // Update sync metadata
+        // Small Breath
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+
+      // Update sync metadata in a final transaction
+      await db.transaction(() async {
         await db
             .into(db.syncMetadata)
             .insert(
@@ -251,6 +284,10 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       });
 
       logInfo('SYNC: Successfully completed restaurant sync.');
+
+      // Warm up image cache for the newly synced restaurants
+      unawaited(_warmupImageCache(restaurants));
+
       unawaited(
         Future.microtask(() {
           if (ref.mounted) {
@@ -258,6 +295,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           }
         }),
       );
+      return Result.success(null);
     } on Object catch (e, stack) {
       logError('SYNC ERROR: Detailed failure report', e, stack);
       unawaited(
@@ -271,14 +309,106 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       if (ref.mounted) {
         ref.read(errorServiceProvider.notifier).handleException(e, stack);
       }
+      return Result.failure(ServerException(e.toString()));
+    }
+  }
+
+  /// Detailed background sync for menu categories and items.
+  Future<Result<void>> syncDetailedHierarchy() async {
+    logInfo('SYNC: Starting detailed hierarchy background synchronization...');
+    try {
+      final db = await ref.read(appDatabaseProvider.future);
+      final response = await _client
+          .from('restaurants')
+          .select('id, menu_categories(*, menu_items(*))');
+      final data = response as List<dynamic>;
+
+      logInfo(
+        'SYNC: Fetched detailed hierarchy for ${data.length} restaurants.',
+      );
+
+      // Heavy JSON parsing in background isolate to avoid blocking UI
+      final restaurants = await BackgroundWorker.runHeavyTask(
+        _parseRestaurants,
+        data,
+      );
+
+      logInfo(
+        'SYNC: Parsed detailed hierarchy for ${restaurants.length} restaurants.',
+      );
+
+      // CHUNKED SYNC: Process in smaller chunks with separate transactions
+      // to keep memory usage low and prevent long UI blocks.
+      const chunkSize = 20;
+      for (var i = 0; i < restaurants.length; i += chunkSize) {
+        final end = (i + chunkSize < restaurants.length)
+            ? i + chunkSize
+            : restaurants.length;
+        final chunk = restaurants.sublist(i, end);
+
+        await db.transaction(() async {
+          await db.batch((batch) {
+            for (final restaurant in chunk) {
+              if (restaurant.id == null) continue;
+
+              for (final category in restaurant.categories) {
+                if (category.id == null) continue;
+
+                batch.insert(
+                  db.cachedMenuCategories,
+                  CachedMenuCategoriesCompanion.insert(
+                    id: category.id!,
+                    restaurantId: restaurant.id!,
+                    name: category.name,
+                    priority: Value(category.priority),
+                  ),
+                  mode: InsertMode.insertOrReplace,
+                );
+
+                for (final item in category.items) {
+                  if (item.id == null) continue;
+
+                  batch.insert(
+                    db.cachedMenuItems,
+                    CachedMenuItemsCompanion.insert(
+                      id: item.id!,
+                      categoryId: category.id!,
+                      name: item.name,
+                      price: item.price,
+                      description: Value(item.description),
+                      imageUrl: Value(item.imageUrl),
+                      isAvailable: Value(item.isAvailable),
+                      calories: Value(item.calories),
+                      rating: Value(item.rating),
+                      dietaryFlags: Value(item.dietaryFlags),
+                    ),
+                    mode: InsertMode.insertOrReplace,
+                  );
+                }
+              }
+            }
+          });
+        });
+
+        // Small breather for the event loop and GC
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+
+      logInfo('SYNC: Successfully completed detailed hierarchy sync.');
+      return Result.success(null);
+    } catch (e, stack) {
+      logError('SYNC ERROR: Detailed hierarchy sync failed', e, stack);
+      return Result.failure(ServerException(e.toString()));
     }
   }
 
   /// Fetches orders and their items from Supabase for the current user
   /// and synchronizes them to the local database.
-  Future<void> syncRemoteOrders() async {
+  Future<Result<void>> syncRemoteOrders() async {
     final userId = _client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      return Result.failure(const UnauthorizedException('No user logged in'));
+    }
 
     try {
       final db = await ref.read(appDatabaseProvider.future);
@@ -293,15 +423,11 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       if (data.isNotEmpty) {
         final first = data.first as Map<String, dynamic>;
         logInfo(
-          'SYNC READY: First Favourite: ID: ${first['item_id']} | Type: ${first['type']}',
+          'SYNC READY: First Order: ID: ${first['id']} | Status: ${first['status']}',
         );
       }
 
       await db.transaction(() async {
-        // We don't delete all orders to avoid losing local-only state if any,
-        // but for a pure remote-to-local sync, we can clear and refill.
-        await db.delete(db.cachedOrders).go();
-
         await db.batch((batch) {
           for (final orderJson in data) {
             final orderId = orderJson['id'] as String;
@@ -314,12 +440,16 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
                 status: orderJson['status'] as String,
                 paymentStatus:
                     (orderJson['payment_status'] ?? 'pending') as String,
-                subtotal: (orderJson['subtotal'] ?? 0.0) as double,
-                deliveryFee: (orderJson['delivery_fee'] ?? 0.0) as double,
-                taxAmount: (orderJson['tax_amount'] ?? 0.0) as double,
-                discountAmount: (orderJson['discount_amount'] ?? 0.0) as double,
-                totalAmount: (orderJson['total_amount'] ?? 0.0) as double,
+                subtotal: ((orderJson['subtotal'] ?? 0.0) as num).toDouble(),
+                deliveryFee: ((orderJson['delivery_fee'] ?? 0.0) as num)
+                    .toDouble(),
+                taxAmount: ((orderJson['tax_amount'] ?? 0.0) as num).toDouble(),
+                discountAmount: ((orderJson['discount_amount'] ?? 0.0) as num)
+                    .toDouble(),
+                totalAmount: ((orderJson['total_amount'] ?? 0.0) as num)
+                    .toDouble(),
                 createdAt: DateTime.parse(orderJson['created_at'] as String),
+                lastUpdated: Value(DateTime.now()),
               ),
               mode: InsertMode.insertOrReplace,
             );
@@ -335,8 +465,10 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
                     menuItemId: Value(itemJson['menu_item_id'] as String?),
                     name: itemJson['name'] as String,
                     quantity: (itemJson['quantity'] ?? 1) as int,
-                    unitPrice: (itemJson['unit_price'] ?? 0.0) as double,
-                    totalPrice: (itemJson['total_price'] ?? 0.0) as double,
+                    unitPrice: ((itemJson['unit_price'] ?? 0.0) as num)
+                        .toDouble(),
+                    totalPrice: ((itemJson['total_price'] ?? 0.0) as num)
+                        .toDouble(),
                   ),
                   mode: InsertMode.insertOrReplace,
                 );
@@ -346,15 +478,19 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         });
       });
       logInfo('SYNC: Successfully synchronized ${data.length} orders.');
+      return Result.success(null);
     } catch (e) {
       logError('SYNC ERROR: Failed to sync orders from Supabase', e);
+      return Result.failure(ServerException(e.toString()));
     }
   }
 
   /// Fetches the user's cart from Supabase and syncs to local database.
-  Future<void> syncRemoteCart() async {
+  Future<Result<void>> syncRemoteCart() async {
     final userId = _client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      return Result.failure(const UnauthorizedException('No user logged in'));
+    }
 
     try {
       final db = await ref.read(appDatabaseProvider.future);
@@ -368,12 +504,11 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       if (data.isNotEmpty) {
         final first = data.first as Map<String, dynamic>;
         logInfo(
-          'SYNC READY: First Favourite: ID: ${first['item_id']} | Type: ${first['type']}',
+          'SYNC READY: First Cart Item: ID: ${first['menu_item_id']} | Name: ${first['name']}',
         );
       }
 
       await db.transaction(() async {
-        await db.delete(db.cachedCartItems).go();
         await db.batch((batch) {
           for (final item in data) {
             batch.insert(
@@ -383,8 +518,9 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
                 restaurantId: Value(item['restaurant_id'] as String?),
                 name: item['name'] as String,
                 imageUrl: Value(item['image_url'] as String?),
-                price: (item['price_at_purchase'] ?? 0.0) as double,
+                price: ((item['price_at_purchase'] ?? 0.0) as num).toDouble(),
                 quantity: Value((item['quantity'] ?? 1) as int),
+                lastUpdated: Value(DateTime.now()),
               ),
               mode: InsertMode.insertOrReplace,
             );
@@ -392,15 +528,19 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         });
       });
       logInfo('SYNC: Successfully synchronized ${data.length} cart items.');
+      return Result.success(null);
     } catch (e) {
       logError('SYNC ERROR: Failed to sync cart from Supabase', e);
+      return Result.failure(ServerException(e.toString()));
     }
   }
 
   /// Fetches the user's favorites from Supabase and syncs to local database.
-  Future<void> syncRemoteFavourites() async {
+  Future<Result<void>> syncRemoteFavourites() async {
     final userId = _client.auth.currentUser?.id;
-    if (userId == null) return;
+    if (userId == null) {
+      return Result.failure(const UnauthorizedException('No user logged in'));
+    }
 
     try {
       final db = await ref.read(appDatabaseProvider.future);
@@ -419,7 +559,6 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       }
 
       await db.transaction(() async {
-        await db.delete(db.cachedFavourites).go();
         await db.batch((batch) {
           for (final item in data) {
             batch.insert(
@@ -432,6 +571,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
                       ? DateTime.parse(item['created_at'] as String)
                       : DateTime.now(),
                 ),
+                lastUpdated: Value(DateTime.now()),
               ),
               mode: InsertMode.insertOrReplace,
             );
@@ -439,8 +579,10 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         });
       });
       logInfo('SYNC: Successfully synchronized ${data.length} favourites.');
+      return Result.success(null);
     } catch (e) {
       logError('SYNC ERROR: Failed to sync favourites from Supabase', e);
+      return Result.failure(ServerException(e.toString()));
     }
   }
 
@@ -805,43 +947,38 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     final cacheManager = DefaultCacheManager();
 
     // 1. Group URLs by Priority
-    final criticalUrls = <String>{}; // Logos & Banners for initial view
-    final standardUrls = <String>{}; // Menu items & secondary content
+    final criticalUrls = <String>{}; // Logos for initial view
+    final standardUrls = <String>{}; // Banners for top restaurants
 
+    // Conservative Pre-caching strategy:
+    // Only logos for top 20 and banners for top 5. Skip all menu items.
     for (var i = 0; i < restaurants.length; i++) {
       final r = restaurants[i];
-      final isTopRestaurant = i < 15; // Prioritize top 15 for banners
 
-      // Logos are critical for the main list
-      if (r.logoUrl != null && r.logoUrl!.isNotEmpty) {
+      // Logos: Pre-cache top 20 for smooth home screen list scrolling
+      if (i < 20 && r.logoUrl != null && r.logoUrl!.isNotEmpty) {
         criticalUrls.add(ImageUtils.getRestaurantThumbnail(r.logoUrl));
       }
 
-      // Banners are critical for top restaurants, standard for others
-      if (r.bannerUrl != null && r.bannerUrl!.isNotEmpty) {
-        if (isTopRestaurant) {
-          criticalUrls.add(ImageUtils.getRestaurantBanner(r.bannerUrl));
-        } else {
-          standardUrls.add(ImageUtils.getRestaurantBanner(r.bannerUrl));
-        }
+      // Banners: Pre-cache only top 5 to save bandwidth and memory
+      if (i < 5 && r.bannerUrl != null && r.bannerUrl!.isNotEmpty) {
+        standardUrls.add(ImageUtils.getRestaurantBanner(r.bannerUrl));
       }
 
-      // Menu items
-      for (final cat in r.categories) {
-        for (final item in cat.items) {
-          if (item.imageUrl != null && item.imageUrl!.isNotEmpty) {
-            standardUrls.add(ImageUtils.getMenuItemImage(item.imageUrl));
-          }
-        }
-      }
+      // Menu items: Skipping pre-caching entirely to avoid UI thread starvation.
+      // These will load on-demand when the user views the restaurant.
     }
 
     logInfo(
       'SYNC: Found ${criticalUrls.length} critical and ${standardUrls.length} standard images to pre-cache.',
     );
 
-    // 2. Optimized Download Helper with Concurrency Control
-    Future<void> downloadInBatches(Set<String> urls, int concurrency) async {
+    // 2. Optimized Download Helper with Concurrency Control and Pre-decoding
+    Future<void> downloadInBatches(
+      Set<String> urls,
+      int concurrency, {
+      bool precache = false,
+    }) async {
       final urlList = urls.toList();
       for (var i = 0; i < urlList.length; i += concurrency) {
         final end = (i + concurrency < urlList.length)
@@ -852,27 +989,41 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         // Download batch in parallel
         await Future.wait(
           batch.map(
-            (url) => cacheManager.downloadFile(url).catchError((Object e) {
-              // Silently fail for individual images to keep the queue moving
-              return null;
-            }),
+            (url) async {
+              try {
+                final file = await cacheManager.downloadFile(url);
+                final context = rootNavigatorKey.currentContext;
+                if (precache &&
+                    ref.mounted &&
+                    file != null &&
+                    context != null) {
+                  // Pre-decode into Flutter's memory cache
+                  await precacheImage(
+                    CachedNetworkImageProvider(url),
+                    context,
+                  ).catchError((_) => null);
+                }
+              } catch (e) {
+                // Silently handle download errors for background caching
+              }
+            },
           ),
         );
 
-        // Tiny delay to let the event loop breathe and allow UI interactions
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Increased delay to let the event loop breathe and allow UI interactions
+        await Future<void>.delayed(const Duration(milliseconds: 250));
       }
     }
 
     // 3. Execute with Priority
-    // Critical images: High concurrency, no wait for standard
+    // Critical images: Reduced concurrency to prioritize UI responsiveness
     unawaited(
       Future(() async {
         logInfo('SYNC: Pre-caching critical images...');
-        await downloadInBatches(criticalUrls, 8);
+        await downloadInBatches(criticalUrls, 3, precache: true);
         logInfo('SYNC: Critical images cached. Starting background batch...');
         // Standard images: Lower concurrency to stay "in the background"
-        await downloadInBatches(standardUrls, 4);
+        await downloadInBatches(standardUrls, 2);
         logInfo('SYNC: All images pre-cached successfully.');
       }),
     );

@@ -103,6 +103,10 @@ class NotificationsNotifier extends Notifier<List<MockNotification>> {
       state = [...state.sublist(0, index), ...state.sublist(index + 1)];
     }
   }
+
+  void addNotification(MockNotification notification) {
+    state = [notification, ...state];
+  }
 }
 
 final notificationsProvider =

@@ -31,7 +31,8 @@ class AiSearchNotifier extends _$AiSearchNotifier {
     if (current.searchCount >= 5) {
       state = AsyncData(
         current.copyWith(
-          error: 'You have reached the limit of 5 AI searches per hour.',
+          error:
+              'Hourly limit reached (5 searches). AI will be available again soon.',
         ),
       );
       return;
@@ -40,7 +41,8 @@ class AiSearchNotifier extends _$AiSearchNotifier {
     if (current.errorCount >= 2) {
       state = AsyncData(
         current.copyWith(
-          error: 'Multiple errors occurred. Please restart the assistant.',
+          error:
+              'Something went wrong multiple times. Please clear the chat (top-right history icon) or try again later.',
         ),
       );
       return;
@@ -69,6 +71,10 @@ class AiSearchNotifier extends _$AiSearchNotifier {
 
       await _executeSearch(query);
     } catch (e) {
+      final errorMessage = e.toString().contains('Quota')
+          ? 'API Quota exceeded. Please try again later.'
+          : 'AI search encountered an issue. Showing general recommendations.';
+
       _currentTurnRestaurants.addAll(restaurantsList);
       state = AsyncData(
         state.value!.copyWith(
@@ -77,12 +83,12 @@ class AiSearchNotifier extends _$AiSearchNotifier {
           messages: [
             ...state.value!.messages,
             AiChatMessage(
-              text: "I've found these recommendations for you!",
+              text: errorMessage,
               isUser: false,
               restaurants: List.from(_currentTurnRestaurants),
             ),
           ],
-          error: null,
+          error: errorMessage,
           restaurants: restaurantsList,
         ),
       );
@@ -167,6 +173,10 @@ class AiSearchNotifier extends _$AiSearchNotifier {
         );
       }
     } catch (e) {
+      final errorMessage = e.toString().contains('Quota')
+          ? 'API Quota exceeded. Please try again later.'
+          : 'AI search encountered an issue. Showing general recommendations.';
+
       final hasRestaurants = _currentTurnRestaurants.isNotEmpty;
       final finalRestaurants = hasRestaurants
           ? _currentTurnRestaurants
@@ -178,15 +188,13 @@ class AiSearchNotifier extends _$AiSearchNotifier {
           messages: [
             ...state.value!.messages,
             AiChatMessage(
-              text: hasRestaurants
-                  ? "I've found some great options for you based on your request!"
-                  : "I've found these recommendations for you!",
+              text: errorMessage,
               isUser: false,
               restaurants: List.from(finalRestaurants),
             ),
           ],
           restaurants: List.from(finalRestaurants),
-          error: null,
+          error: errorMessage,
         ),
       );
     }
@@ -280,7 +288,7 @@ class AiSearchNotifier extends _$AiSearchNotifier {
     state = AsyncData(
       AiSearchState(
         searchTimestamps: current.searchTimestamps,
-        errorCount: current.errorCount,
+        errorCount: 0, // Reset error count on clear
       ),
     );
   }

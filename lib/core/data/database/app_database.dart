@@ -108,6 +108,8 @@ class CachedOrders extends Table {
   RealColumn get discountAmount => real()();
   RealColumn get totalAmount => real()();
   DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get lastUpdated =>
+      dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -130,6 +132,8 @@ class CachedFavourites extends Table {
   TextColumn get id => text()(); // Either restaurantId or menuItemId
   TextColumn get type => text()(); // 'restaurant' or 'menu_item'
   DateTimeColumn get addedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get lastUpdated =>
+      dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -142,6 +146,8 @@ class CachedCartItems extends Table {
   TextColumn get imageUrl => text().nullable()();
   RealColumn get price => real()();
   IntColumn get quantity => integer().withDefault(const Constant(1))();
+  DateTimeColumn get lastUpdated =>
+      dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {menuItemId};
@@ -306,7 +312,7 @@ class AppDatabase extends _$AppDatabase {
 
       return NativeDatabase.createInBackground(
         file,
-        logStatements: kDebugMode,
+        logStatements: false,
         setup: (db) {
           db.execute('PRAGMA foreign_keys = ON');
         },

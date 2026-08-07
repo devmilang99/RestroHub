@@ -37,19 +37,24 @@ class SyncCoordinator extends _$SyncCoordinator {
 
     if (status == NetworkStatus.online) {
       logInfo(
-        'SYNC COORDINATOR: Online at startup. Triggering initial sync and diagnostics...',
+        'SYNC COORDINATOR: Online at startup. Triggering initial diagnostics and background sync...',
       );
       final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
       unawaited(syncManager.diagnoseSchemaMismatch());
-      unawaited(syncManager.syncAllInitialData());
+
+      // We don't trigger syncAllInitialData here if it's already being handled by SplashScreen
+      // to avoid redundancy and saturation. SplashScreen calls syncAllInitialData(metadataOnly: true).
     }
   }
 
   Future<void> _triggerSync() async {
     try {
       if (ref.mounted) {
+        // When network returns, we do a full sync including hierarchy
         unawaited(
-          ref.read(supabaseSyncManagerProvider.notifier).syncAllInitialData(),
+          ref
+              .read(supabaseSyncManagerProvider.notifier)
+              .syncAllInitialData(metadataOnly: false),
         );
       }
     } on Object catch (e, stack) {

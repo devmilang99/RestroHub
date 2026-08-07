@@ -158,12 +158,10 @@ class _LoginViewState extends ConsumerState<LoginView>
                 ).createShader(rect);
               },
               blendMode: BlendMode.darken,
-              child: CachedNetworkImage(
-                imageUrl:
-                    'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2070&auto=format&fit=crop',
+              child: Image.asset(
+                'assets/food6.webp',
                 fit: BoxFit.cover,
-                placeholder: (context, url) => Container(color: Colors.black),
-                errorWidget: (context, url, error) =>
+                errorBuilder: (context, error, stackTrace) =>
                     Container(color: Colors.black),
               ),
             ),

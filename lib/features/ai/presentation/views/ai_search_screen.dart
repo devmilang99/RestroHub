@@ -99,7 +99,13 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
               Expanded(
                 child: isInitial
                     ? _buildInitialView(colorScheme, userName)
-                    : _buildChatView(aiState),
+                    : Column(
+                        children: [
+                          Expanded(child: _buildChatView(aiState)),
+                          if (aiState.value?.error != null)
+                            _buildErrorBanner(aiState.value!.error!),
+                        ],
+                      ),
               ),
               // status is shown inside the input bar to avoid extra layout height
               // Respect keyboard insets so the input bar isn't covered or causes overflow
@@ -281,12 +287,18 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
         itemBuilder: (context, index) {
           if (index < state.messages.length) {
             final msg = state.messages[index];
+            final isError =
+                !msg.isUser &&
+                (msg.text?.contains('Quota') == true ||
+                    msg.text?.contains('issue') == true);
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _ChatBubble(
                   text: msg.text ?? '',
                   isUser: msg.isUser,
+                  isError: isError,
                 ),
                 if (!msg.isUser && msg.restaurants.isNotEmpty) ...[
                   Padding(
@@ -329,15 +341,55 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
       error: (err, stack) => Center(child: Text('Error: $err')),
     );
   }
+
+  Widget _buildErrorBanner(String error) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              error,
+              style: GoogleFonts.poppins(
+                color: Colors.redAccent,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => ref.read(aiSearchProvider.notifier).clearSearch(),
+            child: Text(
+              'RESET',
+              style: GoogleFonts.poppins(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ChatBubble extends StatelessWidget {
   final String text;
   final bool isUser;
+  final bool isError;
 
   const _ChatBubble({
     required this.text,
     required this.isUser,
+    this.isError = false,
   });
 
   @override
@@ -353,12 +405,12 @@ class _ChatBubble extends StatelessWidget {
           if (!isUser) ...[
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFB700),
+              decoration: BoxDecoration(
+                color: isError ? Colors.redAccent : const Color(0xFFFFB700),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.auto_awesome,
+              child: Icon(
+                isError ? Icons.warning_amber_rounded : Icons.auto_awesome,
                 color: Colors.white,
                 size: 16,
               ),
@@ -369,13 +421,20 @@ class _ChatBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isUser ? Colors.orange : const Color(0xFF1E262C),
+                color: isUser
+                    ? Colors.orange
+                    : isError
+                    ? Colors.red.withValues(alpha: 0.1)
+                    : const Color(0xFF1E262C),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(20),
                   topRight: const Radius.circular(20),
                   bottomLeft: Radius.circular(isUser ? 20 : 4),
                   bottomRight: Radius.circular(isUser ? 4 : 20),
                 ),
+                border: isError
+                    ? Border.all(color: Colors.red.withValues(alpha: 0.3))
+                    : null,
               ),
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.75,
@@ -383,9 +442,15 @@ class _ChatBubble extends StatelessWidget {
               child: Text(
                 text,
                 style: GoogleFonts.poppins(
-                  color: isUser ? Colors.black87 : Colors.white,
+                  color: isUser
+                      ? Colors.black87
+                      : isError
+                      ? Colors.redAccent
+                      : Colors.white,
                   fontSize: 14,
-                  fontWeight: isUser ? FontWeight.w600 : FontWeight.normal,
+                  fontWeight: isUser || isError
+                      ? FontWeight.w600
+                      : FontWeight.normal,
                 ),
               ),
             ),

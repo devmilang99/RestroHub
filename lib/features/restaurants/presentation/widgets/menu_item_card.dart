@@ -1,9 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:restro_hub/core/widgets/app_image.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/favourites/presentation/providers/favourites_provider.dart';
@@ -43,7 +42,7 @@ class MenuItemCard extends ConsumerWidget {
               : Colors.white,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: cs.outlineVariant.withValues(alpha: isDark ? 0.12 : 0.4),
+            color: cs.outlineVariant.withValues(alpha: isDark ? 0.6 : 0.4),
           ),
           boxShadow: [
             BoxShadow(

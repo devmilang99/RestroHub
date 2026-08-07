@@ -1,3 +1,4 @@
+// CLEANED BY AI
 import 'dart:async';
 
 import 'package:drift/drift.dart' as drift;
@@ -11,6 +12,8 @@ import 'package:restro_hub/core/utils/logger.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
 import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
+import 'package:restro_hub/features/notifications/data/models/notification_model.dart';
+import 'package:restro_hub/features/notifications/presentation/providers/notifications_provider.dart';
 import 'package:restro_hub/infrastructure/printer/printer_api.g.dart';
 import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 import 'package:uuid/uuid.dart';
@@ -292,7 +295,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
           );
     }
 
-    // Sync to Supabase - We await this to ensure it's attempted before we proceed
+    // Sync to Supabase
     final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
     try {
       await syncManager.pushOrderToRemote(
@@ -319,7 +322,6 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
       );
     } catch (e, st) {
       logError('Failed to sync order to remote Supabase', e, st);
-      // We don't rethrow because we want the local order to succeed anyway
     }
 
     // Push Transaction Record in background
@@ -330,7 +332,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
           'status': 'completed',
           'payment_method': newOrder.paymentMethod.name,
         })
-        .catchError((e, st) {
+        .catchError((Object e, StackTrace st) {
           logError('Failed to push transaction to remote', e);
         });
 
@@ -391,18 +393,13 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
 
   void _startOrderTracking(String orderId) {
     _showStatusNotification(orderId, OrderSubStatus.preparing);
-    // 1. Preparing (Cooking, Packed, InRoute) - 60 seconds
     _runPhase(orderId, OrderSubStatus.preparing, 60, () {
       _showStatusNotification(orderId, OrderSubStatus.delivered);
-      // 2. Delivered / Order being carried - 60 seconds
       _runPhase(orderId, OrderSubStatus.delivered, 60, () {
         _showStatusNotification(orderId, OrderSubStatus.pickup);
-        // 3. Pick Up - 15 seconds
         _runPhase(orderId, OrderSubStatus.pickup, 15, () {
           _showStatusNotification(orderId, OrderSubStatus.success);
-          // 4. Move to Success
           _updateOrderStatus(orderId, OrderSubStatus.success, 1);
-          // Add 10 points for successful order
           ref.read(loyaltyProvider.notifier).addPoints(10);
         });
       });
@@ -410,24 +407,40 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
   }
 
   void _showStatusNotification(String orderId, OrderSubStatus status) {
-    var title = 'Order Update';
-    var body = '';
+    String title = 'Order Update';
+    String body = '';
+    String icon = '🔔';
+    Color color = const Color(0xFF339AF0);
 
     switch (status) {
       case OrderSubStatus.preparing:
         body = 'Your order #$orderId is being prepared!';
+        icon = '🍳';
+        color = const Color(0xFFFFA94D);
+        break;
       case OrderSubStatus.delivered:
         body = 'Your order #$orderId is on the way!';
+        icon = '🛵';
+        color = const Color(0xFF339AF0);
+        break;
       case OrderSubStatus.pickup:
         body = 'Your order #$orderId is ready for pickup!';
+        icon = '🛍️';
+        color = const Color(0xFF845EF7);
+        break;
       case OrderSubStatus.success:
         title = 'Order Delivered';
         body = 'Enjoy your meal! Order #$orderId was successful.';
+        icon = '✅';
+        color = const Color(0xFF51CF66);
+        break;
       case OrderSubStatus.cancelled:
         title = 'Order Cancelled';
         body = 'Your order #$orderId has been cancelled.';
+        icon = '❌';
+        color = const Color(0xFFFF6B6B);
+        break;
       case OrderSubStatus.pending:
-        // No notification for pending
         return;
     }
 
@@ -438,6 +451,21 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
           title: title,
           body: body,
         );
+
+    if (status == OrderSubStatus.success ||
+        status == OrderSubStatus.cancelled) {
+      ref
+          .read(notificationsProvider.notifier)
+          .addNotification(
+            MockNotification(
+              title: title,
+              message: body,
+              icon: icon,
+              timestamp: DateTime.now(),
+              accentColor: color,
+            ),
+          );
+    }
   }
 
   void _runPhase(
@@ -459,7 +487,6 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         _updateOrderStatus(orderId, status, progress);
       }
 
-      // If order was cancelled or removed, stop timer
       final currentState = state.value ?? [];
       if (!currentState.any((o) => o.id == orderId)) {
         timer.cancel();
@@ -498,34 +525,37 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
   }
 }
 
-/// Top-level function for background mapping of orders and their items
 List<OrderModel> _mapOrdersDataToModels(List<Map<String, dynamic>> data) {
-  return data.map((entry) {
-    final row = entry['order'] as CachedOrder;
-    final itemRows = entry['items'] as List<CachedOrderItem>;
+  return data
+      .map((entry) {
+        final row = entry['order'] as CachedOrder;
+        final itemRows = entry['items'] as List<CachedOrderItem>;
 
-    return OrderModel(
-      id: row.id,
-      restaurantId: row.restaurantId,
-      items: itemRows
-          .map(
-            (i) => CartModel(
-              id: i.menuItemId,
-              restaurantId: row.restaurantId,
-              name: i.name,
-              image: '',
-              price: i.unitPrice,
-              quantity: i.quantity,
-            ),
-          )
-          .toList(),
-      totalAmount: row.totalAmount,
-      subStatus: _parseStatusString(row.status),
-      timestamp: row.createdAt,
-      paymentMethod: PaymentMethod.cod,
-      discount: row.discountAmount,
-    );
-  }).toList().reversed.toList();
+        return OrderModel(
+          id: row.id,
+          restaurantId: row.restaurantId,
+          items: itemRows
+              .map(
+                (i) => CartModel(
+                  id: i.menuItemId,
+                  restaurantId: row.restaurantId,
+                  name: i.name,
+                  image: '',
+                  price: i.unitPrice,
+                  quantity: i.quantity,
+                ),
+              )
+              .toList(),
+          totalAmount: row.totalAmount,
+          subStatus: _parseStatusString(row.status),
+          timestamp: row.createdAt,
+          paymentMethod: PaymentMethod.cod,
+          discount: row.discountAmount,
+        );
+      })
+      .toList()
+      .reversed
+      .toList();
 }
 
 OrderSubStatus _parseStatusString(String status) {

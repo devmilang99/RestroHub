@@ -73,7 +73,8 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 
 ### 🍱 Restaurant & Catalog
 - **Multi-Vendor Support** — Explore diverse cuisines from various restaurants with detailed menus and high-quality imagery.
-- **Real-Time Sync** — Leveraging Supabase Realtime for instant menu updates, price changes, and availability.
+- **Atomic Sync Engine** — Robust synchronization that uses atomic upserts to ensure the local database is always consistent without UI flickering.
+- **Real-Time Updates** — Leveraging Supabase Realtime for instant menu updates, price changes, and availability.
 - **Advanced Filtering** — Browse by cuisines, ratings, delivery time, and more.
 
 ### 📦 Order & Delivery
@@ -82,7 +83,8 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 - **Order History** — Comprehensive view of previous orders with easy re-ordering functionality.
 
 ### ⚡ Performance & UX
-- **Offline-First Support** — Full cart and browsing capability even with flaky connections via Drift (SQLite) database.
+- **Robust Offline-First** — Full cart and browsing capability even with flaky connections via Drift (SQLite) with atomic synchronization to prevent data loss.
+- **Isolate-based Processing** — All heavy JSON parsing and data mapping are offloaded to background isolates to maintain a buttery-smooth 60/120 FPS UI.
 - **Cross-Platform Excellence** — Unified codebase for Android, iOS, and Web with responsive design.
 - **Local Network Sync** — Uses `bonsoir` (mDNS) and `shelf` for innovative local discovery and synchronization.
 

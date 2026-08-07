@@ -22,14 +22,15 @@ class ImageUtils {
     final uri = Uri.parse(url);
     final queryParams = Map<String, String>.from(uri.queryParameters);
 
-    // BUCKETING: Round width to nearest 100 to increase cache hits across different screen sizes
+    // BUCKETING: Round width to nearest 200 to increase cache hits across different screen sizes
+    // This ensures that most devices will share the same cached URL from the CDN
     if (width != null) {
-      final bucketedWidth = ((width + 50) ~/ 100) * 100;
-      queryParams['width'] = bucketedWidth.clamp(100, 1200).toString();
+      final bucketedWidth = ((width + 100) ~/ 200) * 200;
+      queryParams['width'] = bucketedWidth.clamp(200, 1200).toString();
     }
     if (height != null) {
-      final bucketedHeight = ((height + 50) ~/ 100) * 100;
-      queryParams['height'] = bucketedHeight.clamp(100, 1200).toString();
+      final bucketedHeight = ((height + 100) ~/ 200) * 200;
+      queryParams['height'] = bucketedHeight.clamp(200, 1200).toString();
     }
     queryParams['quality'] = quality.toString();
     queryParams['format'] = format;
@@ -49,12 +50,12 @@ class ImageUtils {
   /// Convenience method for restaurant logos/thumbnails
   static String getRestaurantThumbnail(String? url) {
     if (url == null || url.isEmpty) return '';
-    return getOptimizedUrl(url, width: 300);
+    return getOptimizedUrl(url, width: 200, quality: 70);
   }
 
   /// Convenience method for menu items
   static String getMenuItemImage(String? url) {
     if (url == null || url.isEmpty) return '';
-    return getOptimizedUrl(url, width: 400);
+    return getOptimizedUrl(url, width: 400, quality: 75);
   }
 }

@@ -12,6 +12,7 @@ import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cart/presentation/views/cart_screen.dart';
 import 'package:restro_hub/features/cuisines/presentation/providers/cuisine_provider.dart';
+import 'package:restro_hub/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_skeletons.dart';
 import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_slivers.dart';
@@ -20,7 +21,6 @@ import 'package:restro_hub/features/orders/presentation/providers/orders_provide
 import 'package:restro_hub/features/orders/presentation/views/orders_screen.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
-import 'package:restro_hub/features/restaurants/presentation/providers/restaurant_provider.dart';
 import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 
 final dashboardTabIndexProvider = StateProvider<int>((ref) => 0);
@@ -76,11 +76,9 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
   Widget build(BuildContext context) {
     final currentIndex = ref.watch(dashboardTabIndexProvider);
     final colorScheme = Theme.of(context).colorScheme;
-    final restaurantsAsync = ref.watch(filteredRestaurantsProvider);
-    final allCuisinesAsync = ref.watch(allCuisinesStreamProvider);
 
     final screens = [
-      _buildHomeView(context, colorScheme, restaurantsAsync, allCuisinesAsync),
+      _buildHomeView(context, colorScheme),
       const CartScreen(),
       const OrdersScreen(),
       ProfileScreen(user: widget.user),
@@ -94,7 +92,10 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
             index: currentIndex,
             children: screens,
           ),
-          bottomNavigationBar: _buildFloatingBottomNav(colorScheme, currentIndex),
+          bottomNavigationBar: _buildFloatingBottomNav(
+            colorScheme,
+            currentIndex,
+          ),
         ),
         const SyncProgressOverlay(),
       ],
@@ -212,62 +213,16 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
     );
   }
 
-  Widget _buildHomeView(
-    BuildContext context,
-    ColorScheme colorScheme,
-    AsyncValue<List<RestaurantModel>> restaurantsAsync,
-    AsyncValue<List<MenuItemModel>> allCuisinesAsync,
-  ) {
-    const currentLocation = 'Kathmandu'; // Mock current location
-
-    final recommendedRestaurants =
-        (restaurantsAsync.value ?? <RestaurantModel>[])
-            .where((r) => r.rating >= 4.0)
-            .take(5)
-            .toList();
-
-    // Filter by location for categories
-    final allRestaurants =
-        (restaurantsAsync.value ?? <RestaurantModel>[]).toList()
-          ..sort((a, b) => b.rating.compareTo(a.rating));
-
-    final restaurants = allRestaurants
-        .where((r) => !recommendedRestaurants.any((rec) => rec.id == r.id))
-        .take(5)
-        .toList();
-
-    final allCuisines = (allCuisinesAsync.value ?? <MenuItemModel>[]).where((
-      c,
-    ) {
-      // If we want filtering by location for cuisines, we'd need to link back to restaurant.
-      // For now, let's keep the baseline logic but filtered by the current restaurants.
-      return true;
-    }).toList();
-
-    final cuisines = allCuisines.take(5).toList();
-
-    final recommendedFood = allCuisines
-        .where((f) => f.rating >= 4.5)
-        .take(5)
-        .toList();
-
-    final recommendedItems = [...recommendedRestaurants, ...recommendedFood]
-      ..sort((a, b) {
-        final rA = a is RestaurantModel
-            ? a.rating
-            : (a as MenuItemModel).rating;
-        final rB = b is RestaurantModel
-            ? b.rating
-            : (b as MenuItemModel).rating;
-        return rB.compareTo(rA);
-      });
-
+  Widget _buildHomeView(BuildContext context, ColorScheme colorScheme) {
     final unreadNotifications = ref
         .watch(notificationsProvider)
         .where((n) => !n.isRead)
         .length;
 
-    final offers = ref.watch(dashboardOffersProvider).value ?? [];
+    final restaurantsAsync = ref.watch(dashboardPopularRestaurantsProvider);
+    final recommendedItemsAsync = ref.watch(dashboardRecommendedItemsProvider);
+    final cuisinesAsync = ref.watch(dashboardBestPickFoodProvider);
+    final offersAsync = ref.watch(dashboardOffersProvider);
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -275,8 +230,9 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
             .read(supabaseSyncManagerProvider.notifier)
             .syncRestaurants(force: true);
         // Also invalidate providers to ensure UI updates immediately
-        ref.invalidate(filteredRestaurantsProvider);
-        ref.invalidate(allCuisinesStreamProvider);
+        ref.invalidate(dashboardPopularRestaurantsProvider);
+        ref.invalidate(dashboardRecommendedItemsProvider);
+        ref.invalidate(dashboardBestPickFoodProvider);
         ref.invalidate(dashboardOffersProvider);
       },
       child: ResponsiveCenter(
@@ -284,235 +240,242 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
           physics: const AlwaysScrollableScrollPhysics(),
           controller: _scrollController,
           slivers: [
-          SliverAppBar(
-            floating: true,
-            pinned: true,
-            backgroundColor: colorScheme.surface,
-            elevation: 0,
-            toolbarHeight: 0, // Hidden app bar to use custom location/search
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                color: colorScheme.primary,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Current Location',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const Icon(
-                                Icons.keyboard_arrow_down,
-                                size: 18,
-                                color: Colors.grey,
-                              ),
-                            ],
-                          ),
-                          Text(
-                            'Kathmandu, Nepal',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          IconButton.filledTonal(
-                            onPressed: () {
-                              final isDark =
-                                  ref.read(themeProvider) == ThemeMode.dark;
-                              ref
-                                  .read(themeProvider.notifier)
-                                  .toggleTheme(isDark: !isDark);
-                            },
-                            icon: Icon(
-                              ref.watch(themeProvider) == ThemeMode.dark
-                                  ? Icons.light_mode_rounded
-                                  : Icons.dark_mode_rounded,
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: colorScheme.primary.withValues(
-                                alpha: 0.1,
-                              ),
-                              foregroundColor: colorScheme.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton.filledTonal(
-                            onPressed: () =>
-                                context.pushNamed('notificationsScreen'),
-                            icon: Badge.count(
-                              count: unreadNotifications,
-                              isLabelVisible: unreadNotifications > 0,
-                              child: const Icon(Icons.notifications_rounded),
-                            ),
-                            style: IconButton.styleFrom(
-                              backgroundColor: colorScheme.primary.withValues(
-                                alpha: 0.1,
-                              ),
-                              foregroundColor: colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Full Search Bar
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () =>
-                              GoRouter.of(context).pushNamed('searchScreen'),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHighest
-                                  .withValues(
-                                    alpha: 0.5,
-                                  ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: colorScheme.outlineVariant.withValues(
-                                  alpha: 0.3,
-                                ),
-                              ),
-                            ),
-                            child: Row(
+            SliverAppBar(
+              floating: true,
+              pinned: true,
+              backgroundColor: colorScheme.surface,
+              elevation: 0,
+              toolbarHeight: 0, // Hidden app bar to use custom location/search
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
                                 Icon(
-                                  Icons.search_rounded,
-                                  color: colorScheme.onSurfaceVariant,
-                                  size: 20,
+                                  Icons.location_on,
+                                  color: colorScheme.primary,
+                                  size: 18,
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 4),
                                 Text(
-                                  'Search for foods...',
+                                  'Current Location',
                                   style: GoogleFonts.poppins(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontSize: 14,
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
                                   ),
+                                ),
+                                const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  size: 18,
+                                  color: Colors.grey,
                                 ),
                               ],
                             ),
+                            Text(
+                              'Kathmandu, Nepal',
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            IconButton.filledTonal(
+                              onPressed: () {
+                                final isDark =
+                                    ref.read(themeProvider) == ThemeMode.dark;
+                                ref
+                                    .read(themeProvider.notifier)
+                                    .toggleTheme(isDark: !isDark);
+                              },
+                              icon: Icon(
+                                ref.watch(themeProvider) == ThemeMode.dark
+                                    ? Icons.light_mode_rounded
+                                    : Icons.dark_mode_rounded,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                foregroundColor: colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton.filledTonal(
+                              onPressed: () =>
+                                  context.pushNamed('notificationsScreen'),
+                              icon: Badge.count(
+                                count: unreadNotifications,
+                                isLabelVisible: unreadNotifications > 0,
+                                child: const Icon(Icons.notifications_rounded),
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: colorScheme.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                foregroundColor: colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // Full Search Bar
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () =>
+                                GoRouter.of(context).pushNamed('searchScreen'),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest
+                                    .withValues(
+                                      alpha: 0.5,
+                                    ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: colorScheme.outlineVariant.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.search_rounded,
+                                    color: colorScheme.onSurfaceVariant,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Search for foods...',
+                                    style: GoogleFonts.poppins(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filledTonal(
-                        onPressed: () => context.push('/aiSearch'),
-                        icon: const Icon(Icons.auto_awesome),
-                        style: IconButton.styleFrom(
-                          backgroundColor: colorScheme.primary.withValues(
-                            alpha: 0.1,
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          onPressed: () => context.push('/aiSearch'),
+                          icon: const Icon(Icons.auto_awesome),
+                          style: IconButton.styleFrom(
+                            backgroundColor: colorScheme.primary.withValues(
+                              alpha: 0.1,
+                            ),
+                            foregroundColor: colorScheme.primary,
                           ),
-                          foregroundColor: colorScheme.primary,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (restaurantsAsync.isLoading && !restaurantsAsync.hasValue)
-            const SliverFillRemaining(child: DashboardSkeleton())
-          else
             DashboardSlivers(
-              restaurants: restaurants,
-              recommendedItems: recommendedItems,
-              cuisines: cuisines,
-              offers: offers,
+              restaurantsAsync: restaurantsAsync,
+              recommendedItemsAsync: recommendedItemsAsync,
+              cuisinesAsync: cuisinesAsync,
+              offersAsync: offersAsync,
             ),
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 100),
-          ), // Space for floating nav
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class DashboardSlivers extends StatelessWidget {
-  final List<RestaurantModel> restaurants;
-  final List<dynamic> recommendedItems;
-  final List<MenuItemModel> cuisines;
-  final List<MenuItemModel> offers;
+  final AsyncValue<List<RestaurantModel>> restaurantsAsync;
+  final AsyncValue<List<dynamic>> recommendedItemsAsync;
+  final AsyncValue<List<MenuItemModel>> cuisinesAsync;
+  final AsyncValue<List<MenuItemModel>> offersAsync;
 
   const DashboardSlivers({
-    required this.restaurants,
-    required this.recommendedItems,
-    required this.cuisines,
-    required this.offers,
+    required this.restaurantsAsync,
+    required this.recommendedItemsAsync,
+    required this.cuisinesAsync,
+    required this.offersAsync,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (restaurants.isEmpty && cuisines.isEmpty && offers.isEmpty) {
-      return const SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Text('No data available'),
-        ),
-      );
-    }
-
     return SliverMainAxisGroup(
       slivers: [
-        if (recommendedItems.isNotEmpty)
-          SliverRestaurantCards(
-            headingTitle: 'Recommended',
-            titleIcon: Icons.star_rounded,
-            items: recommendedItems,
-            seeAll: true,
-            exploreType: ExploreType.recommended,
-          ),
-        SliverPopularCategories(
-          headingTitle: 'Popular Restaurants',
-          items: restaurants,
-          seeAll: true,
-          titleIcon: Icons.auto_graph_rounded,
+        recommendedItemsAsync.when(
+          data: (items) => items.isNotEmpty
+              ? SliverRestaurantCards(
+                  headingTitle: 'Recommended',
+                  titleIcon: Icons.star_rounded,
+                  items: items,
+                  seeAll: true,
+                  exploreType: ExploreType.recommended,
+                )
+              : const SliverToBoxAdapter(child: SizedBox.shrink()),
+          loading: () => const SliverRestaurantCardsSkeleton(),
+          error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
         ),
-        if (offers.isNotEmpty)
-          SliverOfferCards(
-            headingTitle: 'Hot Deals',
-            items: offers,
-            seeAll: true,
-          ),
-        if (cuisines.isNotEmpty)
-          SliverFoodCards(
-            headingTitle: 'Best Pick Food Items',
-            titleIcon: Icons.restaurant_menu_rounded,
-            items: cuisines,
-            seeAll: true,
-          ),
+        restaurantsAsync.when(
+          data: (items) => items.isNotEmpty
+              ? SliverPopularCategories(
+                  headingTitle: 'Popular Restaurants',
+                  items: items,
+                  seeAll: true,
+                  titleIcon: Icons.auto_graph_rounded,
+                )
+              : const SliverToBoxAdapter(child: SizedBox.shrink()),
+          loading: () => const SliverCountryCardsSkeleton(),
+          error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+        ),
+        offersAsync.when(
+          data: (items) => items.isNotEmpty
+              ? SliverOfferCards(
+                  headingTitle: 'Hot Deals',
+                  items: items,
+                  seeAll: true,
+                )
+              : const SliverToBoxAdapter(child: SizedBox.shrink()),
+          loading: () => const SliverOfferCardsSkeleton(),
+          error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+        ),
+        cuisinesAsync.when(
+          data: (items) => items.isNotEmpty
+              ? SliverFoodCards(
+                  headingTitle: 'Best Pick Food Items',
+                  titleIcon: Icons.restaurant_menu_rounded,
+                  items: items,
+                  seeAll: true,
+                )
+              : const SliverToBoxAdapter(child: SizedBox.shrink()),
+          loading: () => const SliverFoodCardsSkeleton(),
+          error: (_, _) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+        ),
       ],
     );
   }

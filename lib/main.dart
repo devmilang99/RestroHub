@@ -25,6 +25,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+
+  // Set a conservative image cache size to prevent OOM on lower-end devices
+  // 100MB is sufficient for smooth scrolling while leaving headroom for sync operations
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 100 * 1024 * 1024;
+  PaintingBinding.instance.imageCache.maximumSize = 500;
+
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   final prefs = await SharedPreferences.getInstance();
@@ -67,45 +73,38 @@ void main() async {
     debugPrint('MAIN: Loading .env...');
     await dotenv.load();
 
-    // Security Check
-    debugPrint('MAIN: Performing security check...');
-    try {
-      final isSecure = await SecurityService.isDeviceSecure().timeout(
-        const Duration(seconds: 5),
-      );
-      if (!isSecure) {
-        debugPrint('MAIN: Device not secure, showing violation screen');
-        runApp(const SecurityViolationScreen());
-        FlutterNativeSplash.remove();
-        return;
-      }
-    } catch (e) {
-      debugPrint('MAIN: Security check timed out or failed: $e');
-      // Continue anyway in debug/dev to avoid soft lock if safe_device hangs
-    }
+    debugPrint('MAIN: Performing parallel initialization...');
 
-    debugPrint('MAIN: Initializing SharedPreferences...');
-    // Prefs already initialized for global error handling
+    // Run independent initialization tasks in parallel to minimize startup time
+    final initResults = await Future.wait([
+      SecurityService.isDeviceSecure()
+          .timeout(const Duration(seconds: 4))
+          .catchError((Object e) {
+            debugPrint('MAIN: Security check failed/timed out: $e');
+            return true; // Fallback to true in case of timeout/error
+          }),
+      container
+          .read(notificationServiceProvider)
+          .init()
+          .timeout(const Duration(seconds: 3))
+          .catchError((Object e) {
+            debugPrint('MAIN: Notification service init failed: $e');
+            return null;
+          }),
+      SupabaseService.initialize()
+          .timeout(const Duration(seconds: 8))
+          .catchError((Object e, StackTrace stack) {
+            logError('Supabase initialization warning', e, stack);
+            return null;
+          }),
+    ]);
 
-    debugPrint('MAIN: Initializing Notification Service...');
-    try {
-      final service = container.read(notificationServiceProvider);
-      await service.init().timeout(const Duration(seconds: 3));
-    } catch (e) {
-      debugPrint('MAIN: Notification service init failed: $e');
-    }
-
-    debugPrint('MAIN: Initializing Supabase...');
-    try {
-      await SupabaseService.initialize().timeout(const Duration(seconds: 10));
-    } catch (e, stack) {
-      logError(
-        'Supabase initialization warning (Safe to continue if session expired)',
-        e,
-        stack,
-      );
-      // We don't rethrow here because the app can still run and
-      // let the user log in even if session recovery fails.
+    final isSecure = (initResults[0] as bool?) ?? true;
+    if (!isSecure) {
+      debugPrint('MAIN: Device not secure, showing violation screen');
+      runApp(const SecurityViolationScreen());
+      FlutterNativeSplash.remove();
+      return;
     }
 
     debugPrint('MAIN: Initialization complete. Running app.');
@@ -115,7 +114,7 @@ void main() async {
         child: const MyApp(),
       ),
     );
-  } catch (e, stack) {
+  } on Object catch (e, stack) {
     debugPrint('MAIN: FATAL STARTUP ERROR: $e');
     debugPrint(stack.toString());
 

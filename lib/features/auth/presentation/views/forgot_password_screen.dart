@@ -189,10 +189,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
             child: Container(
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: NetworkImage(
-                    isDark
-                        ? 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=2070&auto=format&fit=crop'
-                        : 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=2074&auto=format&fit=crop',
+                  image: AssetImage(
+                    isDark ? 'assets/food3.webp' : 'assets/food4.webp',
                   ),
                   fit: BoxFit.cover,
                 ),

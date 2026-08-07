@@ -76,7 +76,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         FlutterNativeSplash.remove();
-        unawaited(_preloadImages());
+        final authRepo = ref.read(authRepositoryProvider);
+        if (authRepo.currentUser != null) {
+          // If logged in, skip some delays and navigate faster
+          unawaited(_preloadImages(isLoggedIn: true));
+        } else {
+          unawaited(_preloadImages());
+        }
       }
     });
 
@@ -92,7 +98,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     unawaited(_pulseController.repeat(reverse: true));
 
     // Logo starts at full scale (1.0) to ensure immediate visibility
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+    _scaleAnimation = Tween<double>(begin: 1, end: 1.05).animate(
       CurvedAnimation(parent: _iconController, curve: Curves.elasticOut),
     );
 
@@ -112,29 +118,33 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     unawaited(_iconController.forward());
   }
 
-  Future<void> _preloadImages() async {
-    // Ensure splash is visible for at least 2 seconds for branding
-    final minDelay = Future<void>.delayed(const Duration(milliseconds: 2500));
+  Future<void> _preloadImages({bool isLoggedIn = false}) async {
+    // Reduced splash delay for faster interaction: 0.8s for logged in, 2.0s for new users
+    final minDelay = Future<void>.delayed(
+      Duration(milliseconds: isLoggedIn ? 800 : 2000),
+    );
 
     try {
       // 1. Preload the first onboarding image (atmospheric) immediately
       if (mounted) {
-        precacheImage(const AssetImage('assets/food1.webp'), context)
-            .then((_) {
-              if (mounted) {
-                setState(() {
-                  _backgroundProvider = const AssetImage('assets/food1.webp');
-                });
-              }
-            })
-            .catchError(
-              (e) => debugPrint('Fallback background preload failed: $e'),
-            );
+        unawaited(
+          precacheImage(const AssetImage('assets/food1.webp'), context)
+              .then((_) {
+                if (mounted) {
+                  setState(() {
+                    _backgroundProvider = const AssetImage('assets/food1.webp');
+                  });
+                }
+              })
+              .catchError((Object e, StackTrace? s) {
+                debugPrint('Fallback background preload failed: $e');
+              }),
+        );
       }
 
       final preloadingTasks = <Future<void>>[];
 
-      for (int i = 0; i < _slides.length; i++) {
+      for (var i = 0; i < _slides.length; i++) {
         if (!mounted) return;
 
         final imageProvider = AssetImage(_slides[i]['image']!);
@@ -155,55 +165,68 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
       await Future.wait(preloadingTasks);
 
-      // Start Global Data Sync concurrently in the background
-      // This populates restaurants, orders, cart, and favourites before the user hits the dashboard
+      // Start Phased Global Data Sync concurrently in the background
+      // Phase 1: Metadata sync for fast splash transition
       if (mounted) {
-        debugPrint('SPLASH: Starting global data sync in background...');
+        debugPrint(
+          'SPLASH: Starting phased global data sync (metadata only)...',
+        );
         unawaited(
-          ref.read(supabaseSyncManagerProvider.notifier).syncAllInitialData(),
+          ref
+              .read(supabaseSyncManagerProvider.notifier)
+              .syncAllInitialData(metadataOnly: true),
         );
       }
     } on Object catch (e) {
       debugPrint('Global initialization error: $e');
-    } finally {
-      await minDelay;
+    }
 
-      if (mounted) {
-        final prefs = ref.read(preferencesServiceProvider);
-        final authRepo = ref.read(authRepositoryProvider);
-        final user = authRepo.currentUser;
+    await minDelay;
 
-        // Directly navigate to dashboard if user is already logged in
-        if (user != null) {
-          debugPrint('SPLASH: User logged in, verifying session...');
-          final isValid = await authRepo.verifySession();
+    if (mounted) {
+      final prefs = ref.read(preferencesServiceProvider);
+      final authRepo = ref.read(authRepositoryProvider);
+      final user = authRepo.currentUser;
 
-          if (!mounted) return;
+      // Directly navigate to dashboard if user is already logged in
+      if (user != null) {
+        debugPrint(
+          'SPLASH: User logged in, verifying session and waiting for minDelay...',
+        );
 
-          if (isValid) {
-            debugPrint('SPLASH: Session valid, navigating to dashboard...');
-            context.goNamed('mainDashBoard');
-            return;
-          } else {
-            debugPrint(
-              'SPLASH: Session invalid or user removed. Redirecting to login...',
-            );
-            // Session was cleared in verifySession() if invalid
-            context.goNamed('mainLoginScreen');
-            return;
-          }
-        }
+        // Parallelize session verification with the minimum splash delay
+        final verificationResults = await Future.wait([
+          authRepo.verifySession(),
+          minDelay,
+        ]);
 
-        if (prefs.isOnboardingCompleted) {
+        final isValid = verificationResults[0] as bool;
+
+        if (!mounted) return;
+
+        if (isValid) {
+          debugPrint('SPLASH: Session valid, navigating to dashboard...');
+          context.goNamed('mainDashBoard');
+          return;
+        } else {
+          debugPrint(
+            'SPLASH: Session invalid or user removed. Redirecting to login...',
+          );
+          // Session was cleared in verifySession() if invalid
           context.goNamed('mainLoginScreen');
           return;
         }
-
-        setState(() {
-          _imagesLoaded = true;
-          _showLoader = false;
-        });
       }
+
+      if (prefs.isOnboardingCompleted) {
+        context.goNamed('mainLoginScreen');
+        return;
+      }
+
+      setState(() {
+        _imagesLoaded = true;
+        _showLoader = false;
+      });
     }
   }
 

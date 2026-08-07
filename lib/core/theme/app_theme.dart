@@ -27,6 +27,7 @@ class AppTheme {
         onSurface: darkText,
         error: Colors.redAccent,
         surface: creamWhite,
+        outlineVariant: Colors.black12,
       ),
       textTheme: GoogleFonts.poppinsTextTheme().copyWith(
         bodyLarge: GoogleFonts.poppins(color: darkText),
@@ -70,6 +71,7 @@ class AppTheme {
         onSecondary: Colors.white,
         surface: backgroundDark,
         error: Colors.redAccent,
+        outlineVariant: Colors.white10,
       ),
       textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
       appBarTheme: AppBarTheme(

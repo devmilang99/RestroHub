@@ -89,13 +89,13 @@ class _SearchableSliverAppLayoutState<T>
 
   double get _headerHeight {
     if (!widget.enableFilters) {
-      return 70;
+      return 80;
     }
     final hasFilterContent =
         widget.filterBar != null ||
         widget.customFilterBuilder != null ||
         (widget.filterItems?.isNotEmpty ?? false);
-    return hasFilterContent ? 120.0 : 70.0;
+    return hasFilterContent ? 130.0 : 80.0;
   }
 
   void _safeAnimateTo(
@@ -579,7 +579,7 @@ class _SearchHeaderContent extends StatelessWidget {
 
     return Container(
       color: colorScheme.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Column(
         children: [
           Row(
@@ -602,6 +602,11 @@ class _SearchHeaderContent extends StatelessWidget {
                           )
                         : Colors.white,
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(
+                        alpha: isDark ? 0.8 : 0.3,
+                      ),
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.05),
@@ -621,19 +626,24 @@ class _SearchHeaderContent extends StatelessWidget {
                         color: colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: colorScheme.primary,
-                      ),
-                      suffixIcon: query.isNotEmpty
-                          ? IconButton(
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (query.isNotEmpty)
+                            IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               onPressed: clearSearch,
-                            )
-                          : null,
+                            ),
+                          Icon(
+                            Icons.search,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                      ),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
+                        horizontal: 16,
                         vertical: 14,
                       ),
                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/core/widgets/app_image.dart';
 
 class RestaurantCard extends StatelessWidget {
@@ -53,7 +54,6 @@ class RestaurantCard extends StatelessWidget {
                   imagePath: image,
                   height: 160,
                   width: double.infinity,
-                  fit: BoxFit.cover,
                   type: AppImageType.banner,
                 ),
                 Padding(

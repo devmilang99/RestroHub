@@ -44,7 +44,7 @@ final class ErrorServiceProvider
   }
 }
 
-String _$errorServiceHash() => r'a1ba22ccf8ddea295d153ba7c50e5d73f21556c0';
+String _$errorServiceHash() => r'644587b6edf06e75e1eb5cad41856b74c02de999';
 
 /// A global service to manage and display error states across the application.
 

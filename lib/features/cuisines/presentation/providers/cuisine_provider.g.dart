@@ -125,7 +125,7 @@ final class AllCuisinesStreamProvider
   }
 }
 
-String _$allCuisinesStreamHash() => r'82b51c8b0152b2d05bd662a85c165c50c769f88b';
+String _$allCuisinesStreamHash() => r'94b09f4818da9e335fb65e12296c690b61fa3e58';
 
 @ProviderFor(restaurantIdFromCategory)
 final restaurantIdFromCategoryProvider = RestaurantIdFromCategoryFamily._();
@@ -374,7 +374,7 @@ final class FilteredCuisinesProvider
   FilteredCuisines create() => FilteredCuisines();
 }
 
-String _$filteredCuisinesHash() => r'51538df5e221dd880a02cc1a8ea5113849ed2fb8';
+String _$filteredCuisinesHash() => r'e76ceed754b2035cfa3ae70d28f6cf379d23640b';
 
 abstract class _$FilteredCuisines extends $AsyncNotifier<List<MenuItemModel>> {
   FutureOr<List<MenuItemModel>> build();

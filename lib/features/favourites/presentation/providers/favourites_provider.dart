@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
@@ -83,13 +84,49 @@ class FavouritesNotifier extends AsyncNotifier<List<FavouriteItem>> {
 
     if (menuItemIds.isNotEmpty) {
       logInfo('FAV_PROVIDER: Querying menu items for IDs: $menuItemIds');
-      final menuItems = await (db.select(
-        db.cachedMenuItems,
-      )..where((t) => t.id.isIn(menuItemIds))).get();
-      logInfo(
-        'FAV_PROVIDER: Found ${menuItems.length} matching menu items in DB.',
-      );
-      for (final c in menuItems) {
+      final query = db.select(db.cachedMenuItems).join([
+        leftOuterJoin(
+          db.cachedMenuCategories,
+          db.cachedMenuCategories.id.equalsExp(db.cachedMenuItems.categoryId),
+        ),
+        leftOuterJoin(
+          db.cachedRestaurants,
+          db.cachedRestaurants.id.equalsExp(
+            db.cachedMenuCategories.restaurantId,
+          ),
+        ),
+      ])..where(db.cachedMenuItems.id.isIn(menuItemIds));
+
+      final rows = await query.get();
+      logInfo('FAV_PROVIDER: Found ${rows.length} matching menu items in DB.');
+
+      for (final row in rows) {
+        final c = row.readTable(db.cachedMenuItems);
+        final r = row.readTableOrNull(db.cachedRestaurants);
+
+        RestaurantModel? restaurant;
+        if (r != null) {
+          restaurant = RestaurantModel(
+            id: r.id,
+            ownerId: r.ownerId,
+            name: r.name,
+            description: r.description ?? '',
+            logoUrl: r.logoUrl,
+            bannerUrl: r.bannerUrl,
+            phone: r.phone,
+            email: r.email,
+            website: r.website,
+            status: RestaurantStatus.fromString(r.status),
+            rating: r.rating,
+            priceRange: r.priceRange,
+            minOrderAmount: r.minOrderAmount,
+            taxPercent: r.taxPercent,
+            locationAddress: r.locationAddress,
+            latitude: r.latitude,
+            longitude: r.longitude,
+          );
+        }
+
         results.add(
           MenuItemFavourite(
             MenuItemModel(
@@ -104,6 +141,7 @@ class FavouritesNotifier extends AsyncNotifier<List<FavouriteItem>> {
               calories: c.calories,
               isAvailable: c.isAvailable,
             ),
+            restaurant: restaurant,
           ),
         );
       }

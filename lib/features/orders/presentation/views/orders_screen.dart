@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
+import 'package:restro_hub/features/dashboard/presentation/widgets/dashboard_skeletons.dart';
 import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/features/orders/presentation/widgets/cancelled_order_card.dart';
 import 'package:restro_hub/features/orders/presentation/widgets/in_progress_order_card.dart';
@@ -69,7 +70,14 @@ class _OrderList extends ConsumerWidget {
     final colorScheme = context.colorScheme;
 
     return ordersAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+            sliver: SliverListSkeleton(itemCount: 4, height: 160),
+          ),
+        ],
+      ),
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (orders) {
         final filteredOrders = orders.where((o) {

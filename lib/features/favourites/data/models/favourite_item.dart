@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
-import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
+import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 
 sealed class FavouriteItem extends Equatable {
   const FavouriteItem();
@@ -30,7 +30,8 @@ class RestaurantFavourite extends FavouriteItem {
 
 class MenuItemFavourite extends FavouriteItem {
   final MenuItemModel menuItem;
-  const MenuItemFavourite(this.menuItem);
+  final RestaurantModel? restaurant;
+  const MenuItemFavourite(this.menuItem, {this.restaurant});
 
   @override
   String get id => menuItem.id ?? '';
@@ -42,5 +43,5 @@ class MenuItemFavourite extends FavouriteItem {
   String? get imageUrl => menuItem.imageUrl;
 
   @override
-  List<Object?> get props => [menuItem];
+  List<Object?> get props => [menuItem, restaurant];
 }
