@@ -36,43 +36,43 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 
 |            Splash Screen            |          Login Screen          |                   Home Dashboard                    |
 |:----------------------------------:|:--------------------------------:|:----------------------------------------------------:|
-| ![Splash](screenshots/01_splash.png) | ![Login](screenshots/02_login.png) | ![Home](screenshots/03_home.png) |
+| <img src="screenshots/01_splash.png" width="200"/> | <img src="screenshots/02_login.png" width="200"/> | <img src="screenshots/03_home.png" width="200"/> |
 
 ### 🤖 AI Assistant
 
 |                 AI Initial Page                 |                 AI Search Results                  |
 |:-----------------------------------------------:|:--------------------------------------------------:|
-| ![AI Initial](screenshots/04_ai_initial.png)    | ![AI Search Results](screenshots/05_ai_search.png) |
+| <img src="screenshots/04_ai_initial.png" width="250"/> | <img src="screenshots/05_ai_search.png" width="250"/> |
 
 ### 🍽️ Restaurant
 
 |             Restaurant Details             |                 Restaurant Menu                 |                   Restaurant Reviews                   |
 |:------------------------------------------:|:-----------------------------------------------:|:------------------------------------------------------:|
-| ![Restaurant Details](screenshots/12_restaurant_details.png) | ![Restaurant Menu](screenshots/13_restaurant_menu.png) | ![Restaurant Reviews](screenshots/14_restaurant_reviews.png) |
+| <img src="screenshots/12_restaurant_details.png" width="200"/> | <img src="screenshots/13_restaurant_menu.png" width="200"/> | <img src="screenshots/14_restaurant_reviews.png" width="200"/> |
 
 ### 🍲 Food
 
 |             Food Details             |                 Food Customization                 |                   Food Reviews                   |
 |:-------------------------------------:|:--------------------------------------------------:|:------------------------------------------------:|
-| ![Food Details](screenshots/15_food_details.png) | ![Food Customization](screenshots/16_food_customization.png) | ![Food Reviews](screenshots/17_food_reviews.png) |
+| <img src="screenshots/15_food_details.png" width="200"/> | <img src="screenshots/16_food_customization.png" width="200"/> | <img src="screenshots/17_food_reviews.png" width="200"/> |
 
 ### 🛒 Shopping Flow
 
 |             My Cart              |                 Cart Management                 |                   Review Order                   |
 |:--------------------------------:|:----------------------------------------:|:------------------------------------------------:|
-| ![Cart](screenshots/06_cart.png) | ![Items](screenshots/06_items.png) | ![Order Review](screenshots/07_order_review.png) |
+| <img src="screenshots/06_cart.png" width="200"/> | <img src="screenshots/06_items.png" width="200"/> | <img src="screenshots/07_order_review.png" width="200"/> |
 
 ### 📦 Order Management
 
 |                   Recent Orders                    |                   Completed Orders                     |                    Cancelled Orders                    |
 |:--------------------------------------------------:|:--------------------------------------------------------:|:-----------------------------------------------------:|
-| ![Recent Orders](screenshots/08_recent_orders.png) | ![Completed Orders](screenshots/09_completed_orders.png) | ![Cancelled Orders](screenshots/10_cancelled_orders.png) |
+| <img src="screenshots/08_recent_orders.png" width="250"/> | <img src="screenshots/09_completed_orders.png" width="250"/> | <img src="screenshots/10_cancelled_orders.png" width="250"/> |
 
 ### 👤 Personalization
 
 |              User Profile              |
 |:--------------------------------------:|
-| ![Profile](screenshots/11_profile.png) |
+| <img src="screenshots/11_profile.png" width="200"/> |
 
 ---
 
