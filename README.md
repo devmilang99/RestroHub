@@ -36,7 +36,7 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 
 |            Splash Screen            |          Login Screen          |                   Home Dashboard                    |
 |:----------------------------------:|:--------------------------------:|:----------------------------------------------------:|
-| <img src="screenshots/01_splash.png" width="200"/> | <img src="screenshots/02_login.png" width="200"/> | <img src="screenshots/03_home.png" width="200"/> |
+| <img src="screenshots/01_splash.png" width="250"/> | <img src="screenshots/02_login.png" width="250"/> | <img src="screenshots/03_home.png" width="250"/> |
 
 ### 🤖 AI Assistant
 
@@ -44,23 +44,17 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 |:-----------------------------------------------:|:--------------------------------------------------:|
 | <img src="screenshots/04_ai_initial.png" width="250"/> | <img src="screenshots/05_ai_search.png" width="250"/> |
 
-### 🍽️ Restaurant
+### 🍽️ Restaurant & 🍲 Food
 
-|             Restaurant Details             |                 Restaurant Menu                 |                   Restaurant Reviews                   |
-|:------------------------------------------:|:-----------------------------------------------:|:------------------------------------------------------:|
-| <img src="screenshots/12_restaurant_details.png" width="200"/> | <img src="screenshots/13_restaurant_menu.png" width="200"/> | <img src="screenshots/14_restaurant_reviews.png" width="200"/> |
+|             Restaurant              |                 Food                  |                   
+|:------------------------------------------:|:------------------------------:|
+| <img src="screenshots/12_restaurant_details.png" width="250"/> | <img src="screenshots/13_food_details.png" width="250"/> 
 
-### 🍲 Food
+### 🛒 Cart Flow
 
-|             Food Details             |                 Food Customization                 |                   Food Reviews                   |
-|:-------------------------------------:|:--------------------------------------------------:|:------------------------------------------------:|
-| <img src="screenshots/15_food_details.png" width="200"/> | <img src="screenshots/16_food_customization.png" width="200"/> | <img src="screenshots/17_food_reviews.png" width="200"/> |
-
-### 🛒 Shopping Flow
-
-|             My Cart              |                 Cart Management                 |                   Review Order                   |
-|:--------------------------------:|:----------------------------------------:|:------------------------------------------------:|
-| <img src="screenshots/06_cart.png" width="200"/> | <img src="screenshots/06_items.png" width="200"/> | <img src="screenshots/07_order_review.png" width="200"/> |
+|             My Cart              |                 Review Order                  |      
+|:--------------------------------:|:---------------------------------------------:|
+| <img src="screenshots/06_cart.png" width="250"/> | <img src="screenshots/07_order_review.png" width="250"/> |
 
 ### 📦 Order Management
 
@@ -72,7 +66,7 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 
 |              User Profile              |
 |:--------------------------------------:|
-| <img src="screenshots/11_profile.png" width="200"/> |
+| <img src="screenshots/11_profile.png" width="250"/> |
 
 ---
 
