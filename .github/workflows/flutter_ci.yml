@@ -9,7 +9,7 @@ on:
 jobs:
   build:
     name: Build & Test
-    runs-on: macos-latest # Using macOS for iOS build support
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
@@ -25,7 +25,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true # Built-in caching for Flutter SDK
+          cache: true
 
       - name: Cache Pub dependencies
         uses: actions/cache@v4
@@ -55,6 +55,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pods-
 
+      - name: Setup CocoaPods
+        run: |
+          sudo gem install cocoapods --version 1.13.0  # Pin to stable version
+          pod setup
+
       - name: Create .env file
         run: |
           echo "SUPABASE_URL=https://dummy-project.supabase.co" > .env
@@ -69,15 +74,8 @@ jobs:
       - name: Run Tests
         run: flutter test
 
-      - name: Set up CocoaPods
-        run: |
-          sudo gem install cocoapods
-          pod repo update
-
       - name: Build iOS
-        run: flutter build ios --no-codesign # Build iOS without signing for verification
+        run: flutter build ios --no-codesign
 
       - name: Build Android APK
-        run: flutter build apk --debug # Build debug for CI speed, change to appbundle/release for deployment
-
-
+        run: flutter build apk --debug
