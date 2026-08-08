@@ -108,7 +108,7 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
     final activeOrders = (ref.watch(ordersProvider).value ?? [])
         .where(
           (o) =>
-              o.subStatus != OrderSubStatus.success &&
+              o.subStatus != OrderSubStatus.completed &&
               o.subStatus != OrderSubStatus.cancelled,
         )
         .toList();

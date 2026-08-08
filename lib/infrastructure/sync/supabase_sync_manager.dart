@@ -51,7 +51,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
         await pushOrderToRemote(orderJson, itemsJson);
 
         // If it's a successful order, also push the transaction
-        if (orderJson['status'] == 'success') {
+        if (orderJson['status'] == 'completed') {
           await pushTransaction({
             'order_id': orderId,
             'amount': orderJson['total_amount'],
@@ -470,12 +470,12 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
 
       await db.transaction(() async {
         // 1. Delete local terminal orders that are missing from remote
-        // We only delete 'success' or 'cancelled' to avoid losing local active orders
+        // We only delete 'completed' or 'cancelled' to avoid losing local active orders
         // that might be in the middle of a sync or offline-created.
         await (db.delete(db.cachedOrders)..where(
               (t) =>
                   t.id.isIn(remoteIds).not() &
-                  (t.status.equals('success') | t.status.equals('cancelled')),
+                  (t.status.equals('completed') | t.status.equals('cancelled')),
             ))
             .go();
 

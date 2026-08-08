@@ -26,7 +26,7 @@ enum OrderSubStatus {
   preparing, // Cooking, Packed, InRoute phases
   delivered, // Order is being carried
   pickup, // Please pick up
-  success,
+  completed,
   cancelled,
 }
 
@@ -124,7 +124,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     if (orders.isNotEmpty) {
       Future.microtask(() {
         for (final order in orders) {
-          if (order.subStatus != OrderSubStatus.success &&
+          if (order.subStatus != OrderSubStatus.completed &&
               order.subStatus != OrderSubStatus.cancelled) {
             _startOrderTracking(order.id);
           }
@@ -201,7 +201,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
 
         await _persistOrderStatus(id, status, startTime: startTime);
 
-        if (status == OrderSubStatus.success) {
+        if (status == OrderSubStatus.completed) {
           ref.read(loyaltyProvider.notifier).addPoints(10);
         }
       }
@@ -508,9 +508,9 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
       case OrderSubStatus.pending:
         return 10;
       case OrderSubStatus.preparing:
-        return 60;
+        return 60; // 1 minute
       case OrderSubStatus.delivered:
-        return 60;
+        return 60; // 1 minute
       case OrderSubStatus.pickup:
         return 15;
       default:
@@ -540,7 +540,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         icon = '🛍️';
         color = const Color(0xFF845EF7);
         break;
-      case OrderSubStatus.success:
+      case OrderSubStatus.completed:
         title = 'Order Delivered';
         body = 'Enjoy your meal! Order #$orderId was successful.';
         icon = '✅';
@@ -568,8 +568,16 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
           body: body,
         );
 
-    if (status == OrderSubStatus.success ||
+    if (status == OrderSubStatus.completed ||
         status == OrderSubStatus.cancelled) {
+      ref
+          .read(notificationServiceProvider)
+          .showNotification(
+            id: orderId.hashCode,
+            title: title,
+            body: body,
+          );
+
       ref
           .read(notificationsProvider.notifier)
           .addNotification(
@@ -580,6 +588,14 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
               timestamp: DateTime.now(),
               accentColor: color,
             ),
+          );
+    } else {
+      ref
+          .read(notificationServiceProvider)
+          .showNotification(
+            id: orderId.hashCode,
+            title: title,
+            body: body,
           );
     }
   }
@@ -593,7 +609,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
       final db = await ref.read(appDatabaseProvider.future);
       final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
 
-      if (status == OrderSubStatus.success ||
+      if (status == OrderSubStatus.completed ||
           status == OrderSubStatus.cancelled) {
         // 1. Update remote first to ensure source of truth is updated
         await syncManager.syncLocalToRemote('orders', {
@@ -601,15 +617,19 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
           'status': status.name,
         });
 
-        // 2. Proactively clear from local database
-        await (db.delete(
+        // 2. Update local status to terminal state instead of deleting
+        // This ensures the Success/Cancelled tabs show the order immediately
+        await (db.update(
           db.cachedOrders,
-        )..where((t) => t.id.equals(orderId))).go();
-        await (db.delete(
-          db.cachedOrderItems,
-        )..where((t) => t.orderId.equals(orderId))).go();
+        )..where((t) => t.id.equals(orderId))).write(
+          CachedOrdersCompanion(
+            status: drift.Value(status.name),
+            lastUpdated: drift.Value(DateTime.now()),
+            progress: const drift.Value(1.0),
+          ),
+        );
 
-        // 3. Trigger a sync to refresh completed/cancelled orders from server
+        // 3. Trigger a sync to refresh remote state in background
         unawaited(
           syncManager.syncRemoteOrders().then((_) async {
             if (ref.mounted) {

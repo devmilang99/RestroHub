@@ -89,11 +89,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
         ),
         actions: [
           if (notifications.isNotEmpty)
-            TextButton(
+            TextButton.icon(
               onPressed: () {
                 ref.read(notificationsProvider.notifier).markAllAsRead();
               },
-              child: Text(
+              icon: Icon(
+                Icons.done_all_rounded,
+                size: 16,
+                color: colorScheme.primary,
+              ),
+              label: Text(
                 'Mark all read',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
@@ -103,7 +108,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               ),
             ),
           if (notifications.isNotEmpty)
-            TextButton(
+            TextButton.icon(
               onPressed: () async {
                 final confirmed = await showDialog<bool>(
                   context: context,
@@ -126,7 +131,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                   _clearAll();
                 }
               },
-              child: Text(
+              icon: const Icon(
+                Icons.delete_sweep_rounded,
+                size: 16,
+                color: Colors.redAccent,
+              ),
+              label: Text(
                 'Clear all',
                 style: GoogleFonts.poppins(
                   fontSize: 12,

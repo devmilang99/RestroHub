@@ -122,7 +122,11 @@ class CachedOrders extends Table {
 
 class CachedOrderItems extends Table {
   TextColumn get id => text()();
-  TextColumn get orderId => text().references(CachedOrders, #id)();
+  TextColumn get orderId => text().references(
+    CachedOrders,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
   TextColumn get menuItemId => text().nullable()();
   TextColumn get name => text()();
   TextColumn get imageUrl => text().nullable()();

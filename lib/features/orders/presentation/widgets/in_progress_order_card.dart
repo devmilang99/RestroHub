@@ -40,8 +40,9 @@ class _InProgressOrderCardState extends ConsumerState<InProgressOrderCard> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       // Calculate real remaining seconds based on order progress and phase
       final status = widget.order.subStatus;
-      int duration = 60;
+      int duration = 60; // Default for preparing and delivered
       if (status == OrderSubStatus.pickup) duration = 15;
+      if (status == OrderSubStatus.pending) duration = 10;
 
       if (mounted) {
         setState(() {
@@ -313,21 +314,34 @@ class _InProgressOrderCardState extends ConsumerState<InProgressOrderCard> {
 
   IconData _getStatusIcon(OrderModel order) {
     if (order.subStatus == OrderSubStatus.pending) return Icons.timer_outlined;
-    if (order.subStatus == OrderSubStatus.preparing) return Icons.soup_kitchen;
+    if (order.subStatus == OrderSubStatus.preparing) {
+      if (order.progress < 0.33) return Icons.delivery_dining;
+      if (order.progress < 0.66) return Icons.soup_kitchen;
+      return Icons.inventory_2;
+    }
     if (order.subStatus == OrderSubStatus.delivered) {
       return Icons.delivery_dining;
+    }
+    if (order.subStatus == OrderSubStatus.pickup) {
+      return Icons.person_pin_circle;
     }
     return Icons.check_circle;
   }
 
   String _getStatusText(OrderModel order) {
-    if (order.subStatus == OrderSubStatus.pending)
+    if (order.subStatus == OrderSubStatus.pending) {
       return 'Awaiting Initiation...';
+    }
     if (order.subStatus == OrderSubStatus.preparing) {
-      return 'Cooking your meal...';
+      if (order.progress < 0.33) return 'Driver En-route to Restaurant...';
+      if (order.progress < 0.66) return 'Chef is Cooking...';
+      return 'Order is Packed!';
     }
     if (order.subStatus == OrderSubStatus.delivered) {
       return 'Out for delivery...';
+    }
+    if (order.subStatus == OrderSubStatus.pickup) {
+      return 'Driver is Waiting...';
     }
     return 'Processing...';
   }
@@ -520,28 +534,28 @@ class _OrderStepProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cookingProgress = (progress / 0.33).clamp(0.0, 1.0);
-    final packedProgress = ((progress - 0.33) / 0.33).clamp(0.0, 1.0);
-    final inRouteProgress = ((progress - 0.66) / 0.34).clamp(0.0, 1.0);
+    final inRouteProgress = (progress / 0.33).clamp(0.0, 1.0);
+    final cookingProgress = ((progress - 0.33) / 0.33).clamp(0.0, 1.0);
+    final packedProgress = ((progress - 0.66) / 0.34).clamp(0.0, 1.0);
 
     return Row(
       children: [
         _ProgressStep(
+          label: 'In Route',
+          icon: Icons.delivery_dining,
+          progress: inRouteProgress,
+          isCompleted: progress > 0.33,
+        ),
+        _ProgressStep(
           label: 'Cooking',
           icon: Icons.soup_kitchen,
           progress: cookingProgress,
-          isCompleted: progress > 0.33,
+          isCompleted: progress > 0.66,
         ),
         _ProgressStep(
           label: 'Packed',
           icon: Icons.inventory_2,
           progress: packedProgress,
-          isCompleted: progress > 0.66,
-        ),
-        _ProgressStep(
-          label: 'In Route',
-          icon: Icons.delivery_dining,
-          progress: inRouteProgress,
           isCompleted: progress >= 1.0,
         ),
       ],

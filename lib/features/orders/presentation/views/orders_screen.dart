@@ -82,10 +82,10 @@ class _OrderList extends ConsumerWidget {
       data: (orders) {
         final filteredOrders = orders.where((o) {
           if (statusType == l10n.inProgress) {
-            return o.subStatus != OrderSubStatus.success &&
+            return o.subStatus != OrderSubStatus.completed &&
                 o.subStatus != OrderSubStatus.cancelled;
           } else if (statusType == l10n.success) {
-            return o.subStatus == OrderSubStatus.success;
+            return o.subStatus == OrderSubStatus.completed;
           } else {
             return o.subStatus == OrderSubStatus.cancelled;
           }
@@ -147,10 +147,10 @@ class _OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (order.subStatus != OrderSubStatus.success &&
+    if (order.subStatus != OrderSubStatus.completed &&
         order.subStatus != OrderSubStatus.cancelled) {
       return InProgressOrderCard(order: order);
-    } else if (order.subStatus == OrderSubStatus.success) {
+    } else if (order.subStatus == OrderSubStatus.completed) {
       return SuccessOrderCard(order: order);
     } else {
       return CancelledOrderCard(order: order);

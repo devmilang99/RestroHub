@@ -57,9 +57,9 @@ Built with a Feature-Driven Layered Architecture, RestroHub is designed for scal
 
 ### 📦 Order Management
 
-|                   Recent Orders                    |                   Completed Orders                     |                    Cancelled Orders                    |
-|:--------------------------------------------------:|:--------------------------------------------------------:|:-----------------------------------------------------:|
-| <img src="screenshots/08_recent_orders.png" width="250"/> | <img src="screenshots/09_completed_orders.png" width="250"/> | <img src="screenshots/10_cancelled_orders.png" width="250"/> |
+|                   Recent Orders                    |                     Live Tracking Order                      |                    Completed Orders                    |                         Cancelled Orders                          |
+|:--------------------------------------------------:|:------------------------------------------------------------:|:-----------------------------------------------------:|:------------------------------------------------------------:|
+| <img src="screenshots/08_recent_orders.png" width="250"/> | <img src="screenshots/14_live_tracking.png" width="250"/> | <img src="screenshots/09_completed_orders.png" width="250"/> | <img src="screenshots/10_cancelled_orders.png" width="250"/> |
 
 ### 👤 Personalization
 

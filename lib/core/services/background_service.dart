@@ -212,7 +212,7 @@ Future<void> onStart(ServiceInstance service) async {
               id: orderId.hashCode,
               title: 'Order Tracking: #$orderId',
               body:
-                  '${_getStatusDisplay(order['status'] as String)} (${(progress * 100).toInt()}%)',
+                  '${_getStatusDisplay(order['status'] as String, progress)} (${(progress * 100).toInt()}%)',
               notificationDetails: NotificationDetails(
                 android: AndroidNotificationDetails(
                   'order_status_channel',
@@ -329,17 +329,19 @@ Future<void> onStart(ServiceInstance service) async {
   });
 }
 
-String _getStatusDisplay(String status) {
+String _getStatusDisplay(String status, [double progress = 0.0]) {
   switch (status) {
     case 'pending':
       return 'Cancellation window open... ⏳';
     case 'preparing':
-      return 'Cooking your meal... 🍳';
+      if (progress < 0.33) return 'Driver En-route to Restaurant... 🛵';
+      if (progress < 0.66) return 'Chef is Cooking... 🍳';
+      return 'Order is Packed! 🛍️';
     case 'delivered':
       return 'Order is on the way! 🛵';
     case 'pickup':
       return 'Ready for pickup! 🛍️';
-    case 'success':
+    case 'completed':
       return 'Delivered! ✅';
     default:
       return 'Processing...';
@@ -355,7 +357,7 @@ String? _getNextStatus(String currentStatus) {
     case 'delivered':
       return 'pickup';
     case 'pickup':
-      return 'success';
+      return 'completed';
     default:
       return null;
   }
@@ -366,9 +368,9 @@ int _getDurationForStatus(String status) {
     case 'pending':
       return 10;
     case 'preparing':
-      return 60;
+      return 60; // 1 minute
     case 'delivered':
-      return 60;
+      return 60; // 1 minute
     case 'pickup':
       return 15;
     default:
