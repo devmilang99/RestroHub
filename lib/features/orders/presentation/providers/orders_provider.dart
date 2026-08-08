@@ -4,9 +4,11 @@ import 'dart:async';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
+import 'package:restro_hub/core/providers/error_service.dart';
 import 'package:restro_hub/core/services/notification_service.dart';
 import 'package:restro_hub/core/utils/logger.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
@@ -43,6 +45,7 @@ class OrderModel {
   final int? remainingPendingSeconds;
   final bool isPendingPaused;
   final String? cancellationReason;
+  final DateTime? phaseStartTime;
 
   OrderModel({
     required this.id,
@@ -59,6 +62,7 @@ class OrderModel {
     this.remainingPendingSeconds,
     this.isPendingPaused = false,
     this.cancellationReason,
+    this.phaseStartTime,
   });
 
   OrderModel copyWith({
@@ -68,6 +72,7 @@ class OrderModel {
     int? remainingPendingSeconds,
     bool? isPendingPaused,
     String? cancellationReason,
+    DateTime? phaseStartTime,
   }) {
     return OrderModel(
       id: id,
@@ -86,12 +91,15 @@ class OrderModel {
           remainingPendingSeconds ?? this.remainingPendingSeconds,
       isPendingPaused: isPendingPaused ?? this.isPendingPaused,
       cancellationReason: cancellationReason ?? this.cancellationReason,
+      phaseStartTime: phaseStartTime ?? this.phaseStartTime,
     );
   }
 }
 
 class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
   Timer? _globalTimer;
+  StreamSubscription? _bgProgressSubscription;
+  StreamSubscription? _bgStatusSubscription;
 
   @override
   FutureOr<List<OrderModel>> build() async {
@@ -99,14 +107,30 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     final user = ref.watch(currentUserProvider).value;
     if (user == null) {
       _globalTimer?.cancel();
+      _bgProgressSubscription?.cancel();
+      _bgStatusSubscription?.cancel();
       return [];
     }
 
     _startGlobalTimer();
+    _listenToBackgroundService();
+
     final db = await ref.watch(appDatabaseProvider.future);
 
     // Initial load from local Drift
     final orders = await _loadLocalOrders(db);
+
+    // Resume tracking for active orders after initial load
+    if (orders.isNotEmpty) {
+      Future.microtask(() {
+        for (final order in orders) {
+          if (order.subStatus != OrderSubStatus.success &&
+              order.subStatus != OrderSubStatus.cancelled) {
+            _startOrderTracking(order.id);
+          }
+        }
+      });
+    }
 
     // If we have a user, try to sync missing orders from remote in background
     final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
@@ -123,6 +147,80 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     }
 
     return orders;
+  }
+
+  void _listenToBackgroundService() {
+    final service = FlutterBackgroundService();
+
+    _bgProgressSubscription?.cancel();
+    _bgProgressSubscription = service.on('updateProgress').listen((event) {
+      if (event == null) return;
+      final id = event['id'] as String;
+      final statusStr = event['status'] as String;
+      final progress = (event['progress'] as num).toDouble();
+
+      final currentState = state.value ?? [];
+      if (currentState.any((o) => o.id == id)) {
+        state = AsyncValue.data([
+          for (final order in currentState)
+            if (order.id == id)
+              order.copyWith(
+                subStatus: _parseStatusString(statusStr),
+                progress: progress,
+              )
+            else
+              order,
+        ]);
+      }
+    });
+
+    _bgStatusSubscription?.cancel();
+    _bgStatusSubscription = service.on('statusChanged').listen((event) async {
+      if (event == null) return;
+      final id = event['id'] as String;
+      final statusStr = event['status'] as String;
+      final status = _parseStatusString(statusStr);
+      final startTimeStr = event['startTime'] as String?;
+      final startTime = startTimeStr != null
+          ? DateTime.parse(startTimeStr)
+          : DateTime.now();
+
+      final currentState = state.value ?? [];
+      if (currentState.any((o) => o.id == id)) {
+        state = AsyncValue.data([
+          for (final order in currentState)
+            if (order.id == id)
+              order.copyWith(
+                subStatus: status,
+                progress: 0.0,
+                phaseStartTime: startTime,
+              )
+            else
+              order,
+        ]);
+
+        await _persistOrderStatus(id, status, startTime: startTime);
+
+        if (status == OrderSubStatus.success) {
+          ref.read(loyaltyProvider.notifier).addPoints(10);
+        }
+      }
+    });
+
+    service.on('error').listen((event) {
+      if (event == null) return;
+      final id = event['id'] as String;
+      final errorMessage =
+          event['message'] as String? ??
+          'Order processing failed due to a technical problem.';
+
+      cancelOrder(id, reason: errorMessage);
+      ref
+          .read(errorServiceProvider.notifier)
+          .showError(
+            message: "Order #$id: $errorMessage Please try again.",
+          );
+    });
   }
 
   Future<List<OrderModel>> _loadLocalOrders(AppDatabase db) async {
@@ -161,9 +259,16 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
               subStatus: OrderSubStatus.preparing,
               targetConfirmationTime: null,
               progress: 0.01,
+              phaseStartTime: now,
             );
             // Persist auto-confirmation to database
-            unawaited(_persistOrderStatus(order.id, OrderSubStatus.preparing));
+            unawaited(
+              _persistOrderStatus(
+                order.id,
+                OrderSubStatus.preparing,
+                startTime: now,
+              ),
+            );
             return updatedOrder;
           } else {
             // Force state update to refresh UI timers
@@ -215,6 +320,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
       newOrder = order.copyWith(
         targetConfirmationTime: DateTime.now().add(const Duration(seconds: 10)),
         remainingPendingSeconds: 10,
+        phaseStartTime: DateTime.now(),
       );
     }
 
@@ -237,6 +343,14 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
             discountAmount: newOrder.discount,
             totalAmount: newOrder.totalAmount,
             createdAt: newOrder.timestamp,
+            targetConfirmationTime: drift.Value(
+              newOrder.targetConfirmationTime,
+            ),
+            remainingPendingSeconds: drift.Value(
+              newOrder.remainingPendingSeconds,
+            ),
+            isPendingPaused: drift.Value(newOrder.isPendingPaused),
+            phaseStartTime: drift.Value(newOrder.phaseStartTime),
           ),
         );
 
@@ -249,6 +363,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
               orderId: newOrder.id,
               menuItemId: drift.Value(item.id),
               name: item.name,
+              imageUrl: drift.Value(item.image),
               quantity: item.quantity,
               unitPrice: item.price,
               totalPrice: item.price * item.quantity,
@@ -283,6 +398,18 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
       );
     } catch (e, st) {
       logError('Failed to sync order to remote Supabase', e, st);
+      // Cancel the order if initial sync fails
+      cancelOrder(
+        newOrder.id,
+        reason: 'Technical problem during order placement.',
+      );
+      ref
+          .read(errorServiceProvider.notifier)
+          .showError(
+            message:
+                'Order could not be processed due to a technical problem. Please try again.',
+          );
+      return;
     }
 
     // Push Transaction Record in background
@@ -295,11 +422,10 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         })
         .catchError((Object e, StackTrace st) {
           logError('Failed to push transaction to remote', e);
+          // We don't necessarily cancel for transaction record failure if the order is synced
         });
 
-    if (newOrder.subStatus != OrderSubStatus.pending) {
-      _startOrderTracking(newOrder.id);
-    }
+    _startOrderTracking(newOrder.id);
   }
 
   void pausePendingTimer(String orderId) {
@@ -337,6 +463,7 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
 
   void confirmOrder(String orderId) {
     final currentState = state.value ?? [];
+    final now = DateTime.now();
     state = AsyncValue.data([
       for (final order in currentState)
         if (order.id == orderId)
@@ -344,29 +471,51 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
             subStatus: OrderSubStatus.preparing,
             targetConfirmationTime: null,
             progress: 0.01,
+            phaseStartTime: now,
           )
         else
           order,
     ]);
 
-    unawaited(_persistOrderStatus(orderId, OrderSubStatus.preparing));
+    unawaited(
+      _persistOrderStatus(orderId, OrderSubStatus.preparing, startTime: now),
+    );
     _startOrderTracking(orderId);
     _triggerPrinter(orderId);
   }
 
   void _startOrderTracking(String orderId) {
-    _showStatusNotification(orderId, OrderSubStatus.preparing);
-    _runPhase(orderId, OrderSubStatus.preparing, 60, () {
-      _showStatusNotification(orderId, OrderSubStatus.delivered);
-      _runPhase(orderId, OrderSubStatus.delivered, 60, () {
-        _showStatusNotification(orderId, OrderSubStatus.pickup);
-        _runPhase(orderId, OrderSubStatus.pickup, 15, () {
-          _showStatusNotification(orderId, OrderSubStatus.success);
-          _updateOrderStatus(orderId, OrderSubStatus.success, 1);
-          ref.read(loyaltyProvider.notifier).addPoints(10);
-        });
-      });
+    final service = FlutterBackgroundService();
+    service.startService(); // Ensure it is running
+    service.invoke('setAsForeground');
+
+    final order = (state.value ?? []).firstWhere((o) => o.id == orderId);
+
+    service.invoke('startTracking', {
+      'order': {
+        'id': orderId,
+        'status': order.subStatus.name,
+      },
+      'duration': _getPhaseDuration(order.subStatus),
+      'startTime': order.phaseStartTime?.toIso8601String(),
     });
+
+    _showStatusNotification(orderId, order.subStatus);
+  }
+
+  int _getPhaseDuration(OrderSubStatus status) {
+    switch (status) {
+      case OrderSubStatus.pending:
+        return 10;
+      case OrderSubStatus.preparing:
+        return 60;
+      case OrderSubStatus.delivered:
+        return 60;
+      case OrderSubStatus.pickup:
+        return 15;
+      default:
+        return 0;
+    }
   }
 
   void _showStatusNotification(String orderId, OrderSubStatus status) {
@@ -404,7 +553,11 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         color = const Color(0xFFFF6B6B);
         break;
       case OrderSubStatus.pending:
-        return;
+        title = 'Order Received';
+        body = 'Cancellation window for #$orderId is open for 10s.';
+        icon = '⏳';
+        color = const Color(0xFFADB5BD);
+        break;
     }
 
     ref
@@ -431,57 +584,11 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     }
   }
 
-  void _runPhase(
-    String orderId,
-    OrderSubStatus status,
-    int durationSeconds,
-    VoidCallback onComplete,
-  ) {
-    var elapsed = 0;
-    Timer.periodic(const Duration(seconds: 1), (timer) {
-      elapsed++;
-      final progress = elapsed / durationSeconds;
-
-      if (elapsed >= durationSeconds) {
-        timer.cancel();
-        _updateOrderStatus(orderId, status, 1);
-        onComplete();
-      } else {
-        _updateOrderStatus(orderId, status, progress);
-      }
-
-      final currentState = state.value ?? [];
-      if (!currentState.any((o) => o.id == orderId)) {
-        timer.cancel();
-      }
-    });
-  }
-
-  void _updateOrderStatus(
-    String orderId,
-    OrderSubStatus status,
-    double progress,
-  ) {
-    final currentState = state.value ?? [];
-    state = AsyncValue.data([
-      for (final order in currentState)
-        if (order.id == orderId)
-          order.copyWith(subStatus: status, progress: progress)
-        else
-          order,
-    ]);
-
-    // Persist status change if it's a new state
-    final order = currentState.firstWhere((o) => o.id == orderId);
-    if (order.subStatus != status) {
-      unawaited(_persistOrderStatus(orderId, status));
-    }
-  }
-
   Future<void> _persistOrderStatus(
     String orderId,
-    OrderSubStatus status,
-  ) async {
+    OrderSubStatus status, {
+    DateTime? startTime,
+  }) async {
     try {
       final db = await ref.read(appDatabaseProvider.future);
       final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
@@ -513,16 +620,48 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         );
       } else {
         // Update local status for in-progress orders
-        await (db.update(db.cachedOrders)..where((t) => t.id.equals(orderId)))
-            .write(CachedOrdersCompanion(status: drift.Value(status.name)));
+        final companion = CachedOrdersCompanion(
+          status: drift.Value(status.name),
+          phaseStartTime: drift.Value(startTime ?? DateTime.now()),
+        );
+
+        if (status == OrderSubStatus.preparing) {
+          await (db.update(
+            db.cachedOrders,
+          )..where((t) => t.id.equals(orderId))).write(
+            companion.copyWith(
+              targetConfirmationTime: const drift.Value(null),
+              remainingPendingSeconds: const drift.Value(null),
+            ),
+          );
+        } else {
+          await (db.update(
+            db.cachedOrders,
+          )..where((t) => t.id.equals(orderId))).write(companion);
+        }
       }
     } catch (e, st) {
       logError('Failed to persist order status update for $orderId', e, st);
+      // Handle technical failure by cancelling order (if not already cancelling)
+      if (status != OrderSubStatus.cancelled) {
+        cancelOrder(orderId, reason: 'Technical synchronization error.');
+        ref
+            .read(errorServiceProvider.notifier)
+            .showError(
+              message:
+                  'Order #$orderId encountered a technical problem and has been cancelled. Please try again.',
+            );
+      }
     }
   }
 
   void cancelOrder(String orderId, {String? reason}) {
     _showStatusNotification(orderId, OrderSubStatus.cancelled);
+
+    // Stop background tracking
+    final service = FlutterBackgroundService();
+    service.invoke('stopTracking', {'id': orderId});
+
     final currentState = state.value ?? [];
     state = AsyncValue.data([
       for (final order in currentState)
@@ -554,7 +693,7 @@ List<OrderModel> _mapOrdersDataToModels(List<Map<String, dynamic>> data) {
                   id: i.menuItemId,
                   restaurantId: row.restaurantId,
                   name: i.name,
-                  image: '',
+                  image: i.imageUrl ?? '',
                   price: i.unitPrice,
                   quantity: i.quantity,
                 ),
@@ -565,6 +704,10 @@ List<OrderModel> _mapOrdersDataToModels(List<Map<String, dynamic>> data) {
           timestamp: row.createdAt,
           paymentMethod: PaymentMethod.cod,
           discount: row.discountAmount,
+          targetConfirmationTime: row.targetConfirmationTime,
+          remainingPendingSeconds: row.remainingPendingSeconds,
+          isPendingPaused: row.isPendingPaused,
+          phaseStartTime: row.phaseStartTime,
         );
       })
       .toList()

@@ -134,7 +134,7 @@ class _LoginViewState extends ConsumerState<LoginView>
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: Colors.transparent,

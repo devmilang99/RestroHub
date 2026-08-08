@@ -279,9 +279,6 @@ class _ProcessCheckOutState extends ConsumerState<ProcessCheckOut> {
                   setState(() => _isPlacingOrder = true);
 
                   try {
-                    // Simulate a small delay for better UX
-                    await Future.delayed(const Duration(milliseconds: 1500));
-
                     final orderId =
                         'ORD${DateTime.now().millisecondsSinceEpoch}';
                     final restaurantId = cart.isNotEmpty

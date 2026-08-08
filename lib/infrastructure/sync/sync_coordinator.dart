@@ -39,8 +39,17 @@ class SyncCoordinator extends _$SyncCoordinator {
       logInfo(
         'SYNC COORDINATOR: Online at startup. Triggering initial diagnostics and background sync...',
       );
-      final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
-      unawaited(syncManager.diagnoseSchemaMismatch());
+
+      // Defer diagnostics to avoid startup congestion
+      unawaited(
+        Future.delayed(const Duration(seconds: 10), () {
+          if (ref.mounted) {
+            ref
+                .read(supabaseSyncManagerProvider.notifier)
+                .diagnoseSchemaMismatch();
+          }
+        }),
+      );
 
       // We don't trigger syncAllInitialData here if it's already being handled by SplashScreen
       // to avoid redundancy and saturation. SplashScreen calls syncAllInitialData(metadataOnly: true).

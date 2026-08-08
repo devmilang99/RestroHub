@@ -26,6 +26,7 @@ part 'supabase_sync_manager.g.dart';
 @Riverpod(keepAlive: true)
 class SupabaseSyncManager extends _$SupabaseSyncManager {
   late final SupabaseClient _client;
+  Future<void> _orderSyncQueue = Future.value();
 
   @override
   void build() {
@@ -33,6 +34,45 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
   }
 
   User? get currentUser => _client.auth.currentUser;
+
+  /// Enqueues an order and its items for sequential synchronization to Supabase.
+  /// This ensures that orders are processed one after another, and failures in one
+  /// sync do not stop others in the queue.
+  void enqueueOrderSync(
+    Map<String, dynamic> orderJson,
+    List<Map<String, dynamic>> itemsJson,
+  ) {
+    final orderId = orderJson['id'];
+    logInfo('SYNC: Enqueueing sequential sync for order $orderId');
+
+    _orderSyncQueue = _orderSyncQueue.then((_) async {
+      try {
+        logInfo('SYNC: Processing queued sync for order $orderId');
+        await pushOrderToRemote(orderJson, itemsJson);
+
+        // If it's a successful order, also push the transaction
+        if (orderJson['status'] == 'success') {
+          await pushTransaction({
+            'order_id': orderId,
+            'amount': orderJson['total_amount'],
+            'status': 'completed',
+            'payment_method': orderJson['payment_method'] ?? 'cod',
+          });
+        }
+        logInfo('SYNC: Sequential sync completed for order $orderId');
+
+        // Trigger a remote order sync refresh to update local Success/Cancelled tabs
+        unawaited(syncRemoteOrders());
+      } catch (e, st) {
+        logError(
+          'SYNC ERROR: Sequential sync failed for order $orderId. '
+          'The queue will continue with the next item.',
+          e,
+          st,
+        );
+      }
+    });
+  }
 
   /// Runs all core sync tasks concurrently for maximum efficiency during startup.
   /// Modified to use a phased approach:
@@ -439,6 +479,11 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
             ))
             .go();
 
+        // 1b. Clear items for all remote orders in one go to avoid N queries
+        await (db.delete(
+          db.cachedOrderItems,
+        )..where((t) => t.orderId.isIn(remoteIds))).go();
+
         // 2. Sync all remote orders to local
         await db.batch((batch) {
           for (final orderJson in data) {
@@ -462,19 +507,33 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
                     .toDouble(),
                 createdAt: DateTime.parse(orderJson['created_at'] as String),
                 lastUpdated: Value(DateTime.now()),
+                progress: Value(
+                  ((orderJson['progress'] ?? 0.0) as num).toDouble(),
+                ),
+                phaseStartTime: Value(
+                  orderJson['phase_start_time'] != null
+                      ? DateTime.parse(orderJson['phase_start_time'] as String)
+                      : null,
+                ),
+                targetConfirmationTime: Value(
+                  orderJson['target_confirmation_time'] != null
+                      ? DateTime.parse(
+                          orderJson['target_confirmation_time'] as String,
+                        )
+                      : null,
+                ),
+                remainingPendingSeconds: Value(
+                  orderJson['remaining_pending_seconds'] as int?,
+                ),
+                isPendingPaused: Value(
+                  (orderJson['is_pending_paused'] ?? false) as bool,
+                ),
               ),
               mode: InsertMode.insertOrReplace,
             );
 
             final items = orderJson['order_items'] as List?;
             if (items != null) {
-              // Delete existing items for this order before re-inserting to ensure consistency
-              // This is a simplified "sync" for items within an order.
-              batch.deleteWhere(
-                db.cachedOrderItems,
-                (t) => t.orderId.equals(orderId),
-              );
-
               for (final itemJson in items) {
                 batch.insert(
                   db.cachedOrderItems,
@@ -483,6 +542,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
                     orderId: orderId,
                     menuItemId: Value(itemJson['menu_item_id'] as String?),
                     name: itemJson['name'] as String,
+                    imageUrl: Value(itemJson['image_url'] as String?),
                     quantity: (itemJson['quantity'] ?? 1) as int,
                     unitPrice: ((itemJson['unit_price'] ?? 0.0) as num)
                         .toDouble(),
@@ -618,6 +678,25 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     } catch (e) {
       logError('SYNC ERROR: Failed to sync favourites from Supabase', e);
       return Result.failure(ServerException(e.toString()));
+    }
+  }
+
+  /// Removes an order and its items from Supabase
+  Future<void> deleteRemoteOrder(String orderId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    try {
+      // Deleting the order should cascade to order_items if the schema is correct.
+      // If not, we delete items first.
+      await _client.from('order_items').delete().eq('order_id', orderId);
+      await _client.from('orders').delete().match({
+        'id': orderId,
+        'customer_id': userId,
+      });
+      logInfo('SYNC: Successfully deleted order $orderId from remote.');
+    } catch (e) {
+      logError('SYNC ERROR: Failed to delete order $orderId from Supabase', e);
     }
   }
 
@@ -1054,11 +1133,19 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
     // Critical images: Reduced concurrency to prioritize UI responsiveness
     unawaited(
       Future(() async {
+        // Initial delay to ensure the app has finished navigation and initial render
+        await Future<void>.delayed(const Duration(seconds: 3));
+
         logInfo('SYNC: Pre-caching critical images...');
-        await downloadInBatches(criticalUrls, 3, precache: true);
-        logInfo('SYNC: Critical images cached. Starting background batch...');
+        await downloadInBatches(criticalUrls, 2, precache: true);
+
+        logInfo(
+          'SYNC: Critical images cached. Starting background batch in 5s...',
+        );
+        await Future<void>.delayed(const Duration(seconds: 5));
+
         // Standard images: Lower concurrency to stay "in the background"
-        await downloadInBatches(standardUrls, 2);
+        await downloadInBatches(standardUrls, 1);
         logInfo('SYNC: All images pre-cached successfully.');
       }),
     );
@@ -1085,12 +1172,18 @@ Map<String, dynamic> _prepareOrderExportPayload(Map<String, dynamic> params) {
       'total_amount': row.totalAmount,
       'created_at': row.createdAt.toIso8601String(),
       'discount_amount': row.discountAmount,
+      'progress': row.progress,
+      'phase_start_time': row.phaseStartTime?.toIso8601String(),
+      'target_confirmation_time': row.targetConfirmationTime?.toIso8601String(),
+      'remaining_pending_seconds': row.remainingPendingSeconds,
+      'is_pending_paused': row.isPendingPaused,
     },
     'items': itemRows
         .map(
           (i) => {
             'menu_item_id': i.menuItemId,
             'name': i.name,
+            'image_url': i.imageUrl,
             'quantity': i.quantity,
             'unit_price': i.unitPrice,
             'total_price': i.totalPrice,

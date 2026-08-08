@@ -11,6 +11,7 @@ import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/dashboard/logic/membership_rules.dart';
 import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
+import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -609,10 +610,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildLogoutButton(ThemeData theme) {
+    final activeOrders = ref.watch(ordersProvider).value ?? [];
+
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () async {
+          if (activeOrders.isNotEmpty) {
+            await showDialog<void>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.orange.shade700),
+                    const SizedBox(width: 10),
+                    const Text('Logout Restricted'),
+                  ],
+                ),
+                content: const Text(
+                  'Your order is currently in progress. For a seamless experience, please wait until your order is completed before logging out.\n\nThank you for your patience!',
+                  style: TextStyle(fontSize: 15),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('UNDERSTOOD'),
+                  ),
+                ],
+              ),
+            );
+            return;
+          }
+
           final confirm = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(

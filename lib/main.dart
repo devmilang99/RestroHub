@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/network/network_providers.dart';
 import 'package:restro_hub/core/providers/error_service.dart';
 import 'package:restro_hub/core/providers/preferences_provider.dart';
+import 'package:restro_hub/core/services/background_service.dart';
 import 'package:restro_hub/core/services/notification_service.dart';
 import 'package:restro_hub/core/services/security_service.dart';
 import 'package:restro_hub/core/theme/app_theme.dart';
@@ -75,21 +77,14 @@ void main() async {
 
     debugPrint('MAIN: Performing parallel initialization...');
 
-    // Run independent initialization tasks in parallel to minimize startup time
+    // Run critical initialization tasks in parallel.
+    // We defer non-critical background services to after runApp to minimize main thread pressure.
     final initResults = await Future.wait([
       SecurityService.isDeviceSecure()
           .timeout(const Duration(seconds: 4))
           .catchError((Object e) {
             debugPrint('MAIN: Security check failed/timed out: $e');
             return true; // Fallback to true in case of timeout/error
-          }),
-      container
-          .read(notificationServiceProvider)
-          .init()
-          .timeout(const Duration(seconds: 3))
-          .catchError((Object e) {
-            debugPrint('MAIN: Notification service init failed: $e');
-            return null;
           }),
       SupabaseService.initialize()
           .timeout(const Duration(seconds: 8))
@@ -114,6 +109,20 @@ void main() async {
         child: const MyApp(),
       ),
     );
+
+    // Defer non-critical initializations until after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        initializeBackgroundService().catchError((e) {
+          debugPrint('MAIN: Background service init failed: $e');
+        }),
+      );
+      unawaited(
+        container.read(notificationServiceProvider).init().catchError((e) {
+          debugPrint('MAIN: Notification service init failed: $e');
+        }),
+      );
+    });
   } on Object catch (e, stack) {
     debugPrint('MAIN: FATAL STARTUP ERROR: $e');
     debugPrint(stack.toString());
@@ -153,10 +162,12 @@ class MyApp extends ConsumerWidget {
               statusBarColor: Colors.transparent,
               systemNavigationBarColor: Colors.transparent,
               systemNavigationBarDividerColor: Colors.transparent,
-              systemNavigationBarIconBrightness: themeMode == ThemeMode.dark
+              systemNavigationBarIconBrightness:
+                  Theme.of(context).brightness == Brightness.dark
                   ? Brightness.light
                   : Brightness.dark,
-              statusBarIconBrightness: themeMode == ThemeMode.dark
+              statusBarIconBrightness:
+                  Theme.of(context).brightness == Brightness.dark
                   ? Brightness.light
                   : Brightness.dark,
             ),

@@ -2698,6 +2698,67 @@ class $CachedOrdersTable extends CachedOrders
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _progressMeta = const VerificationMeta(
+    'progress',
+  );
+  @override
+  late final GeneratedColumn<double> progress = GeneratedColumn<double>(
+    'progress',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _phaseStartTimeMeta = const VerificationMeta(
+    'phaseStartTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> phaseStartTime =
+      GeneratedColumn<DateTime>(
+        'phase_start_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _targetConfirmationTimeMeta =
+      const VerificationMeta('targetConfirmationTime');
+  @override
+  late final GeneratedColumn<DateTime> targetConfirmationTime =
+      GeneratedColumn<DateTime>(
+        'target_confirmation_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _remainingPendingSecondsMeta =
+      const VerificationMeta('remainingPendingSeconds');
+  @override
+  late final GeneratedColumn<int> remainingPendingSeconds =
+      GeneratedColumn<int>(
+        'remaining_pending_seconds',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _isPendingPausedMeta = const VerificationMeta(
+    'isPendingPaused',
+  );
+  @override
+  late final GeneratedColumn<bool> isPendingPaused = GeneratedColumn<bool>(
+    'is_pending_paused',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_pending_paused" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2711,6 +2772,11 @@ class $CachedOrdersTable extends CachedOrders
     totalAmount,
     createdAt,
     lastUpdated,
+    progress,
+    phaseStartTime,
+    targetConfirmationTime,
+    remainingPendingSeconds,
+    isPendingPaused,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2825,6 +2891,48 @@ class $CachedOrdersTable extends CachedOrders
         ),
       );
     }
+    if (data.containsKey('progress')) {
+      context.handle(
+        _progressMeta,
+        progress.isAcceptableOrUnknown(data['progress']!, _progressMeta),
+      );
+    }
+    if (data.containsKey('phase_start_time')) {
+      context.handle(
+        _phaseStartTimeMeta,
+        phaseStartTime.isAcceptableOrUnknown(
+          data['phase_start_time']!,
+          _phaseStartTimeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_confirmation_time')) {
+      context.handle(
+        _targetConfirmationTimeMeta,
+        targetConfirmationTime.isAcceptableOrUnknown(
+          data['target_confirmation_time']!,
+          _targetConfirmationTimeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('remaining_pending_seconds')) {
+      context.handle(
+        _remainingPendingSecondsMeta,
+        remainingPendingSeconds.isAcceptableOrUnknown(
+          data['remaining_pending_seconds']!,
+          _remainingPendingSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_pending_paused')) {
+      context.handle(
+        _isPendingPausedMeta,
+        isPendingPaused.isAcceptableOrUnknown(
+          data['is_pending_paused']!,
+          _isPendingPausedMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2878,6 +2986,26 @@ class $CachedOrdersTable extends CachedOrders
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_updated'],
       )!,
+      progress: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}progress'],
+      )!,
+      phaseStartTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}phase_start_time'],
+      ),
+      targetConfirmationTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}target_confirmation_time'],
+      ),
+      remainingPendingSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}remaining_pending_seconds'],
+      ),
+      isPendingPaused: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_pending_paused'],
+      )!,
     );
   }
 
@@ -2899,6 +3027,11 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
   final double totalAmount;
   final DateTime createdAt;
   final DateTime lastUpdated;
+  final double progress;
+  final DateTime? phaseStartTime;
+  final DateTime? targetConfirmationTime;
+  final int? remainingPendingSeconds;
+  final bool isPendingPaused;
   const CachedOrder({
     required this.id,
     required this.restaurantId,
@@ -2911,6 +3044,11 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     required this.totalAmount,
     required this.createdAt,
     required this.lastUpdated,
+    required this.progress,
+    this.phaseStartTime,
+    this.targetConfirmationTime,
+    this.remainingPendingSeconds,
+    required this.isPendingPaused,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2926,6 +3064,19 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     map['total_amount'] = Variable<double>(totalAmount);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['last_updated'] = Variable<DateTime>(lastUpdated);
+    map['progress'] = Variable<double>(progress);
+    if (!nullToAbsent || phaseStartTime != null) {
+      map['phase_start_time'] = Variable<DateTime>(phaseStartTime);
+    }
+    if (!nullToAbsent || targetConfirmationTime != null) {
+      map['target_confirmation_time'] = Variable<DateTime>(
+        targetConfirmationTime,
+      );
+    }
+    if (!nullToAbsent || remainingPendingSeconds != null) {
+      map['remaining_pending_seconds'] = Variable<int>(remainingPendingSeconds);
+    }
+    map['is_pending_paused'] = Variable<bool>(isPendingPaused);
     return map;
   }
 
@@ -2942,6 +3093,17 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
       totalAmount: Value(totalAmount),
       createdAt: Value(createdAt),
       lastUpdated: Value(lastUpdated),
+      progress: Value(progress),
+      phaseStartTime: phaseStartTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(phaseStartTime),
+      targetConfirmationTime: targetConfirmationTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetConfirmationTime),
+      remainingPendingSeconds: remainingPendingSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(remainingPendingSeconds),
+      isPendingPaused: Value(isPendingPaused),
     );
   }
 
@@ -2962,6 +3124,15 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       lastUpdated: serializer.fromJson<DateTime>(json['lastUpdated']),
+      progress: serializer.fromJson<double>(json['progress']),
+      phaseStartTime: serializer.fromJson<DateTime?>(json['phaseStartTime']),
+      targetConfirmationTime: serializer.fromJson<DateTime?>(
+        json['targetConfirmationTime'],
+      ),
+      remainingPendingSeconds: serializer.fromJson<int?>(
+        json['remainingPendingSeconds'],
+      ),
+      isPendingPaused: serializer.fromJson<bool>(json['isPendingPaused']),
     );
   }
   @override
@@ -2979,6 +3150,15 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
       'totalAmount': serializer.toJson<double>(totalAmount),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'lastUpdated': serializer.toJson<DateTime>(lastUpdated),
+      'progress': serializer.toJson<double>(progress),
+      'phaseStartTime': serializer.toJson<DateTime?>(phaseStartTime),
+      'targetConfirmationTime': serializer.toJson<DateTime?>(
+        targetConfirmationTime,
+      ),
+      'remainingPendingSeconds': serializer.toJson<int?>(
+        remainingPendingSeconds,
+      ),
+      'isPendingPaused': serializer.toJson<bool>(isPendingPaused),
     };
   }
 
@@ -2994,6 +3174,11 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     double? totalAmount,
     DateTime? createdAt,
     DateTime? lastUpdated,
+    double? progress,
+    Value<DateTime?> phaseStartTime = const Value.absent(),
+    Value<DateTime?> targetConfirmationTime = const Value.absent(),
+    Value<int?> remainingPendingSeconds = const Value.absent(),
+    bool? isPendingPaused,
   }) => CachedOrder(
     id: id ?? this.id,
     restaurantId: restaurantId ?? this.restaurantId,
@@ -3006,6 +3191,17 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     totalAmount: totalAmount ?? this.totalAmount,
     createdAt: createdAt ?? this.createdAt,
     lastUpdated: lastUpdated ?? this.lastUpdated,
+    progress: progress ?? this.progress,
+    phaseStartTime: phaseStartTime.present
+        ? phaseStartTime.value
+        : this.phaseStartTime,
+    targetConfirmationTime: targetConfirmationTime.present
+        ? targetConfirmationTime.value
+        : this.targetConfirmationTime,
+    remainingPendingSeconds: remainingPendingSeconds.present
+        ? remainingPendingSeconds.value
+        : this.remainingPendingSeconds,
+    isPendingPaused: isPendingPaused ?? this.isPendingPaused,
   );
   CachedOrder copyWithCompanion(CachedOrdersCompanion data) {
     return CachedOrder(
@@ -3032,6 +3228,19 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
       lastUpdated: data.lastUpdated.present
           ? data.lastUpdated.value
           : this.lastUpdated,
+      progress: data.progress.present ? data.progress.value : this.progress,
+      phaseStartTime: data.phaseStartTime.present
+          ? data.phaseStartTime.value
+          : this.phaseStartTime,
+      targetConfirmationTime: data.targetConfirmationTime.present
+          ? data.targetConfirmationTime.value
+          : this.targetConfirmationTime,
+      remainingPendingSeconds: data.remainingPendingSeconds.present
+          ? data.remainingPendingSeconds.value
+          : this.remainingPendingSeconds,
+      isPendingPaused: data.isPendingPaused.present
+          ? data.isPendingPaused.value
+          : this.isPendingPaused,
     );
   }
 
@@ -3048,7 +3257,12 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
           ..write('discountAmount: $discountAmount, ')
           ..write('totalAmount: $totalAmount, ')
           ..write('createdAt: $createdAt, ')
-          ..write('lastUpdated: $lastUpdated')
+          ..write('lastUpdated: $lastUpdated, ')
+          ..write('progress: $progress, ')
+          ..write('phaseStartTime: $phaseStartTime, ')
+          ..write('targetConfirmationTime: $targetConfirmationTime, ')
+          ..write('remainingPendingSeconds: $remainingPendingSeconds, ')
+          ..write('isPendingPaused: $isPendingPaused')
           ..write(')'))
         .toString();
   }
@@ -3066,6 +3280,11 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
     totalAmount,
     createdAt,
     lastUpdated,
+    progress,
+    phaseStartTime,
+    targetConfirmationTime,
+    remainingPendingSeconds,
+    isPendingPaused,
   );
   @override
   bool operator ==(Object other) =>
@@ -3081,7 +3300,12 @@ class CachedOrder extends DataClass implements Insertable<CachedOrder> {
           other.discountAmount == this.discountAmount &&
           other.totalAmount == this.totalAmount &&
           other.createdAt == this.createdAt &&
-          other.lastUpdated == this.lastUpdated);
+          other.lastUpdated == this.lastUpdated &&
+          other.progress == this.progress &&
+          other.phaseStartTime == this.phaseStartTime &&
+          other.targetConfirmationTime == this.targetConfirmationTime &&
+          other.remainingPendingSeconds == this.remainingPendingSeconds &&
+          other.isPendingPaused == this.isPendingPaused);
 }
 
 class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
@@ -3096,6 +3320,11 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
   final Value<double> totalAmount;
   final Value<DateTime> createdAt;
   final Value<DateTime> lastUpdated;
+  final Value<double> progress;
+  final Value<DateTime?> phaseStartTime;
+  final Value<DateTime?> targetConfirmationTime;
+  final Value<int?> remainingPendingSeconds;
+  final Value<bool> isPendingPaused;
   final Value<int> rowid;
   const CachedOrdersCompanion({
     this.id = const Value.absent(),
@@ -3109,6 +3338,11 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     this.totalAmount = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.lastUpdated = const Value.absent(),
+    this.progress = const Value.absent(),
+    this.phaseStartTime = const Value.absent(),
+    this.targetConfirmationTime = const Value.absent(),
+    this.remainingPendingSeconds = const Value.absent(),
+    this.isPendingPaused = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CachedOrdersCompanion.insert({
@@ -3123,6 +3357,11 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     required double totalAmount,
     required DateTime createdAt,
     this.lastUpdated = const Value.absent(),
+    this.progress = const Value.absent(),
+    this.phaseStartTime = const Value.absent(),
+    this.targetConfirmationTime = const Value.absent(),
+    this.remainingPendingSeconds = const Value.absent(),
+    this.isPendingPaused = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        restaurantId = Value(restaurantId),
@@ -3146,6 +3385,11 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     Expression<double>? totalAmount,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? lastUpdated,
+    Expression<double>? progress,
+    Expression<DateTime>? phaseStartTime,
+    Expression<DateTime>? targetConfirmationTime,
+    Expression<int>? remainingPendingSeconds,
+    Expression<bool>? isPendingPaused,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -3160,6 +3404,13 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
       if (totalAmount != null) 'total_amount': totalAmount,
       if (createdAt != null) 'created_at': createdAt,
       if (lastUpdated != null) 'last_updated': lastUpdated,
+      if (progress != null) 'progress': progress,
+      if (phaseStartTime != null) 'phase_start_time': phaseStartTime,
+      if (targetConfirmationTime != null)
+        'target_confirmation_time': targetConfirmationTime,
+      if (remainingPendingSeconds != null)
+        'remaining_pending_seconds': remainingPendingSeconds,
+      if (isPendingPaused != null) 'is_pending_paused': isPendingPaused,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -3176,6 +3427,11 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     Value<double>? totalAmount,
     Value<DateTime>? createdAt,
     Value<DateTime>? lastUpdated,
+    Value<double>? progress,
+    Value<DateTime?>? phaseStartTime,
+    Value<DateTime?>? targetConfirmationTime,
+    Value<int?>? remainingPendingSeconds,
+    Value<bool>? isPendingPaused,
     Value<int>? rowid,
   }) {
     return CachedOrdersCompanion(
@@ -3190,6 +3446,13 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      progress: progress ?? this.progress,
+      phaseStartTime: phaseStartTime ?? this.phaseStartTime,
+      targetConfirmationTime:
+          targetConfirmationTime ?? this.targetConfirmationTime,
+      remainingPendingSeconds:
+          remainingPendingSeconds ?? this.remainingPendingSeconds,
+      isPendingPaused: isPendingPaused ?? this.isPendingPaused,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -3230,6 +3493,25 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
     if (lastUpdated.present) {
       map['last_updated'] = Variable<DateTime>(lastUpdated.value);
     }
+    if (progress.present) {
+      map['progress'] = Variable<double>(progress.value);
+    }
+    if (phaseStartTime.present) {
+      map['phase_start_time'] = Variable<DateTime>(phaseStartTime.value);
+    }
+    if (targetConfirmationTime.present) {
+      map['target_confirmation_time'] = Variable<DateTime>(
+        targetConfirmationTime.value,
+      );
+    }
+    if (remainingPendingSeconds.present) {
+      map['remaining_pending_seconds'] = Variable<int>(
+        remainingPendingSeconds.value,
+      );
+    }
+    if (isPendingPaused.present) {
+      map['is_pending_paused'] = Variable<bool>(isPendingPaused.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -3250,6 +3532,11 @@ class CachedOrdersCompanion extends UpdateCompanion<CachedOrder> {
           ..write('totalAmount: $totalAmount, ')
           ..write('createdAt: $createdAt, ')
           ..write('lastUpdated: $lastUpdated, ')
+          ..write('progress: $progress, ')
+          ..write('phaseStartTime: $phaseStartTime, ')
+          ..write('targetConfirmationTime: $targetConfirmationTime, ')
+          ..write('remainingPendingSeconds: $remainingPendingSeconds, ')
+          ..write('isPendingPaused: $isPendingPaused, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -3305,6 +3592,17 @@ class $CachedOrderItemsTable extends CachedOrderItems
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _imageUrlMeta = const VerificationMeta(
+    'imageUrl',
+  );
+  @override
+  late final GeneratedColumn<String> imageUrl = GeneratedColumn<String>(
+    'image_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _quantityMeta = const VerificationMeta(
     'quantity',
   );
@@ -3344,6 +3642,7 @@ class $CachedOrderItemsTable extends CachedOrderItems
     orderId,
     menuItemId,
     name,
+    imageUrl,
     quantity,
     unitPrice,
     totalPrice,
@@ -3389,6 +3688,12 @@ class $CachedOrderItemsTable extends CachedOrderItems
       );
     } else if (isInserting) {
       context.missing(_nameMeta);
+    }
+    if (data.containsKey('image_url')) {
+      context.handle(
+        _imageUrlMeta,
+        imageUrl.isAcceptableOrUnknown(data['image_url']!, _imageUrlMeta),
+      );
     }
     if (data.containsKey('quantity')) {
       context.handle(
@@ -3439,6 +3744,10 @@ class $CachedOrderItemsTable extends CachedOrderItems
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      imageUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_url'],
+      ),
       quantity: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}quantity'],
@@ -3465,6 +3774,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
   final String orderId;
   final String? menuItemId;
   final String name;
+  final String? imageUrl;
   final int quantity;
   final double unitPrice;
   final double totalPrice;
@@ -3473,6 +3783,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
     required this.orderId,
     this.menuItemId,
     required this.name,
+    this.imageUrl,
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
@@ -3486,6 +3797,9 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
       map['menu_item_id'] = Variable<String>(menuItemId);
     }
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || imageUrl != null) {
+      map['image_url'] = Variable<String>(imageUrl);
+    }
     map['quantity'] = Variable<int>(quantity);
     map['unit_price'] = Variable<double>(unitPrice);
     map['total_price'] = Variable<double>(totalPrice);
@@ -3500,6 +3814,9 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
           ? const Value.absent()
           : Value(menuItemId),
       name: Value(name),
+      imageUrl: imageUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imageUrl),
       quantity: Value(quantity),
       unitPrice: Value(unitPrice),
       totalPrice: Value(totalPrice),
@@ -3516,6 +3833,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
       orderId: serializer.fromJson<String>(json['orderId']),
       menuItemId: serializer.fromJson<String?>(json['menuItemId']),
       name: serializer.fromJson<String>(json['name']),
+      imageUrl: serializer.fromJson<String?>(json['imageUrl']),
       quantity: serializer.fromJson<int>(json['quantity']),
       unitPrice: serializer.fromJson<double>(json['unitPrice']),
       totalPrice: serializer.fromJson<double>(json['totalPrice']),
@@ -3529,6 +3847,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
       'orderId': serializer.toJson<String>(orderId),
       'menuItemId': serializer.toJson<String?>(menuItemId),
       'name': serializer.toJson<String>(name),
+      'imageUrl': serializer.toJson<String?>(imageUrl),
       'quantity': serializer.toJson<int>(quantity),
       'unitPrice': serializer.toJson<double>(unitPrice),
       'totalPrice': serializer.toJson<double>(totalPrice),
@@ -3540,6 +3859,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
     String? orderId,
     Value<String?> menuItemId = const Value.absent(),
     String? name,
+    Value<String?> imageUrl = const Value.absent(),
     int? quantity,
     double? unitPrice,
     double? totalPrice,
@@ -3548,6 +3868,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
     orderId: orderId ?? this.orderId,
     menuItemId: menuItemId.present ? menuItemId.value : this.menuItemId,
     name: name ?? this.name,
+    imageUrl: imageUrl.present ? imageUrl.value : this.imageUrl,
     quantity: quantity ?? this.quantity,
     unitPrice: unitPrice ?? this.unitPrice,
     totalPrice: totalPrice ?? this.totalPrice,
@@ -3560,6 +3881,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
           ? data.menuItemId.value
           : this.menuItemId,
       name: data.name.present ? data.name.value : this.name,
+      imageUrl: data.imageUrl.present ? data.imageUrl.value : this.imageUrl,
       quantity: data.quantity.present ? data.quantity.value : this.quantity,
       unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
       totalPrice: data.totalPrice.present
@@ -3575,6 +3897,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
           ..write('orderId: $orderId, ')
           ..write('menuItemId: $menuItemId, ')
           ..write('name: $name, ')
+          ..write('imageUrl: $imageUrl, ')
           ..write('quantity: $quantity, ')
           ..write('unitPrice: $unitPrice, ')
           ..write('totalPrice: $totalPrice')
@@ -3588,6 +3911,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
     orderId,
     menuItemId,
     name,
+    imageUrl,
     quantity,
     unitPrice,
     totalPrice,
@@ -3600,6 +3924,7 @@ class CachedOrderItem extends DataClass implements Insertable<CachedOrderItem> {
           other.orderId == this.orderId &&
           other.menuItemId == this.menuItemId &&
           other.name == this.name &&
+          other.imageUrl == this.imageUrl &&
           other.quantity == this.quantity &&
           other.unitPrice == this.unitPrice &&
           other.totalPrice == this.totalPrice);
@@ -3610,6 +3935,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
   final Value<String> orderId;
   final Value<String?> menuItemId;
   final Value<String> name;
+  final Value<String?> imageUrl;
   final Value<int> quantity;
   final Value<double> unitPrice;
   final Value<double> totalPrice;
@@ -3619,6 +3945,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
     this.orderId = const Value.absent(),
     this.menuItemId = const Value.absent(),
     this.name = const Value.absent(),
+    this.imageUrl = const Value.absent(),
     this.quantity = const Value.absent(),
     this.unitPrice = const Value.absent(),
     this.totalPrice = const Value.absent(),
@@ -3629,6 +3956,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
     required String orderId,
     this.menuItemId = const Value.absent(),
     required String name,
+    this.imageUrl = const Value.absent(),
     required int quantity,
     required double unitPrice,
     required double totalPrice,
@@ -3644,6 +3972,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
     Expression<String>? orderId,
     Expression<String>? menuItemId,
     Expression<String>? name,
+    Expression<String>? imageUrl,
     Expression<int>? quantity,
     Expression<double>? unitPrice,
     Expression<double>? totalPrice,
@@ -3654,6 +3983,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
       if (orderId != null) 'order_id': orderId,
       if (menuItemId != null) 'menu_item_id': menuItemId,
       if (name != null) 'name': name,
+      if (imageUrl != null) 'image_url': imageUrl,
       if (quantity != null) 'quantity': quantity,
       if (unitPrice != null) 'unit_price': unitPrice,
       if (totalPrice != null) 'total_price': totalPrice,
@@ -3666,6 +3996,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
     Value<String>? orderId,
     Value<String?>? menuItemId,
     Value<String>? name,
+    Value<String?>? imageUrl,
     Value<int>? quantity,
     Value<double>? unitPrice,
     Value<double>? totalPrice,
@@ -3676,6 +4007,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
       orderId: orderId ?? this.orderId,
       menuItemId: menuItemId ?? this.menuItemId,
       name: name ?? this.name,
+      imageUrl: imageUrl ?? this.imageUrl,
       quantity: quantity ?? this.quantity,
       unitPrice: unitPrice ?? this.unitPrice,
       totalPrice: totalPrice ?? this.totalPrice,
@@ -3697,6 +4029,9 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
+    }
+    if (imageUrl.present) {
+      map['image_url'] = Variable<String>(imageUrl.value);
     }
     if (quantity.present) {
       map['quantity'] = Variable<int>(quantity.value);
@@ -3720,6 +4055,7 @@ class CachedOrderItemsCompanion extends UpdateCompanion<CachedOrderItem> {
           ..write('orderId: $orderId, ')
           ..write('menuItemId: $menuItemId, ')
           ..write('name: $name, ')
+          ..write('imageUrl: $imageUrl, ')
           ..write('quantity: $quantity, ')
           ..write('unitPrice: $unitPrice, ')
           ..write('totalPrice: $totalPrice, ')
@@ -6576,6 +6912,11 @@ typedef $$CachedOrdersTableCreateCompanionBuilder =
       required double totalAmount,
       required DateTime createdAt,
       Value<DateTime> lastUpdated,
+      Value<double> progress,
+      Value<DateTime?> phaseStartTime,
+      Value<DateTime?> targetConfirmationTime,
+      Value<int?> remainingPendingSeconds,
+      Value<bool> isPendingPaused,
       Value<int> rowid,
     });
 typedef $$CachedOrdersTableUpdateCompanionBuilder =
@@ -6591,6 +6932,11 @@ typedef $$CachedOrdersTableUpdateCompanionBuilder =
       Value<double> totalAmount,
       Value<DateTime> createdAt,
       Value<DateTime> lastUpdated,
+      Value<double> progress,
+      Value<DateTime?> phaseStartTime,
+      Value<DateTime?> targetConfirmationTime,
+      Value<int?> remainingPendingSeconds,
+      Value<bool> isPendingPaused,
       Value<int> rowid,
     });
 
@@ -6686,6 +7032,31 @@ class $$CachedOrdersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get phaseStartTime => $composableBuilder(
+    column: $table.phaseStartTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get targetConfirmationTime => $composableBuilder(
+    column: $table.targetConfirmationTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get remainingPendingSeconds => $composableBuilder(
+    column: $table.remainingPendingSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPendingPaused => $composableBuilder(
+    column: $table.isPendingPaused,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> cachedOrderItemsRefs(
     Expression<bool> Function($$CachedOrderItemsTableFilterComposer f) f,
   ) {
@@ -6775,6 +7146,31 @@ class $$CachedOrdersTableOrderingComposer
     column: $table.lastUpdated,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<double> get progress => $composableBuilder(
+    column: $table.progress,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get phaseStartTime => $composableBuilder(
+    column: $table.phaseStartTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get targetConfirmationTime => $composableBuilder(
+    column: $table.targetConfirmationTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get remainingPendingSeconds => $composableBuilder(
+    column: $table.remainingPendingSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPendingPaused => $composableBuilder(
+    column: $table.isPendingPaused,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CachedOrdersTableAnnotationComposer
@@ -6828,6 +7224,29 @@ class $$CachedOrdersTableAnnotationComposer
 
   GeneratedColumn<DateTime> get lastUpdated => $composableBuilder(
     column: $table.lastUpdated,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get progress =>
+      $composableBuilder(column: $table.progress, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get phaseStartTime => $composableBuilder(
+    column: $table.phaseStartTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get targetConfirmationTime => $composableBuilder(
+    column: $table.targetConfirmationTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get remainingPendingSeconds => $composableBuilder(
+    column: $table.remainingPendingSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isPendingPaused => $composableBuilder(
+    column: $table.isPendingPaused,
     builder: (column) => column,
   );
 
@@ -6896,6 +7315,11 @@ class $$CachedOrdersTableTableManager
                 Value<double> totalAmount = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> lastUpdated = const Value.absent(),
+                Value<double> progress = const Value.absent(),
+                Value<DateTime?> phaseStartTime = const Value.absent(),
+                Value<DateTime?> targetConfirmationTime = const Value.absent(),
+                Value<int?> remainingPendingSeconds = const Value.absent(),
+                Value<bool> isPendingPaused = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedOrdersCompanion(
                 id: id,
@@ -6909,6 +7333,11 @@ class $$CachedOrdersTableTableManager
                 totalAmount: totalAmount,
                 createdAt: createdAt,
                 lastUpdated: lastUpdated,
+                progress: progress,
+                phaseStartTime: phaseStartTime,
+                targetConfirmationTime: targetConfirmationTime,
+                remainingPendingSeconds: remainingPendingSeconds,
+                isPendingPaused: isPendingPaused,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -6924,6 +7353,11 @@ class $$CachedOrdersTableTableManager
                 required double totalAmount,
                 required DateTime createdAt,
                 Value<DateTime> lastUpdated = const Value.absent(),
+                Value<double> progress = const Value.absent(),
+                Value<DateTime?> phaseStartTime = const Value.absent(),
+                Value<DateTime?> targetConfirmationTime = const Value.absent(),
+                Value<int?> remainingPendingSeconds = const Value.absent(),
+                Value<bool> isPendingPaused = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CachedOrdersCompanion.insert(
                 id: id,
@@ -6937,6 +7371,11 @@ class $$CachedOrdersTableTableManager
                 totalAmount: totalAmount,
                 createdAt: createdAt,
                 lastUpdated: lastUpdated,
+                progress: progress,
+                phaseStartTime: phaseStartTime,
+                targetConfirmationTime: targetConfirmationTime,
+                remainingPendingSeconds: remainingPendingSeconds,
+                isPendingPaused: isPendingPaused,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -7003,6 +7442,7 @@ typedef $$CachedOrderItemsTableCreateCompanionBuilder =
       required String orderId,
       Value<String?> menuItemId,
       required String name,
+      Value<String?> imageUrl,
       required int quantity,
       required double unitPrice,
       required double totalPrice,
@@ -7014,6 +7454,7 @@ typedef $$CachedOrderItemsTableUpdateCompanionBuilder =
       Value<String> orderId,
       Value<String?> menuItemId,
       Value<String> name,
+      Value<String?> imageUrl,
       Value<int> quantity,
       Value<double> unitPrice,
       Value<double> totalPrice,
@@ -7070,6 +7511,11 @@ class $$CachedOrderItemsTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imageUrl => $composableBuilder(
+    column: $table.imageUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7136,6 +7582,11 @@ class $$CachedOrderItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get imageUrl => $composableBuilder(
+    column: $table.imageUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get quantity => $composableBuilder(
     column: $table.quantity,
     builder: (column) => ColumnOrderings(column),
@@ -7194,6 +7645,9 @@ class $$CachedOrderItemsTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get imageUrl =>
+      $composableBuilder(column: $table.imageUrl, builder: (column) => column);
 
   GeneratedColumn<int> get quantity =>
       $composableBuilder(column: $table.quantity, builder: (column) => column);
@@ -7264,6 +7718,7 @@ class $$CachedOrderItemsTableTableManager
                 Value<String> orderId = const Value.absent(),
                 Value<String?> menuItemId = const Value.absent(),
                 Value<String> name = const Value.absent(),
+                Value<String?> imageUrl = const Value.absent(),
                 Value<int> quantity = const Value.absent(),
                 Value<double> unitPrice = const Value.absent(),
                 Value<double> totalPrice = const Value.absent(),
@@ -7273,6 +7728,7 @@ class $$CachedOrderItemsTableTableManager
                 orderId: orderId,
                 menuItemId: menuItemId,
                 name: name,
+                imageUrl: imageUrl,
                 quantity: quantity,
                 unitPrice: unitPrice,
                 totalPrice: totalPrice,
@@ -7284,6 +7740,7 @@ class $$CachedOrderItemsTableTableManager
                 required String orderId,
                 Value<String?> menuItemId = const Value.absent(),
                 required String name,
+                Value<String?> imageUrl = const Value.absent(),
                 required int quantity,
                 required double unitPrice,
                 required double totalPrice,
@@ -7293,6 +7750,7 @@ class $$CachedOrderItemsTableTableManager
                 orderId: orderId,
                 menuItemId: menuItemId,
                 name: name,
+                imageUrl: imageUrl,
                 quantity: quantity,
                 unitPrice: unitPrice,
                 totalPrice: totalPrice,

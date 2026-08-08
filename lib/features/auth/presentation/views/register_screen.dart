@@ -98,8 +98,7 @@ class _RegisterState extends ConsumerState<Register>
   Widget build(BuildContext context) {
     final formKey = GlobalKey<FormState>();
 
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
     final primaryColor = colorScheme.primary;
     final backgroundColor = colorScheme.surface;
@@ -203,7 +202,7 @@ class _RegisterState extends ConsumerState<Register>
                                     controller: fullNameController,
                                     label: 'Full Name',
                                     icon: Icons.person_outline,
-                                    isDark: themeMode == ThemeMode.dark,
+                                    isDark: isDark,
                                     validator:
                                         RegistrationValidator.validateFullName,
                                   ),
@@ -213,7 +212,7 @@ class _RegisterState extends ConsumerState<Register>
                                     controller: emailController,
                                     label: 'Email',
                                     icon: Icons.email_outlined,
-                                    isDark: themeMode == ThemeMode.dark,
+                                    isDark: isDark,
                                     keyboardType: TextInputType.emailAddress,
                                     validator:
                                         RegistrationValidator.validateEmail,
@@ -224,7 +223,7 @@ class _RegisterState extends ConsumerState<Register>
                                     controller: addressController,
                                     label: 'Address',
                                     icon: Icons.location_on_outlined,
-                                    isDark: themeMode == ThemeMode.dark,
+                                    isDark: isDark,
                                     validator:
                                         RegistrationValidator.validateAddress,
                                   ),
@@ -234,7 +233,7 @@ class _RegisterState extends ConsumerState<Register>
                                     controller: phoneNumberController,
                                     label: 'Phone Number',
                                     icon: Icons.phone_outlined,
-                                    isDark: themeMode == ThemeMode.dark,
+                                    isDark: isDark,
                                     keyboardType: TextInputType.phone,
                                     prefixText: '+977 ',
                                     validator:
@@ -245,7 +244,7 @@ class _RegisterState extends ConsumerState<Register>
                                     context: context,
                                     controller: passwordController,
                                     label: 'Password',
-                                    isDark: themeMode == ThemeMode.dark,
+                                    isDark: isDark,
                                     icon: Icons.lock_outline,
                                     isPassword: true,
                                     validator:

@@ -244,7 +244,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
 
     final item = _permissions[_currentIndex];
     final status = await item.permission.request();
-    final isDark = ref.read(themeProvider) == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (status.isPermanentlyDenied) {
       if (mounted) {
@@ -395,8 +395,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen>
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_isLoading) {
       return const Scaffold(

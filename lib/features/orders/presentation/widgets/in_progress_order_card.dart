@@ -38,12 +38,15 @@ class _InProgressOrderCardState extends ConsumerState<InProgressOrderCard> {
 
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_secondsRemaining > 0) {
-        if (mounted) {
-          setState(() {
-            _secondsRemaining--;
-          });
-        }
+      // Calculate real remaining seconds based on order progress and phase
+      final status = widget.order.subStatus;
+      int duration = 60;
+      if (status == OrderSubStatus.pickup) duration = 15;
+
+      if (mounted) {
+        setState(() {
+          _secondsRemaining = (duration * (1 - widget.order.progress)).toInt();
+        });
       }
     });
   }

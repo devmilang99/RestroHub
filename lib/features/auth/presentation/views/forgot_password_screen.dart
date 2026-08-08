@@ -154,8 +154,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
 
   @override
   Widget build(BuildContext context) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
     final primaryColor = colorScheme.primary;
     final backgroundColor = colorScheme.surface;

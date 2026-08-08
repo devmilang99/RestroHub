@@ -127,55 +127,55 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     try {
       // 1. Preload the first onboarding image (atmospheric) immediately
       if (mounted) {
-        unawaited(
-          precacheImage(const AssetImage('assets/food1.webp'), context)
-              .then((_) {
-                if (mounted) {
-                  setState(() {
-                    _backgroundProvider = const AssetImage('assets/food1.webp');
-                  });
-                }
-              })
-              .catchError((Object e, StackTrace? s) {
-                debugPrint('Fallback background preload failed: $e');
-              }),
-        );
+        try {
+          await precacheImage(const AssetImage('assets/food1.webp'), context);
+          if (mounted) {
+            setState(() {
+              _backgroundProvider = const AssetImage('assets/food1.webp');
+            });
+          }
+        } catch (e) {
+          debugPrint('Fallback background preload failed: $e');
+        }
       }
 
-      final preloadingTasks = <Future<void>>[];
-
+      // 2. Preload remaining images sequentially to avoid saturating the main thread/IO
       for (var i = 0; i < _slides.length; i++) {
         if (!mounted) return;
+        
+        // Skip if already set as background (index 0)
+        if (i == 0 && _backgroundProvider != null) {
+          _preloadedImages[i] = _backgroundProvider;
+          continue;
+        }
 
         final imageProvider = AssetImage(_slides[i]['image']!);
-        preloadingTasks.add(
-          precacheImage(imageProvider, context)
-              .then((_) {
-                if (mounted) {
-                  _preloadedImages[i] = imageProvider;
-                }
-              })
-              .catchError((Object e) {
-                debugPrint(
-                  'Failed to preload image: ${_slides[i]['image']} - $e',
-                );
-              }),
-        );
+        try {
+          await precacheImage(imageProvider, context);
+          if (mounted) {
+            _preloadedImages[i] = imageProvider;
+          }
+        } catch (e) {
+          debugPrint('Failed to preload image: ${_slides[i]['image']} - $e');
+        }
+        
+        // Small breather between images to keep UI responsive
+        await Future<void>.delayed(const Duration(milliseconds: 100));
       }
 
-      await Future.wait(preloadingTasks);
-
       // Start Phased Global Data Sync concurrently in the background
-      // Phase 1: Metadata sync for fast splash transition
+      // Defer slightly to let the UI finish its initial entrance
       if (mounted) {
-        debugPrint(
-          'SPLASH: Starting phased global data sync (metadata only)...',
-        );
-        unawaited(
-          ref
-              .read(supabaseSyncManagerProvider.notifier)
-              .syncAllInitialData(metadataOnly: true),
-        );
+        unawaited(Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            debugPrint(
+              'SPLASH: Starting phased global data sync (metadata only)...',
+            );
+            ref
+                .read(supabaseSyncManagerProvider.notifier)
+                .syncAllInitialData(metadataOnly: true);
+          }
+        }));
       }
     } on Object catch (e) {
       debugPrint('Global initialization error: $e');

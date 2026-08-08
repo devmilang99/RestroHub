@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:http_certificate_pinning/http_certificate_pinning.dart';
 import 'package:restro_hub/core/utils/logger.dart';
 import 'package:safe_device/safe_device.dart';
@@ -5,6 +6,12 @@ import 'package:safe_device/safe_device.dart';
 class SecurityService {
   /// Checks if the device is secure (not rooted/jailbroken, not an emulator if restricted).
   static Future<bool> isDeviceSecure() async {
+    // Bypass security checks in debug mode or CI to prevent startup blocks on emulators
+    if (kDebugMode ||
+        const bool.fromEnvironment('BYPASS_SECURITY', defaultValue: false)) {
+      return true;
+    }
+
     try {
       bool isJailBroken = await SafeDevice.isJailBroken;
       bool isRealDevice = await SafeDevice.isRealDevice;

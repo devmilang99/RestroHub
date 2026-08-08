@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
+import 'package:restro_hub/features/orders/presentation/providers/orders_provider.dart';
 import 'package:restro_hub/infrastructure/sync/models/sync_status.dart';
 import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 import 'package:restro_hub/infrastructure/sync/sync_monitor_provider.dart';
@@ -18,6 +19,7 @@ class DashboardDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authRepositoryProvider).currentUser;
+    final activeOrders = ref.watch(ordersProvider).value ?? [];
 
     return Drawer(
       child: Column(
@@ -51,6 +53,32 @@ class DashboardDrawer extends ConsumerWidget {
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: () async {
+              if (activeOrders.isNotEmpty) {
+                await showDialog<void>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange.shade700),
+                        const SizedBox(width: 10),
+                        const Text('Logout Restricted'),
+                      ],
+                    ),
+                    content: const Text(
+                      'Your order is currently in progress. For a seamless experience, please wait until your order is completed before logging out.\n\nThank you for your patience!',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('UNDERSTOOD'),
+                      ),
+                    ],
+                  ),
+                );
+                return;
+              }
+
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(

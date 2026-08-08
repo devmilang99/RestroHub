@@ -18,7 +18,6 @@ import 'package:restro_hub/features/cuisines/presentation/views/cuisine_detail_s
 import 'package:restro_hub/features/cuisines/presentation/views/search_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/contact_us_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/info_screens.dart';
-import 'package:restro_hub/features/dashboard/presentation/views/location_picker_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/main_dashboard_screen.dart';
 import 'package:restro_hub/features/dashboard/presentation/views/profile_screen.dart';
 import 'package:restro_hub/features/explore/presentation/views/discovery_screen.dart';
@@ -210,15 +209,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             child: ProfileScreen(user: user),
           );
         },
-      ),
-      GoRoute(
-        path: '/locationPicker',
-        name: 'locationPicker',
-        pageBuilder: (context, state) => buildPageWithTransition(
-          context: context,
-          state: state,
-          child: const LocationPickerScreen(),
-        ),
       ),
       GoRoute(
         path: '/contactUsScreen',

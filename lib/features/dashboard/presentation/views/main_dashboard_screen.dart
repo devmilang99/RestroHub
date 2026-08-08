@@ -296,14 +296,15 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                           children: [
                             IconButton.filledTonal(
                               onPressed: () {
-                                final isDark =
-                                    ref.read(themeProvider) == ThemeMode.dark;
+                                final isCurrentlyDark =
+                                    Theme.of(context).brightness ==
+                                    Brightness.dark;
                                 ref
                                     .read(themeProvider.notifier)
-                                    .toggleTheme(isDark: !isDark);
+                                    .toggleTheme(isDark: !isCurrentlyDark);
                               },
                               icon: Icon(
-                                ref.watch(themeProvider) == ThemeMode.dark
+                                Theme.of(context).brightness == Brightness.dark
                                     ? Icons.light_mode_rounded
                                     : Icons.dark_mode_rounded,
                               ),
