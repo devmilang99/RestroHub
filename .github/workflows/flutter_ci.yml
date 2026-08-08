@@ -69,9 +69,6 @@ jobs:
       - name: Run Tests
         run: flutter test
 
-      - name: Build Android APK
-        run: flutter build apk --debug # Build debug for CI speed, change to appbundle/release for deployment
-
       - name: Set up CocoaPods
         run: |
           sudo gem install cocoapods
@@ -79,3 +76,8 @@ jobs:
 
       - name: Build iOS
         run: flutter build ios --no-codesign # Build iOS without signing for verification
+
+      - name: Build Android APK
+        run: flutter build apk --debug # Build debug for CI speed, change to appbundle/release for deployment
+
+
