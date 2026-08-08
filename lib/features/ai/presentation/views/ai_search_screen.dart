@@ -287,10 +287,7 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
         itemBuilder: (context, index) {
           if (index < state.messages.length) {
             final msg = state.messages[index];
-            final isError =
-                !msg.isUser &&
-                (msg.text?.contains('Quota') == true ||
-                    msg.text?.contains('issue') == true);
+            final isError = msg.isError;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,11 +297,15 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
                   isUser: msg.isUser,
                   isError: isError,
                 ),
-                if (!msg.isUser && msg.restaurants.isNotEmpty) ...[
+                if (!msg.isUser &&
+                    (msg.restaurants.isNotEmpty ||
+                        msg.menuItems.isNotEmpty)) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 16, bottom: 8),
                     child: Text(
-                      'Top recommendations',
+                      msg.menuItems.isNotEmpty
+                          ? 'Recommended dishes'
+                          : 'Top recommendations',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -312,23 +313,43 @@ class _AiSearchScreenState extends ConsumerState<AiSearchScreen> {
                       ),
                     ),
                   ),
-                  ...msg.restaurants.map(
-                    (r) => RecommendationCard(
-                      title: r.name,
-                      description: r.description,
-                      price: 'Rs. ${(r.rating * 10).toInt()}', // Sample price
-                      category: 'Restaurant',
-                      imageUrl: r.bannerUrl ?? '',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => RestaurantMenuScreen(restaurant: r),
-                          ),
-                        );
-                      },
+                  if (msg.menuItems.isNotEmpty)
+                    ...msg.menuItems.map(
+                      (item) => AiFoodResultCard(
+                        foodName: item.name,
+                        restaurantName:
+                            'Lasai', // In a real app, this would come from the item or a join
+                        description: item.description,
+                        price: item.price,
+                        imageUrl: item.imageUrl ?? '',
+                        rating: item.rating,
+                        onTap: () {
+                          // Handle item tap
+                        },
+                        onAddToCart: () {
+                          // Handle add to cart
+                        },
+                      ),
+                    )
+                  else
+                    ...msg.restaurants.map(
+                      (r) => AiRestaurantResultCard(
+                        name: r.name,
+                        description: r.description,
+                        rating: r.rating,
+                        imageUrl: r.bannerUrl ?? '',
+                        location: r.locationAddress ?? 'Kathmandu, Nepal',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  RestaurantMenuScreen(restaurant: r),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
                 ],
               ],
             );

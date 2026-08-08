@@ -101,12 +101,17 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     final orders = await _loadLocalOrders(db);
 
     // If we have a user, try to sync missing orders from remote in background
-    final userId = ref
-        .read(supabaseSyncManagerProvider.notifier)
-        .currentUser
-        ?.id;
+    final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
+    final userId = syncManager.currentUser?.id;
     if (userId != null) {
-      unawaited(_syncWithRemote(db));
+      unawaited(
+        syncManager.syncRemoteOrders().then((_) async {
+          if (ref.mounted) {
+            final updatedOrders = await _loadLocalOrders(db);
+            state = AsyncValue.data(updatedOrders);
+          }
+        }),
+      );
     }
 
     return orders;
@@ -132,61 +137,6 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
     return compute(_mapOrdersDataToModels, ordersWithItems);
   }
 
-  Future<void> _syncWithRemote(AppDatabase db) async {
-    final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
-    final remoteOrders = await syncManager.fetchRemoteOrders();
-
-    if (remoteOrders.isEmpty) return;
-
-    await db.batch((batch) {
-      for (final remote in remoteOrders) {
-        final orderId = remote['id'] as String;
-
-        // Insert Order
-        batch.insert(
-          db.cachedOrders,
-          CachedOrdersCompanion.insert(
-            id: orderId,
-            restaurantId: (remote['restaurant_id'] ?? 'unknown').toString(),
-            status: remote['status'] as String,
-            paymentStatus: 'paid', // Assuming remote orders are paid
-            subtotal: (remote['total_amount'] as num).toDouble(),
-            deliveryFee: 0,
-            taxAmount: 0,
-            discountAmount: 0,
-            totalAmount: (remote['total_amount'] as num).toDouble(),
-            createdAt: DateTime.parse(remote['created_at'] as String),
-          ),
-          mode: drift.InsertMode.insertOrReplace,
-        );
-
-        // Insert Items
-        final remoteItems = remote['order_items'] as List<dynamic>?;
-        if (remoteItems != null) {
-          for (final item in remoteItems) {
-            batch.insert(
-              db.cachedOrderItems,
-              CachedOrderItemsCompanion.insert(
-                id: (item['id'] ?? const Uuid().v4()).toString(),
-                orderId: orderId,
-                menuItemId: drift.Value(item['menu_item_id'] as String?),
-                name: item['name'] as String,
-                quantity: item['quantity'] as int,
-                unitPrice: (item['unit_price'] as num).toDouble(),
-                totalPrice: (item['total_price'] as num).toDouble(),
-              ),
-              mode: drift.InsertMode.insertOrReplace,
-            );
-          }
-        }
-      }
-    });
-
-    // Refresh state after sync
-    final updatedOrders = await _loadLocalOrders(db);
-    state = AsyncValue.data(updatedOrders);
-  }
-
   void _startGlobalTimer() {
     _globalTimer?.cancel();
     _globalTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -199,11 +149,14 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
             order.targetConfirmationTime != null) {
           if (now.isAfter(order.targetConfirmationTime!)) {
             stateChanged = true;
-            return order.copyWith(
+            final updatedOrder = order.copyWith(
               subStatus: OrderSubStatus.preparing,
               targetConfirmationTime: null,
               progress: 0.01,
             );
+            // Persist auto-confirmation to database
+            unawaited(_persistOrderStatus(order.id, OrderSubStatus.preparing));
+            return updatedOrder;
           } else {
             // Force state update to refresh UI timers
             stateChanged = true;
@@ -387,6 +340,8 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         else
           order,
     ]);
+
+    unawaited(_persistOrderStatus(orderId, OrderSubStatus.preparing));
     _startOrderTracking(orderId);
     _triggerPrinter(orderId);
   }
@@ -507,6 +462,55 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         else
           order,
     ]);
+
+    // Persist status change if it's a new state
+    final order = currentState.firstWhere((o) => o.id == orderId);
+    if (order.subStatus != status) {
+      unawaited(_persistOrderStatus(orderId, status));
+    }
+  }
+
+  Future<void> _persistOrderStatus(
+    String orderId,
+    OrderSubStatus status,
+  ) async {
+    try {
+      final db = await ref.read(appDatabaseProvider.future);
+      final syncManager = ref.read(supabaseSyncManagerProvider.notifier);
+
+      if (status == OrderSubStatus.success ||
+          status == OrderSubStatus.cancelled) {
+        // 1. Update remote first to ensure source of truth is updated
+        await syncManager.syncLocalToRemote('orders', {
+          'id': orderId,
+          'status': status.name,
+        });
+
+        // 2. Proactively clear from local database
+        await (db.delete(
+          db.cachedOrders,
+        )..where((t) => t.id.equals(orderId))).go();
+        await (db.delete(
+          db.cachedOrderItems,
+        )..where((t) => t.orderId.equals(orderId))).go();
+
+        // 3. Trigger a sync to refresh completed/cancelled orders from server
+        unawaited(
+          syncManager.syncRemoteOrders().then((_) async {
+            if (ref.mounted) {
+              final updatedOrders = await _loadLocalOrders(db);
+              state = AsyncValue.data(updatedOrders);
+            }
+          }),
+        );
+      } else {
+        // Update local status for in-progress orders
+        await (db.update(db.cachedOrders)..where((t) => t.id.equals(orderId)))
+            .write(CachedOrdersCompanion(status: drift.Value(status.name)));
+      }
+    } catch (e, st) {
+      logError('Failed to persist order status update for $orderId', e, st);
+    }
   }
 
   void cancelOrder(String orderId, {String? reason}) {
@@ -522,6 +526,8 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
         else
           order,
     ]);
+
+    unawaited(_persistOrderStatus(orderId, OrderSubStatus.cancelled));
   }
 }
 

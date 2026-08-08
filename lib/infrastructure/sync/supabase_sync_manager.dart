@@ -419,6 +419,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           .order('created_at', ascending: false);
 
       final data = response as List<dynamic>;
+      final remoteIds = data.map((json) => json['id'] as String).toList();
 
       if (data.isNotEmpty) {
         final first = data.first as Map<String, dynamic>;
@@ -428,6 +429,17 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       }
 
       await db.transaction(() async {
+        // 1. Delete local terminal orders that are missing from remote
+        // We only delete 'success' or 'cancelled' to avoid losing local active orders
+        // that might be in the middle of a sync or offline-created.
+        await (db.delete(db.cachedOrders)..where(
+              (t) =>
+                  t.id.isIn(remoteIds).not() &
+                  (t.status.equals('success') | t.status.equals('cancelled')),
+            ))
+            .go();
+
+        // 2. Sync all remote orders to local
         await db.batch((batch) {
           for (final orderJson in data) {
             final orderId = orderJson['id'] as String;
@@ -456,6 +468,13 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
 
             final items = orderJson['order_items'] as List?;
             if (items != null) {
+              // Delete existing items for this order before re-inserting to ensure consistency
+              // This is a simplified "sync" for items within an order.
+              batch.deleteWhere(
+                db.cachedOrderItems,
+                (t) => t.orderId.equals(orderId),
+              );
+
               for (final itemJson in items) {
                 batch.insert(
                   db.cachedOrderItems,
@@ -500,6 +519,9 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           .eq('user_id', userId);
 
       final data = response as List<dynamic>;
+      final remoteMenuItemIds = data
+          .map((item) => item['menu_item_id'] as String)
+          .toList();
 
       if (data.isNotEmpty) {
         final first = data.first as Map<String, dynamic>;
@@ -509,6 +531,12 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       }
 
       await db.transaction(() async {
+        // 1. Delete local cart items missing from remote
+        await (db.delete(
+          db.cachedCartItems,
+        )..where((t) => t.menuItemId.isIn(remoteMenuItemIds).not())).go();
+
+        // 2. Insert or replace remote items
         await db.batch((batch) {
           for (final item in data) {
             batch.insert(
@@ -550,6 +578,7 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
           .eq('user_id', userId);
 
       final data = response as List<dynamic>;
+      final remoteIds = data.map((item) => item['item_id'] as String).toList();
 
       if (data.isNotEmpty) {
         final first = data.first as Map<String, dynamic>;
@@ -559,6 +588,12 @@ class SupabaseSyncManager extends _$SupabaseSyncManager {
       }
 
       await db.transaction(() async {
+        // 1. Delete local favourites missing from remote
+        await (db.delete(
+          db.cachedFavourites,
+        )..where((t) => t.id.isIn(remoteIds).not())).go();
+
+        // 2. Insert or replace remote favourites
         await db.batch((batch) {
           for (final item in data) {
             batch.insert(

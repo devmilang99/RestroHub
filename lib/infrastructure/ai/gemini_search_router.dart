@@ -8,38 +8,48 @@ part 'gemini_search_router.g.dart';
 class GeminiSearchRouter extends _$GeminiSearchRouter {
   final _searchRestaurantsTool = FunctionDeclaration(
     'search_restaurants',
-    'Search Restro Hub for restaurants. Use when user wants to find places to eat.',
+    'Find restaurants.',
     Schema.object(
       properties: {
-        'keywords': Schema.string(
-          description: 'Restaurant name or type (e.g. Italian).',
-        ),
-        'location': Schema.string(description: 'Location or area.'),
-        'rating_min': Schema.number(description: 'Minimum rating (0-5).'),
+        'keywords': Schema.string(description: 'Name/type (e.g. Italian).'),
+        'location': Schema.string(description: 'Area.'),
+        'rating_min': Schema.number(description: 'Min rating (0-5).'),
       },
     ),
   );
 
   final _searchCuisinesTool = FunctionDeclaration(
     'search_cuisines',
-    'Search for specific food items or cuisines across restaurants.',
+    'Find food/cuisines.',
     Schema.object(
       properties: {
-        'keywords': Schema.string(description: 'Food item name (e.g. Pizza).'),
-        'category': Schema.string(
-          description: 'Cuisine category (e.g. Indian, Chinese, Continental).',
+        'keywords': Schema.string(description: 'Item (e.g. Pizza).'),
+        'category': Schema.string(description: 'Cuisine (e.g. Indian).'),
+        'price_max': Schema.number(description: 'Max price.'),
+      },
+    ),
+  );
+
+  final _searchMenuItemsTool = FunctionDeclaration(
+    'search_menu_items',
+    'Find specific dishes or food items.',
+    Schema.object(
+      properties: {
+        'keywords': Schema.string(
+          description: 'Food name or type (e.g. Burger, Ribs).',
         ),
-        'price_max': Schema.number(description: 'Maximum price.'),
+        'price_max': Schema.number(description: 'Max price.'),
+        'rating_min': Schema.number(description: 'Min rating (0-5).'),
       },
     ),
   );
 
   final _getRestaurantDetailsTool = FunctionDeclaration(
     'get_restaurant_details',
-    'Get detailed information for a specific restaurant.',
+    'Get details.',
     Schema.object(
       properties: {
-        'restaurant_id': Schema.string(description: 'Unique restaurant ID.'),
+        'restaurant_id': Schema.string(description: 'ID.'),
       },
       requiredProperties: ['restaurant_id'],
     ),
@@ -47,13 +57,11 @@ class GeminiSearchRouter extends _$GeminiSearchRouter {
 
   final _applyCouponTool = FunctionDeclaration(
     'apply_coupon',
-    'Check or apply restaurant discount coupons.',
+    'Apply coupons.',
     Schema.object(
       properties: {
-        'coupon_code': Schema.string(description: 'Coupon code.'),
-        'restaurant_id': Schema.string(
-          description: 'Restaurant ID (optional).',
-        ),
+        'coupon_code': Schema.string(description: 'Code.'),
+        'restaurant_id': Schema.string(description: 'ID.'),
       },
       requiredProperties: ['coupon_code'],
     ),
@@ -69,6 +77,7 @@ class GeminiSearchRouter extends _$GeminiSearchRouter {
         functionDeclarations: [
           _searchRestaurantsTool,
           _searchCuisinesTool,
+          _searchMenuItemsTool,
           _getRestaurantDetailsTool,
           _applyCouponTool,
         ],
@@ -76,18 +85,12 @@ class GeminiSearchRouter extends _$GeminiSearchRouter {
     ];
 
     _systemInstruction = Content.system(
-      '''
-Role: Restro Hub AI Assistant.
-Goal: Help users find restaurants and food with brief, premium advice.
-
-Rules:
-- Use 'search_restaurants' for any exploration, category mentions, or "Best/Top" queries.
-- Use 'apply_coupon' for discount or offer related queries.
-- Call tools before claiming no results.
-- Post-tool: Give a concise natural language response (max 2 sentences).
-- Do NOT list prices in text (already in UI cards).
-- Tone: Professional, Brief & Helpful.
-''',
+      '''You are Restro Hub AI. Brief & Professional.
+- Use 'search_restaurants' for exploration or "Top/Best" queries.
+- Use 'apply_coupon' for discounts.
+- Call tools before saying no results.
+- Post-tool: 1-2 sentences only.
+- NO prices in text (shown in cards).''',
     );
   }
 
