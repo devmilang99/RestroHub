@@ -4,6 +4,8 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:restro_hub/core/data/mock_data.dart';
 import 'package:restro_hub/features/ai/domain/model/ai_chat_message.dart';
 import 'package:restro_hub/features/ai/presentation/ai_search_state.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
+import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
 import 'package:restro_hub/features/restaurants/data/repositories/restaurant_repository.dart';
 import 'package:restro_hub/infrastructure/ai/gemini_search_router.dart';
@@ -22,6 +24,14 @@ class AiSearchNotifier extends _$AiSearchNotifier {
 
   @override
   FutureOr<AiSearchState> build() {
+    // Watch user to reset state on logout/login
+    ref.watch(currentUserProvider);
+
+    // Clear in-memory history and turn data when rebuilt
+    _chatHistory.clear();
+    _currentTurnRestaurants.clear();
+    _currentTurnMenuItems.clear();
+
     return const AiSearchState();
   }
 
@@ -206,7 +216,9 @@ class AiSearchNotifier extends _$AiSearchNotifier {
         );
       }
     } catch (e) {
-      final bool hasSpecificResults = _currentTurnRestaurants.isNotEmpty;
+      final bool hasSpecificResults =
+          _currentTurnRestaurants.isNotEmpty ||
+          _currentTurnMenuItems.isNotEmpty;
 
       if (hasSpecificResults) {
         // Handle as success if we found specific results but failed to summarize
@@ -221,9 +233,11 @@ class AiSearchNotifier extends _$AiSearchNotifier {
                 isUser: false,
                 isError: false,
                 restaurants: List.from(_currentTurnRestaurants),
+                menuItems: List.from(_currentTurnMenuItems),
               ),
             ],
             restaurants: List.from(_currentTurnRestaurants),
+            menuItems: List.from(_currentTurnMenuItems),
           ),
         );
         return;

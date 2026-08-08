@@ -6,6 +6,7 @@ import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/core/utils/logger.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/favourites/data/models/favourite_item.dart';
 import 'package:restro_hub/features/restaurants/data/models/menu_models.dart';
 import 'package:restro_hub/features/restaurants/data/models/restaurant_model.dart';
@@ -16,13 +17,26 @@ class FavouritesNotifier extends AsyncNotifier<List<FavouriteItem>> {
   @override
   FutureOr<List<FavouriteItem>> build() async {
     logInfo('FAV_PROVIDER: Building FavouritesNotifier...');
+
+    // 1. Watch current user to ensure data isolation and resets on logout/login
+    final userAsync = ref.watch(currentUserProvider);
+    final user = userAsync.value;
+
+    if (user == null) {
+      logInfo('FAV_PROVIDER: No user logged in, returning empty list.');
+      return [];
+    }
+
+    // 2. Watch raw favorites stream from DB
+    // This ensures FavouritesNotifier automatically rebuilds when Supabase sync updates the local DB
     final db = await ref.watch(appDatabaseProvider.future);
-    logInfo('FAV_PROVIDER: Fetching raw favorites from DB...');
-    final favs = await db.select(db.cachedFavourites).get();
+    final rawFavs = ref.watch(rawFavouritesStreamProvider).value ?? [];
+
     logInfo(
-      'FAV_PROVIDER: Found ${favs.length} raw favorites. Resolving models...',
+      'FAV_PROVIDER: DB update detected (${rawFavs.length} items for ${user.id}). Resolving models...',
     );
-    return _resolveModels(favs, db);
+
+    return _resolveModels(rawFavs, db);
   }
 
   Future<List<FavouriteItem>> _resolveModels(
@@ -232,6 +246,15 @@ final favouritesProvider =
     AsyncNotifierProvider<FavouritesNotifier, List<FavouriteItem>>(() {
       return FavouritesNotifier();
     });
+
+/// A stream provider that watches the raw favorites in the local DB.
+/// This is used by [FavouritesNotifier] to react to background sync updates.
+final rawFavouritesStreamProvider = StreamProvider<List<CachedFavourite>>((
+  ref,
+) async* {
+  final db = await ref.watch(appDatabaseProvider.future);
+  yield* db.select(db.cachedFavourites).watch();
+});
 
 final ProviderFamily<bool, String?> isFavouriteProvider =
     Provider.family<bool, String?>((ref, id) {

@@ -1,30 +1,40 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/features/auth/data/models/user_address_model.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 
-final userAddressesProvider = FutureProvider<List<UserAddressModel>>((
+final userAddressesProvider = StreamProvider<List<UserAddressModel>>((
   ref,
-) async {
-  final db = await ref.watch(appDatabaseProvider.future);
-  final rows = await db.select(db.cachedUserAddresses).get();
+) async* {
+  // Watch user to reset on logout
+  final user = ref.watch(currentUserProvider).value;
+  if (user == null) {
+    yield [];
+    return;
+  }
 
-  return rows
-      .map(
-        (row) => UserAddressModel(
-          id: row.id,
-          userId: '', // Local DB doesn't store userId in this table currently
-          label: row.label,
-          addressLine1: row.addressLine1,
-          addressLine2: row.addressLine2,
-          city: row.city,
-          state: row.state,
-          postalCode: row.postalCode,
-          latitude: row.latitude,
-          longitude: row.longitude,
-          isDefault: row.isDefault,
-        ),
-      )
-      .toList();
+  final db = await ref.watch(appDatabaseProvider.future);
+  final stream = db.select(db.cachedUserAddresses).watch();
+
+  yield* stream.map(
+    (rows) => rows
+        .map(
+          (row) => UserAddressModel(
+            id: row.id,
+            userId: user.id,
+            label: row.label,
+            addressLine1: row.addressLine1,
+            addressLine2: row.addressLine2,
+            city: row.city,
+            state: row.state,
+            postalCode: row.postalCode,
+            latitude: row.latitude,
+            longitude: row.longitude,
+            isDefault: row.isDefault,
+          ),
+        )
+        .toList(),
+  );
 });
 
 final defaultAddressProvider = Provider<UserAddressModel>((ref) {

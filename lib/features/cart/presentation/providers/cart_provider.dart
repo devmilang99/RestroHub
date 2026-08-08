@@ -8,12 +8,19 @@ import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
+
 class CartNotifier extends AsyncNotifier<List<CartModel>> {
   @override
   FutureOr<List<CartModel>> build() async {
+    // Watch current user to ensure resets on logout
+    final user = ref.watch(currentUserProvider).value;
+    if (user == null) return [];
+
     final db = await ref.watch(appDatabaseProvider.future);
 
-    final items = await db.select(db.cachedCartItems).get();
+    // Watch raw cart items to react to background sync updates
+    final items = ref.watch(rawCartItemsStreamProvider).value ?? [];
     return compute(_mapCartRowsToModels, items);
   }
 
@@ -190,6 +197,14 @@ List<CartModel> _mapCartRowsToModels(List<CachedCartItem> rows) {
 
 final cartProvider = AsyncNotifierProvider<CartNotifier, List<CartModel>>(() {
   return CartNotifier();
+});
+
+/// A stream provider that watches the raw cart items in the local DB.
+final rawCartItemsStreamProvider = StreamProvider<List<CachedCartItem>>((
+  ref,
+) async* {
+  final db = await ref.watch(appDatabaseProvider.future);
+  yield* db.select(db.cachedCartItems).watch();
 });
 
 final cartTotalItemsProvider = Provider<int>((ref) {

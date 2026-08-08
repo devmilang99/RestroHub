@@ -11,19 +11,23 @@ final authRepositoryProvider = Provider<IAuthRepository>((ref) {
   return SupabaseAuthRepositoryImpl(supabase, ref);
 });
 
-/// A listenable provider that notifies when auth state changes.
-final authListenableProvider = Provider<ValueNotifier<User?>>((ref) {
+/// A provider that exposes the current Supabase user and updates when the auth state changes.
+final currentUserProvider = StreamProvider<User?>((ref) async* {
   final supabase = ref.watch(supabaseClientProvider);
-  final notifier = ValueNotifier<User?>(supabase.auth.currentUser);
 
-  final subscription = supabase.auth.onAuthStateChange.listen((data) {
-    notifier.value = data.session?.user;
+  // Yield initial state
+  yield supabase.auth.currentUser;
+
+  // Yield subsequent changes
+  yield* supabase.auth.onAuthStateChange.map((data) => data.session?.user);
+});
+
+/// A provider that exposes a [Listenable] that notifies when the auth state changes.
+/// Useful for GoRouter's refreshListenable.
+final authListenableProvider = Provider<Listenable>((ref) {
+  final listenable = ValueNotifier<User?>(null);
+  ref.listen(currentUserProvider, (previous, next) {
+    listenable.value = next.value;
   });
-
-  ref.onDispose(() {
-    subscription.cancel();
-    notifier.dispose();
-  });
-
-  return notifier;
+  return listenable;
 });

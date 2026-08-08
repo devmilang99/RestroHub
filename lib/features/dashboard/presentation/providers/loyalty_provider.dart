@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/dashboard/logic/membership_rules.dart';
 
 class LoyaltyState {
@@ -28,6 +29,16 @@ class LoyaltyState {
 class LoyaltyNotifier extends Notifier<LoyaltyState> {
   @override
   LoyaltyState build() {
+    // Watch user to reset on logout
+    final user = ref.watch(currentUserProvider).value;
+    if (user == null) {
+      return LoyaltyState(
+        points: 0,
+        totalSpent: 0,
+        tier: MembershipTier.bronze,
+      );
+    }
+
     const points = 750;
     return LoyaltyState(
       points: points,

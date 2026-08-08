@@ -256,15 +256,19 @@ class AiFoodResultCard extends StatelessWidget {
               children: [
                 const Icon(Icons.store, color: Colors.orange, size: 16),
                 const SizedBox(width: 8),
-                Text(
-                  restaurantName,
-                  style: GoogleFonts.poppins(
-                    color: Colors.orange,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
+                Expanded(
+                  child: Text(
+                    restaurantName,
+                    style: GoogleFonts.poppins(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: onFavorite,
                   child: const Icon(
@@ -321,50 +325,53 @@ class AiFoodResultCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: Colors.orange,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            rating.toString(),
-                            style: GoogleFonts.poppins(
-                              color: Colors.white70,
-                              fontSize: 12,
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.orange,
+                              size: 14,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.access_time,
-                            color: Colors.white38,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            deliveryTime,
-                            style: GoogleFonts.poppins(
+                            const SizedBox(width: 4),
+                            Text(
+                              rating.toString(),
+                              style: GoogleFonts.poppins(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Icon(
+                              Icons.access_time,
                               color: Colors.white38,
-                              fontSize: 12,
+                              size: 14,
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Icon(
-                            Icons.location_on_outlined,
-                            color: Colors.white38,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            distance,
-                            style: GoogleFonts.poppins(
+                            const SizedBox(width: 4),
+                            Text(
+                              deliveryTime,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white38,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Icon(
+                              Icons.location_on_outlined,
                               color: Colors.white38,
-                              fontSize: 12,
+                              size: 14,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              distance,
+                              style: GoogleFonts.poppins(
+                                color: Colors.white38,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -446,12 +453,16 @@ class AiRestaurantResultCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        name,
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),

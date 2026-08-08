@@ -9,6 +9,7 @@ import 'package:restro_hub/core/data/database/app_database.dart';
 import 'package:restro_hub/core/data/database/database_provider.dart';
 import 'package:restro_hub/core/services/notification_service.dart';
 import 'package:restro_hub/core/utils/logger.dart';
+import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
 import 'package:restro_hub/features/cart/data/models/cart_model.dart';
 import 'package:restro_hub/features/checkout/presentation/providers/checkout_provider.dart';
 import 'package:restro_hub/features/dashboard/presentation/providers/loyalty_provider.dart';
@@ -94,6 +95,13 @@ class OrdersNotifier extends AsyncNotifier<List<OrderModel>> {
 
   @override
   FutureOr<List<OrderModel>> build() async {
+    // Watch current user to ensure data resets on logout/login
+    final user = ref.watch(currentUserProvider).value;
+    if (user == null) {
+      _globalTimer?.cancel();
+      return [];
+    }
+
     _startGlobalTimer();
     final db = await ref.watch(appDatabaseProvider.future);
 

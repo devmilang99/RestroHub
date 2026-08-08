@@ -8,6 +8,7 @@ import 'package:restro_hub/core/models/enums.dart';
 import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/responsive_center.dart';
 import 'package:restro_hub/core/widgets/sync_progress_overlay.dart';
+import 'package:restro_hub/features/ai/presentation/ai_search_notifier.dart';
 import 'package:restro_hub/features/auth/data/models/user_model.dart';
 import 'package:restro_hub/features/cart/presentation/providers/cart_provider.dart';
 import 'package:restro_hub/features/cart/presentation/views/cart_screen.dart';
@@ -381,7 +382,22 @@ class _MainDashBoardState extends ConsumerState<MainDashBoard> {
                         ),
                         const SizedBox(width: 8),
                         IconButton.filledTonal(
-                          onPressed: () => context.push('/aiSearch'),
+                          onPressed: () {
+                            final aiState = ref.read(aiSearchProvider).value;
+                            if (aiState != null && aiState.searchCount >= 5) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'Hourly limit reached (5 searches). AI will be available again soon.',
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: colorScheme.error,
+                                ),
+                              );
+                              return;
+                            }
+                            context.push('/aiSearch');
+                          },
                           icon: const Icon(Icons.auto_awesome),
                           style: IconButton.styleFrom(
                             backgroundColor: colorScheme.primary.withValues(

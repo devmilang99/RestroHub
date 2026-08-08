@@ -15,6 +15,7 @@ import 'package:restro_hub/core/widgets/loading_dialog.dart';
 import 'package:restro_hub/core/widgets/responsive_center.dart';
 import 'package:restro_hub/features/auth/data/datasources/google_auth_datasource.dart';
 import 'package:restro_hub/features/auth/presentation/providers/auth_provider.dart';
+import 'package:restro_hub/infrastructure/sync/supabase_sync_manager.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 class MainLoginScreen extends ConsumerStatefulWidget {
@@ -603,6 +604,12 @@ class _LoginViewState extends ConsumerState<LoginView>
       if (mounted) {
         LoadingDialog.hide(context);
         if (user != null) {
+          // Trigger sync immediately after login to ensure user data is fetched
+          unawaited(
+            ref
+                .read(supabaseSyncManagerProvider.notifier)
+                .syncAllInitialData(metadataOnly: true),
+          );
           context.goNamed('mainDashBoard');
         }
       }
@@ -630,6 +637,12 @@ class _LoginViewState extends ConsumerState<LoginView>
       if (mounted) {
         LoadingDialog.hide(context);
         if (user != null) {
+          // Trigger sync immediately after login to ensure user data is fetched
+          unawaited(
+            ref
+                .read(supabaseSyncManagerProvider.notifier)
+                .syncAllInitialData(metadataOnly: true),
+          );
           context.goNamed('mainDashBoard', extra: user);
         }
       }

@@ -23,10 +23,9 @@ Discover local flavors, chat with AI assistants, and track your orders in real-t
 </div>
 
 ## 📖 Overview
+RestroHub is a high-performance, feature-rich food delivery platform designed to provide a seamless and intelligent dining experience. More than just a simple delivery app, it represents a modern mobile engineering approach, blending Agentic AI with Real-Time Data Orchestration.
 
-**RestroHub** is a production-ready Flutter application that redefines the food delivery experience. It blends modern mobile architecture with agentic AI workflows and real-time synchronization to[...]
-
-Built with a feature-first architecture, RestroHub leverages **Google Gemini AI** for smart assistance, **Supabase** for robust backend services, and **Drift (SQLite)** for a seamless offline-firs[...]
+Built with a Feature-Driven Layered Architecture, RestroHub is designed for scale and reliability. It empowers users to discover local flavors through natural language conversation with Google Gemini, while ensuring a buttery-smooth UI even in low-connectivity environments through a custom Atomic Sync Engine.
 
 ---
 
@@ -103,20 +102,38 @@ Built with a feature-first architecture, RestroHub leverages **Google Gemini AI*
 
 ---
 
-## 🛠 Tech Stack
+## 🏗 System Architecture
 
-| Layer              | Technology                                                                   |
-|--------------------|------------------------------------------------------------------------------|
-| **Framework & UI** | Flutter (3.10.4+), Material 3, Google Fonts, Animations                      |
-| **Architecture**   | Clean/Layered Architecture, Riverpod (UDF), GoRouter                         |
-| **AI / ML**        | Google Generative AI (Gemini)                                                |
-| **Backend & Sync** | Supabase (Auth, Postgres, Realtime, Storage), Dio                            |
-| **Security**       | Safe Device (Root/Jailbreak), Flutter Secure Storage, SSL Pinning             |
-| **Local Data**     | Drift (SQLite), Shared Preferences                                           |
-| **DevOps**         | GitHub Actions (CI/CD), R8/Proguard Obfuscation                              |
-| **Utility**        | Bonsoir (mDNS), Shelf (Web Server), Connectivity Plus                        |
+RestroHub follows a **Feature-Driven Layered Architecture**, strictly adhering to Unidirectional Data Flow (UDF) principles.
 
----
+### Architecture Overview
+
+```mermaid
+graph TD
+    subgraph "Presentation Layer"
+        UI[Flutter UI / Material 3]
+        Providers[Riverpod State Providers]
+    end
+
+    subgraph "Domain Layer (Feature-First)"
+        Features[Feature Business Logic]
+        Models[Domain Entities]
+    end
+
+    subgraph "Infrastructure Layer"
+        Repos[Repositories]
+        LocalDB[(Drift / SQLite)]
+        RemoteAPI[Supabase / Dio]
+        AIService[Gemini AI]
+    end
+
+    UI --> Providers
+    Providers --> Features
+    Features --> Repos
+    Repos --> LocalDB
+    Repos --> RemoteAPI
+    Repos --> AIService
+```
 
 ## 🏗️ Architecture
 
@@ -138,7 +155,20 @@ lib/
 
 ---
 
-## 🚀 Getting Started
+## 🛠 Tech Stack
+
+| Layer              | Technology                                                        |
+|--------------------|-------------------------------------------------------------------|
+| **Framework & UI** | Flutter (3.10.4+), Material 3, Google Fonts, Animations           |
+| **Architecture**   | Clean/Layered Architecture, Riverpod (UDF), GoRouter              |
+| **AI / ML**        | Google Generative AI (Gemini), Google Function Calling.           |
+| **Backend & Sync** | Supabase (Auth, Postgres, Realtime, Storage), Dio                 |
+| **Security**       | Safe Device (Root/Jailbreak), Flutter Secure Storage, SSL Pinning |
+| **Local Data**     | Drift (SQLite), Shared Preferences                                |
+| **DevOps**         | GitHub Actions (CI/CD), R8/Proguard Obfuscation                   |
+| **Utility**        | Bonsoir (mDNS), Shelf (Web Server), Connectivity Plus             |
+
+---
 
 ### Prerequisites
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (>= 3.10.4)
