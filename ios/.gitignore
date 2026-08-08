@@ -15,10 +15,6 @@ Icon?
 profile
 xcuserdata
 **/.generated/
-Flutter/App.framework
-Flutter/Flutter.framework
-Flutter/Flutter.podspec
-Flutter/Generated.xcconfig
 Flutter/ephemeral/
 Flutter/app.flx
 Flutter/app.zip
@@ -34,6 +30,4 @@ Runner/GeneratedPluginRegistrant.*
 !default.perspectivev3
 
 
-/ios/Flutter/Generated.xcconfig
 /ios/Flutter/flutter_export_environment.sh
-/ios/Flutter/Flutter.podspec
