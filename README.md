@@ -160,8 +160,8 @@ lib/
 | Layer              | Technology                                                        |
 |--------------------|-------------------------------------------------------------------|
 | **Framework & UI** | Flutter (3.10.4+), Material 3, Google Fonts, Animations           |
-| **Architecture**   | Clean/Layered Architecture, Riverpod (UDF), GoRouter              |
-| **AI / ML**        | Google Generative AI (Gemini), Google Function Calling.           |
+| **Architecture**   | Feature-Driven Architecture, Riverpod (UDF), GoRouter             |
+| **AI / ML**        | Google Generative AI (Gemini), Gemini Function Calling.           |
 | **Backend & Sync** | Supabase (Auth, Postgres, Realtime, Storage), Dio                 |
 | **Security**       | Safe Device (Root/Jailbreak), Flutter Secure Storage, SSL Pinning |
 | **Local Data**     | Drift (SQLite), Shared Preferences                                |
