@@ -50,8 +50,16 @@ jobs:
           echo "SUPABASE_URL=https://dummy-project.supabase.co" > .env
           echo "SUPABASE_ANON_KEY=dummy-anon-key" >> .env
 
+      - name: Precache iOS Artifacts
+        run: flutter precache --ios
+
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install
 
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
