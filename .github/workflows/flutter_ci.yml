@@ -50,31 +50,8 @@ jobs:
           echo "SUPABASE_URL=https://dummy-project.supabase.co" > .env
           echo "SUPABASE_ANON_KEY=dummy-anon-key" >> .env
 
-      - name: Precache Flutter Artifacts
-        run: flutter precache --ios
-
-      - name: Clean & Re-bind iOS Project Structure
-        run: |
-          rm -rf ios/Pods ios/Podfile.lock ios/Flutter/podhelper.rb
-          flutter clean
-          flutter pub get
-          flutter create . --platforms=ios
-
-      - name: Verify podhelper.rb Existence
-        run: |
-          if [ -f "ios/Flutter/podhelper.rb" ]; then
-            echo "SUCCESS: podhelper.rb exists!"
-            ls -la ios/Flutter/
-          else
-            echo "ERROR: podhelper.rb still missing!"
-            ls -la ios/
-            exit 1
-          fi
-
-      - name: Install CocoaPods
-        run: |
-          cd ios
-          pod install --repo-update
+      - name: Install dependencies
+        run: flutter pub get
 
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
