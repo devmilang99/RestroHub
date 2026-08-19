@@ -105,10 +105,10 @@ jobs:
         with:
           name: RestroHub-Debug-APK
           path: build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 7
+          retention-days: 90
 
   ios_build:
-    name: Build iOS App Bundle
+    name: Build iOS App Bundle & IPA
     needs: test
     runs-on: macos-latest
     steps:
@@ -146,92 +146,68 @@ jobs:
       - name: Build iOS App Bundle
         run: flutter build ios --release --no-codesign
 
-      - name: Upload iOS App Bundle Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: RestroHub-iOS-Build
-          path: build/ios/iphoneos/Runner.app
-          retention-days: 7
-
-  ios_testflight:
-    name: Build & Deploy iOS to TestFlight
-    needs: test
-    runs-on: macos-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          cache: true
-
-      - name: Cache Pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pub-
-
-      - name: Create .env file
+      - name: Create Unsigned IPA
         run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'https://example.supabase.co' }}" > .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy-anon-key' }}" >> .env
-          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy-client-id' }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy-gemini-key' }}" >> .env
-          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy-gemini-key-backup' }}" >> .env
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Run build_runner
-        run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Decode provisioning profile
-        run: |
-          echo "${{ secrets.IOS_PROVISIONING_PROFILE }}" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
-        if: secrets.IOS_PROVISIONING_PROFILE != ''
-
-      - name: Import signing certificate
-        uses: apple-actions/import-codesign-certs@v2
-        with:
-          p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_CERT }}
-          p12-password: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
-        if: secrets.IOS_DISTRIBUTION_CERT != ''
-
-      - name: Build iOS for distribution
-        run: |
-          flutter build ios --release -v \
-            --build-number=${{ github.run_number }} \
-            --build-name="1.0.${{ github.run_number }}"
-        if: secrets.IOS_DISTRIBUTION_CERT != ''
-
-      - name: Build unsigned iOS IPA (for testing)
-        run: |
-          flutter build ios --release --no-codesign
           mkdir -p build/ios/ipa
           cd build/ios/iphoneos
           mkdir -p Payload
-          mv Runner.app Payload/
+          cp -r Runner.app Payload/
           zip -r ../ipa/RestroHub.ipa Payload
-        if: secrets.IOS_DISTRIBUTION_CERT == ''
 
-      - name: Upload to TestFlight
-        uses: apple-actions/upload-testflight-build@v1
-        with:
-          app-path: 'build/ios/iphoneos/Runner.app'
-          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
-        if: secrets.APP_STORE_CONNECT_ISSUER_ID != ''
-
-      - name: Upload unsigned IPA as artifact (fallback)
+      - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RestroHub-iOS-TestFlight-IPA
+          name: RestroHub-iOS-IPA
           path: build/ios/ipa/RestroHub.ipa
-          retention-days: 30
-        if: secrets.IOS_DISTRIBUTION_CERT == '' && always()
+          retention-days: 90
+
+  create_release:
+    name: Create GitHub Release
+    needs: [android_debug, ios_build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: RestroHub-Debug-APK
+          path: artifacts/android
+
+      - name: Download iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: RestroHub-iOS-IPA
+          path: artifacts/ios
+
+      - name: Prepare Release Files
+        run: |
+          mv artifacts/android/app-debug.apk RestroHub-Android.apk
+          mv artifacts/ios/RestroHub.ipa RestroHub-iOS.ipa
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "RestroHub Latest Build"
+          body: |
+            ## 🚀 Latest Build Summary
+            
+            This release contains the latest automated builds from the `main` branch.
+            
+            ### 📦 Artifacts
+            - **Android**: `RestroHub-Android.apk` (Debug Build)
+            - **iOS**: `RestroHub-iOS.ipa` (Unsigned Build - for BrowserStack/Simulation)
+            
+            *Last updated: ${{ github.event.head_commit.timestamp }}*
+            *Commit: ${{ github.sha }}*
+          files: |
+            RestroHub-Android.apk
+            RestroHub-iOS.ipa
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

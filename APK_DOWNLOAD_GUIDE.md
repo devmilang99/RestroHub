@@ -3,10 +3,12 @@
 > [!IMPORTANT]
 > This document has been consolidated into the main [README.md](README.md#installation). Please
 > refer to the README for the most up-to-date installation instructions and build artifacts.
+> 
+> **iOS User?** Check the [iOS Download & Testing Guide](IOS_DOWNLOAD_GUIDE.md) for instructions on using BrowserStack or TestFlight.
 
 ## 🎯 Quick Start
 
-**⬇️ [Download APK from Build Artifacts](https://github.com/milan-ghimire/RestroHub/actions)**
+**⬇️ [Download Latest APK](https://github.com/milan-ghimire/RestroHub/releases/latest/download/RestroHub-Android.apk)**
 
 This document provides complete instructions for downloading and installing the latest RestroHub
 APK build.
@@ -46,7 +48,7 @@ Before installation, ensure your device meets these requirements:
 ### Method 1: Direct Installation (Easiest)
 
 1. **Download the APK**
-    - Click the download link above to get the APK file from the latest successful GitHub Action run.
+    - Click the **[Latest Download Link](https://github.com/milan-ghimire/RestroHub/releases/latest/download/RestroHub-Android.apk)**.
     - Wait for download to complete.
 
 2. **Prepare Your Device**

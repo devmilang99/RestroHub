@@ -42,9 +42,9 @@ Before installation, ensure your device meets these requirements:
 
 ---
 
-## 🚀 Installation Methods
+## 🚀 Installation & Testing Methods
 
-### Method 1: TestFlight Installation (Recommended)
+### Method 1: TestFlight Installation (Recommended for Real Devices)
 
 TestFlight is Apple's official beta testing platform. Installing via TestFlight is the easiest way to get the
 latest RestroHub build on your iOS device.
@@ -95,13 +95,38 @@ When you launch RestroHub for the first time, grant all requested permissions:
 
 ---
 
-### Method 2: Direct Xcode Installation (For Developers)
+### Method 2: BrowserStack Simulation (No Mac Required)
+
+Since RestroHub is built on GitHub Actions, you can download the generated `.ipa` artifact and test it using services like **BrowserStack** even if you don't own a Mac.
+
+#### Step 1: Download the IPA Artifact
+1. Go to the [RestroHub Latest Release](https://github.com/milan-ghimire/RestroHub/releases/latest) page.
+2. Download the **RestroHub-iOS.ipa** asset.
+3. Once downloaded, you are ready to upload it to BrowserStack.
+
+#### Step 2: Upload to BrowserStack App Live
+1. Log in to your [BrowserStack App Live](https://www.browserstack.com/app-live) account.
+2. Click on **"Upload"** in the "App" section.
+3. Select the `RestroHub-iOS.ipa` file you just downloaded.
+4. BrowserStack will automatically resign the app for testing on their real devices.
+
+#### Step 3: Select a Device & Launch
+1. Choose an iPhone (e.g., iPhone 15 Pro) from the list.
+2. BrowserStack will boot the device and install RestroHub.
+3. Grant permissions (Location, Camera, Notifications) when prompted to test all features.
+
+> [!TIP]
+> This method is perfect for verifying UI layouts and basic functionality on various iOS versions without needing local Apple hardware.
+
+---
+
+### Method 3: Direct Xcode Installation (For Developers with Mac)
 
 For developers with Xcode installed on macOS:
 
 ```bash
 # Step 1: Clone the repository
-git clone https://github.com/devmilang99/RestroHub.git
+git clone https://github.com/milan-ghimire/RestroHub.git
 cd RestroHub
 
 # Step 2: Install Flutter dependencies
@@ -123,7 +148,7 @@ open ios/Runner.xcworkspace
 # - Press Cmd+R or click "Run" button
 ```
 
-### Method 3: Command Line Installation (For Developers)
+### Method 4: Command Line Installation (For Developers with Mac)
 
 ```bash
 # Step 1: Navigate to project directory
@@ -241,13 +266,13 @@ The easiest way to report issues or send feedback:
 
 ### Report Bugs on GitHub
 
-- Found a critical bug? [Open an issue on GitHub](https://github.com/devmilang99/RestroHub/issues)
+- Found a critical bug? [Open an issue on GitHub](https://github.com/milan-ghimire/RestroHub/issues)
 - Include: Device model, iOS version, build number, and steps to reproduce
 - Check the build information in Settings → About RestroHub for version details
 
 ### Request Features
 
-- Have a feature idea? [Create a feature request](https://github.com/devmilang99/RestroHub/discussions)
+- Have a feature idea? [Create a feature request](https://github.com/milan-ghimire/RestroHub/discussions)
 
 ---
 
@@ -300,7 +325,7 @@ Screenshots: [Attach if applicable]
 ---
 
 **Last Updated:** August 19, 2026  
-**Repository:** [devmilang99/RestroHub](https://github.com/devmilang99/RestroHub)  
+**Repository:** [milan-ghimire/RestroHub](https://github.com/milan-ghimire/RestroHub)  
 **License:** Apache License 2.0
 
 ---

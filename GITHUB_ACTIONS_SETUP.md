@@ -94,7 +94,7 @@ The updated CI/CD workflow automatically builds and deploys iOS apps to TestFlig
 
 ### 3.2 Add Secrets to GitHub
 
-1. Go to your GitHub repository: `https://github.com/devmilang99/RestroHub`
+1. Go to your GitHub repository: `https://github.com/milan-ghimire/RestroHub`
 2. Click **Settings** → **Secrets and variables** → **Actions**
 3. Click **"New repository secret"**
 
@@ -372,4 +372,4 @@ Once set up, every push to `main` or `develop` will:
 ---
 
 **Last Updated:** August 19, 2026  
-**Repository:** [devmilang99/RestroHub](https://github.com/devmilang99/RestroHub)
+**Repository:** [milan-ghimire/RestroHub](https://github.com/milan-ghimire/RestroHub)
