@@ -4,7 +4,7 @@
 > This document has been consolidated into the main [README.md](README.md#installation). Please
 > refer to the README for the most up-to-date installation instructions and build artifacts.
 > 
-> **iOS User?** Check the [iOS Download & Testing Guide](IOS_DOWNLOAD_GUIDE.md) for instructions on using BrowserStack or TestFlight.
+> **iOS User?** Check the [iOS Download & Testing Guide](IOS_DOWNLOAD_GUIDE.md) for instructions on using BrowserStack cloud simulation.
 
 ## 🎯 Quick Start
 

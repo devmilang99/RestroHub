@@ -1,15 +1,16 @@
-# 🍔 RestroHub iOS Download & Installation Guide
+# 🍔 RestroHub iOS Download & Testing Guide
 
 > [!IMPORTANT]
-> This document provides instructions for downloading and installing RestroHub on iOS devices via TestFlight.
+> This document provides instructions for testing RestroHub on iOS devices using cloud simulation services like **BrowserStack**. 
+> Because this is an unsigned build, it cannot be installed directly on a real iPhone without developer signing.
 > For Android users, please refer to the [APK Download Guide](APK_DOWNLOAD_GUIDE.md).
 
 ## 🎯 Quick Start
 
-**⬇️ [Download via TestFlight](https://testflight.apple.com/join/YOUR_PUBLIC_LINK)**
+**⬇️ [Download Latest iOS IPA](https://github.com/milan-ghimire/RestroHub/releases/latest/download/RestroHub-iOS.ipa)**
 
-This document provides complete instructions for downloading and installing the latest RestroHub
-iOS build via Apple TestFlight.
+This document provides complete instructions for downloading and testing the latest RestroHub
+iOS build using BrowserStack.
 
 ---
 
@@ -22,107 +23,49 @@ You are downloading **RestroHub** - a premium food delivery ecosystem built with
 - **Backend**: Supabase (PostgreSQL, Realtime, Auth)
 - **Local Database**: Drift (SQLite) with Atomic Sync
 
-This iOS build is automatically created and distributed via TestFlight from the latest source code via 
-GitHub Actions CI/CD pipeline.
+This iOS build is automatically created as an **Unsigned IPA** via GitHub Actions CI/CD pipeline, specifically optimized for cloud testing environments.
 
 ---
 
-## ✅ System Requirements
+## ✅ System Requirements (BrowserStack)
 
-Before installation, ensure your device meets these requirements:
+Before testing, ensure you have:
 
 | Requirement                     | Specification                                 |
 |---------------------------------|-----------------------------------------------|
-| **Minimum iOS Version**         | iOS 12.0 or higher                            |
-| **Recommended iOS Version**     | iOS 15.0 or higher                            |
-| **Storage Space**               | At least 200MB free                           |
-| **RAM**                         | 2GB minimum (3GB+ recommended)                |
-| **Network**                     | Internet connection required for AI & Orders  |
-| **Apple ID**                    | Required for TestFlight access                |
+| **BrowserStack Account**        | Required (Free trial or paid)                 |
+| **Storage Space**               | ~100MB for the IPA file                       |
+| **Network**                     | Stable internet for cloud simulation          |
+| **Device Selection**            | iPhone 13 or newer recommended for performance|
 
 ---
 
-## 🚀 Installation & Testing Methods
+## 🚀 Testing Methods
 
-### Method 1: TestFlight Installation (Recommended for Real Devices)
+### Method 1: BrowserStack Simulation (Recommended / No Mac Required)
 
-TestFlight is Apple's official beta testing platform. Installing via TestFlight is the easiest way to get the
-latest RestroHub build on your iOS device.
+Since RestroHub generates an unsigned `.ipa` artifact, you can test it using **BrowserStack App Live** even if you don't own a Mac or an iPhone.
 
-#### Step 1: Install TestFlight
-
-1. Open the **App Store** on your iPhone or iPad
-2. Search for **"TestFlight"**
-3. Tap **Get** and then **Install**
-4. Sign in with your Apple ID if prompted
-
-Or use this direct link: [TestFlight on App Store](https://apps.apple.com/app/testflight/id899247664)
-
-#### Step 2: Join the RestroHub Beta
-
-**Option A: Via Email Invitation (If you received an email)**
-
-1. Check your email inbox for the TestFlight invitation from Apple
-2. Open the email on your iOS device
-3. Tap the **"View in TestFlight"** link
-4. You'll be taken directly to the RestroHub TestFlight page
-5. Tap **"Install"** to add the app to your device
-
-**Option B: Via Public Invitation Link**
-
-1. Open this link on your iOS device: **[TestFlight Public Link](https://testflight.apple.com/join/YOUR_PUBLIC_LINK)**
-2. You'll be redirected to the TestFlight app (or App Store if TestFlight isn't installed)
-3. Review the app details and tap **"Install"**
-4. Follow any prompts to confirm installation
-
-#### Step 3: Install the Application
-
-1. Once you tap Install, TestFlight will begin downloading and installing RestroHub
-2. Wait for the installation to complete (progress indicator will show)
-3. Once installed, the "Install" button will change to "Open"
-4. Tap **"Open"** to launch RestroHub for the first time
-
-#### Step 4: Grant Permissions
-
-When you launch RestroHub for the first time, grant all requested permissions:
-
-- ✓ **Internet Access** — Connect to Supabase, Gemini AI, and order services
-- ✓ **Location (Always or While Using)** — For delivery address and nearby restaurant discovery
-- ✓ **Camera** — For profile photos and future QR code scanning features
-- ✓ **Notifications** — For real-time order updates on food preparation and delivery
-- ✓ **Contacts** (optional) — To suggest saved contacts when sharing favorite restaurants
-- ✓ **Photo Library** (optional) — For uploading profile pictures
-
----
-
-### Method 2: BrowserStack Simulation (No Mac Required)
-
-Since RestroHub is built on GitHub Actions, you can download the generated `.ipa` artifact and test it using services like **BrowserStack** even if you don't own a Mac.
-
-#### Step 1: Download the IPA Artifact
+#### Step 1: Download the IPA Asset
 1. Go to the [RestroHub Latest Release](https://github.com/milan-ghimire/RestroHub/releases/latest) page.
 2. Download the **RestroHub-iOS.ipa** asset.
-3. Once downloaded, you are ready to upload it to BrowserStack.
 
-#### Step 2: Upload to BrowserStack App Live
+#### Step 2: Upload to BrowserStack
 1. Log in to your [BrowserStack App Live](https://www.browserstack.com/app-live) account.
 2. Click on **"Upload"** in the "App" section.
 3. Select the `RestroHub-iOS.ipa` file you just downloaded.
-4. BrowserStack will automatically resign the app for testing on their real devices.
+4. BrowserStack will automatically resign the app for testing on their real cloud devices.
 
 #### Step 3: Select a Device & Launch
 1. Choose an iPhone (e.g., iPhone 15 Pro) from the list.
 2. BrowserStack will boot the device and install RestroHub.
 3. Grant permissions (Location, Camera, Notifications) when prompted to test all features.
 
-> [!TIP]
-> This method is perfect for verifying UI layouts and basic functionality on various iOS versions without needing local Apple hardware.
-
 ---
 
-### Method 3: Direct Xcode Installation (For Developers with Mac)
+### Method 2: Direct Xcode Installation (For Developers with Mac)
 
-For developers with Xcode installed on macOS:
+If you have a Mac and a physical iPhone, you can build and run the app directly from source.
 
 ```bash
 # Step 1: Clone the repository
@@ -139,26 +82,9 @@ dart run build_runner build --delete-conflicting-outputs
 open ios/Runner.xcworkspace
 
 # Step 5: In Xcode
-# - Select "Runner" project in left sidebar
-# - Select "Runner" target
-# - Go to "Signing & Capabilities"
-# - Select your development team
-# - Connect your iOS device via USB
-# - Select your device in the top toolbar
-# - Press Cmd+R or click "Run" button
-```
-
-### Method 4: Command Line Installation (For Developers with Mac)
-
-```bash
-# Step 1: Navigate to project directory
-cd RestroHub
-
-# Step 2: Install dependencies
-flutter pub get
-
-# Step 3: Run on your connected iOS device
-flutter run -v
+# - Go to "Signing & Capabilities" and select your Development Team
+# - Connect your iPhone via USB
+# - Select your device and press "Run" (Cmd+R)
 ```
 
 ---
@@ -170,105 +96,64 @@ RestroHub is built with security as a priority. Here's what the app accesses and
 | Permission                 | Purpose                                                    |
 |----------------------------|------------------------------------------------------------|
 | **INTERNET**               | Connect to Supabase, Gemini AI, and track orders           |
-| **LOCATION_ALWAYS**        | Accurate delivery address and nearby restaurant discovery  |
-| **LOCATION_WHEN_IN_USE**   | Temporary location access during checkout and delivery     |
-| **CAMERA**                 | Capturing profile pictures and future QR scanning features |
-| **USER_NOTIF**             | Real-time updates on food preparation and delivery         |
-| **CONTACTS** (optional)    | Suggest saved contacts for sharing favorite restaurants    |
-| **PHOTO_LIBRARY** (optional)| Uploading custom profile pictures                         |
+| **LOCATION**               | Accurate delivery address and nearby restaurant discovery  |
+| **CAMERA**                 | Capturing profile pictures and scanning features           |
+| **NOTIFICATIONS**          | Real-time updates on food preparation and delivery         |
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Installation Issues
+### Testing Issues
 
 | Problem                                  | Solution                                                    |
 |------------------------------------------|-------------------------------------------------------------|
-| **"Cannot connect to TestFlight"**       | Check your internet connection and Apple ID credentials     |
-| **"App cannot be installed at this time"** | Wait a few minutes and try again; TestFlight servers may be busy |
-| **"Insufficient storage"**               | Free up at least 250MB on your device and retry             |
-| **"Expired TestFlight link"**            | Contact us to request a new invitation (links expire after 28 days) |
-| **"Beta offer has expired"**             | The testing period has ended; check for a public App Store release |
+| **"IPA failed to upload"**               | Ensure the file is named `RestroHub-iOS.ipa` and not corrupted. |
+| **"Device session timed out"**           | Refresh your BrowserStack tab and restart the session.      |
+| **"Location not detected"**              | Enable "GPS" or "Location Simulation" in BrowserStack menu. |
+| **"App crashes on launch"**              | Check if the BrowserStack device OS is iOS 12.0 or higher.  |
 
 ### Runtime Issues
 
 | Problem                              | Solution                                                                     |
 |--------------------------------------|------------------------------------------------------------------------------|
-| **App crashes on startup**           | Force close and reopen; if persists, delete and reinstall via TestFlight    |
-| **"Permission denied" errors**       | Go to Settings → RestroHub → Permissions → Toggle the necessary permissions |
-| **App appears outdated**             | Check TestFlight for a newer build; update via TestFlight when available    |
-| **Network/sync issues**              | Check internet connection; ensure Supabase services are accessible          |
-| **Slow performance**                 | Close background apps or restart your device                                |
-| **"Untrusted Developer" message**    | Go to Settings → General → Device Management → Trust the developer          |
+| **"Permission denied" errors**       | Go to iOS Settings within the simulation -> RestroHub -> Grant permissions.  |
+| **Network/sync issues**              | Ensure the simulated device has internet enabled in BrowserStack settings.   |
+| **AI Assistant not responding**      | Verify that the `.env` keys were correctly set during the build process.    |
 
 ---
 
-## 🔄 Updates & New Builds
+## 🔄 Updates
 
 When new builds are released:
 
-1. Open the **TestFlight** app
-2. Navigate to **RestroHub**
-3. If an update is available, tap **"Update"** (or wait for auto-update if enabled)
-4. Your data and settings will be preserved
-5. App will launch with new features
-
-**Enable Automatic Updates:**
-
-1. Open TestFlight app
-2. Go to **Account** → **Settings**
-3. Toggle **"Automatic Updates"** on
-4. RestroHub will update automatically when new builds are available
+1. Download the new `RestroHub-iOS.ipa` from the releases page.
+2. Re-upload it to BrowserStack.
+3. Start a new session.
 
 ---
 
 ## 📊 Build Information
 
 ```
-Build Type: Release
-Architecture: arm64 (native), arm64e (enhanced)
+Build Type: Release (Unsigned)
+Architecture: arm64
 Min iOS: 12.0
 Target iOS: 17.0+
 Language Composition:
-  - Dart (Flutter): 97.3%
-  - Swift (iOS): 2.3%
-  - Other: 0.4%
-
-TestFlight Build Status: ✅ Active
+  - Dart (Flutter): 98.2%
+  - Swift (iOS): 1.5%
+  - Other: 0.3%
 ```
-
----
-
-## ⏰ TestFlight Build Expiration
-
-**Important:** TestFlight beta builds automatically expire **90 days** after they are made available.
-If your installed build expires:
-
-1. You'll receive a notification
-2. Update via TestFlight when the new build is available
-3. Your app data will be preserved during the update
 
 ---
 
 ## 📞 Support & Feedback
 
-### Send Feedback via TestFlight
-
-The easiest way to report issues or send feedback:
-
-1. Open the **TestFlight** app
-2. Select **RestroHub**
-3. Tap **"Send Beta Feedback"**
-4. Describe your feedback or bug
-5. Include screenshots if applicable
-6. Tap **Send**
-
 ### Report Bugs on GitHub
 
-- Found a critical bug? [Open an issue on GitHub](https://github.com/milan-ghimire/RestroHub/issues)
-- Include: Device model, iOS version, build number, and steps to reproduce
-- Check the build information in Settings → About RestroHub for version details
+- Found a bug? [Open an issue on GitHub](https://github.com/milan-ghimire/RestroHub/issues)
+- Include: Simulated device model, iOS version, and steps to reproduce.
 
 ### Request Features
 
@@ -278,49 +163,9 @@ The easiest way to report issues or send feedback:
 
 ## 🔐 Security Best Practices
 
-1. **Keep Your Device Updated** — Install all iOS security updates from Apple
-2. **Use Strong Authentication** — Enable Face ID / Touch ID when prompted by the app
-3. **Secure Your Apple ID** — Use a strong password and enable two-factor authentication
-4. **Trust Developer Only When Necessary** — Only trust developers when installing beta apps
-5. **Be Cautious** — Only install from official TestFlight links provided by us
-
----
-
-## ❓ FAQ
-
-**Q: Is TestFlight safe?**  
-A: Yes. TestFlight is Apple's official beta testing platform and all builds are scanned for security.
-
-**Q: Will my data be saved if the beta expires?**  
-A: Yes. Your app data is stored locally and in Supabase. Updating or reinstalling preserves your data.
-
-**Q: Can I use RestroHub on multiple iOS devices?**  
-A: Yes. Use the same Apple ID on each device and accept the TestFlight invitation on each device.
-
-**Q: How do I remove RestroHub?**  
-A: Open TestFlight, select RestroHub, tap **"Remove This App"** or delete it from your home screen.
-
-**Q: What if I want the App Store version instead?**  
-A: RestroHub may be available on the App Store. Search for "RestroHub" in the App Store app.
-
----
-
-## 📋 Feedback Template
-
-When reporting issues, please include:
-
-```
-Device Model: iPhone 14 Pro
-iOS Version: 17.2
-Build Number: [Check in Settings → About RestroHub]
-Issue: [Describe what happened]
-Steps to Reproduce:
-1. [Step 1]
-2. [Step 2]
-Expected Behavior: [What should happen]
-Actual Behavior: [What actually happened]
-Screenshots: [Attach if applicable]
-```
+1. **Secure Your API Keys** — Never commit your actual `.env` file to the repository.
+2. **Use Strong Authentication** — Enable biometric simulation in BrowserStack if available.
+3. **Be Cautious** — Only test IPAs downloaded from this official repository.
 
 ---
 

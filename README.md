@@ -195,7 +195,7 @@ lib/
 > [!TIP]
 > **Looking for pre-built versions?**
 > - For Android: Check the [APK Download & Installation Guide](APK_DOWNLOAD_GUIDE.md).
-> - For iOS (BrowserStack/TestFlight): Check the [iOS Download & Testing Guide](IOS_DOWNLOAD_GUIDE.md).
+> - For iOS (BrowserStack): Check the [iOS Download & Testing Guide](IOS_DOWNLOAD_GUIDE.md).
 
 1. **Clone the repository**
    ```bash
