@@ -202,8 +202,11 @@ lib/
 
 5. **Launch Application**
    ```bash
-   flutter run
+   flutter run --android-skip-build-dependency-validation
    ```
+
+> [!NOTE]
+> If you encounter Android dependency validation errors during build or run (common with newer AGP versions), the project uses the `--android-skip-build-dependency-validation` flag to bypass these checks.
 
 ---
 

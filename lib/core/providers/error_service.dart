@@ -33,11 +33,16 @@ class ErrorService extends _$ErrorService {
     required String message,
     ErrorType type = ErrorType.unknown,
   }) {
-    state = ErrorState(message: message, type: type);
+    // Delay state update to avoid "Tried to modify a provider while the widget tree was building"
+    Future.microtask(() {
+      state = ErrorState(message: message, type: type);
+    });
   }
 
   void clearError() {
-    state = null;
+    Future.microtask(() {
+      state = null;
+    });
   }
 
   void handleException(dynamic e, [StackTrace? stack]) {
