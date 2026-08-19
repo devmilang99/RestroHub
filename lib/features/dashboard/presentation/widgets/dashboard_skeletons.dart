@@ -187,7 +187,7 @@ class SliverFoodCardsSkeleton extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 340,
+              height: 410,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),

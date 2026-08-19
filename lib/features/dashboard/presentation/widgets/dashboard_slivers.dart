@@ -210,10 +210,9 @@ class _SliverOfferCardsState extends State<SliverOfferCards> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
-    final displayItems =
-        widget.displayCount != null
-            ? widget.items.take(widget.displayCount!).toList()
-            : widget.items;
+    final displayItems = widget.displayCount != null
+        ? widget.items.take(widget.displayCount!).toList()
+        : widget.items;
 
     if (displayItems.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
@@ -229,8 +228,8 @@ class _SliverOfferCardsState extends State<SliverOfferCards> {
                 height: 180,
                 child: PageView.builder(
                   controller: _pageController,
-                  onPageChanged:
-                      (index) => setState(() => _currentPage = index),
+                  onPageChanged: (index) =>
+                      setState(() => _currentPage = index),
                   itemCount: displayItems.length,
                   itemBuilder: (context, index) {
                     final item = displayItems[index];
@@ -353,10 +352,9 @@ class _SliverOfferCardsState extends State<SliverOfferCards> {
                     width: _currentPage == index ? 24 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color:
-                          _currentPage == index
-                              ? colorScheme.primary
-                              : Colors.grey.withValues(alpha: 0.3),
+                      color: _currentPage == index
+                          ? colorScheme.primary
+                          : Colors.grey.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -394,8 +392,9 @@ class SliverRestaurantCards extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayItems =
-        displayCount != null ? items.take(displayCount!).toList() : items;
+    final displayItems = displayCount != null
+        ? items.take(displayCount!).toList()
+        : items;
 
     final isWide = context.isWide;
     final cardWidth = isWide ? 280.0 : 220.0;
@@ -456,10 +455,9 @@ class SliverRestaurantCards extends ConsumerWidget {
                   itemCount: displayItems.length,
                   itemBuilder: (context, index) {
                     final item = displayItems[index];
-                    final itemId =
-                        item is RestaurantModel
-                            ? item.id
-                            : (item as MenuItemModel).id;
+                    final itemId = item is RestaurantModel
+                        ? item.id
+                        : (item as MenuItemModel).id;
 
                     var name = '';
                     String? imageUrl = '';
@@ -493,24 +491,22 @@ class SliverRestaurantCards extends ConsumerWidget {
                           width: cardWidth,
                           margin: const EdgeInsets.only(right: 14),
                           decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? colorScheme.surfaceContainerHighest
-                                        .withValues(alpha: 0.3)
-                                    : Colors.white,
+                            color: isDark
+                                ? colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.3)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow:
-                                isDark
-                                    ? null
-                                    : [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.07,
-                                        ),
-                                        blurRadius: 14,
-                                        offset: const Offset(0, 5),
+                            boxShadow: isDark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.07,
                                       ),
-                                    ],
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ],
                           ),
                           clipBehavior: Clip.hardEdge,
                           child: Stack(
@@ -545,10 +541,9 @@ class SliverRestaurantCards extends ConsumerWidget {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color:
-                                          item is RestaurantModel
-                                              ? Colors.amber
-                                              : colorScheme.primary,
+                                      color: item is RestaurantModel
+                                          ? Colors.amber
+                                          : colorScheme.primary,
                                       borderRadius: BorderRadius.circular(10),
                                       boxShadow: [
                                         BoxShadow(
@@ -576,10 +571,9 @@ class SliverRestaurantCards extends ConsumerWidget {
                                 right: 12,
                                 child: Consumer(
                                   builder: (context, ref, _) {
-                                    final itemId =
-                                        item is RestaurantModel
-                                            ? item.id
-                                            : (item as MenuItemModel).id;
+                                    final itemId = item is RestaurantModel
+                                        ? item.id
+                                        : (item as MenuItemModel).id;
                                     final isFav = ref.watch(
                                       isFavouriteProvider(itemId),
                                     );
@@ -601,8 +595,9 @@ class SliverRestaurantCards extends ConsumerWidget {
                                               ? Icons.favorite
                                               : Icons.favorite_border,
                                           size: 14,
-                                          color:
-                                              isFav ? Colors.red : Colors.grey,
+                                          color: isFav
+                                              ? Colors.red
+                                              : Colors.grey,
                                         ),
                                       ),
                                     );
@@ -635,32 +630,24 @@ class SliverRestaurantCards extends ConsumerWidget {
                                             ),
                                           );
                                           return restaurantAsync.when(
-                                            data:
-                                                (r) =>
-                                                    r != null
-                                                        ? Text(
-                                                          r.name,
-                                                          style: GoogleFonts
-                                                              .poppins(
-                                                                color:
-                                                                    Colors
-                                                                        .white70,
-                                                                fontSize: 10,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w500,
-                                                              ),
-                                                          maxLines: 1,
-                                                          overflow:
-                                                              TextOverflow
-                                                                  .ellipsis,
-                                                        )
-                                                        : const SizedBox
-                                                            .shrink(),
-                                            loading: () => const SizedBox.shrink(),
-                                            error:
-                                                (_, _) =>
-                                                    const SizedBox.shrink(),
+                                            data: (r) => r != null
+                                                ? Text(
+                                                    r.name,
+                                                    style: GoogleFonts.poppins(
+                                                      color: Colors.white70,
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  )
+                                                : const SizedBox.shrink(),
+                                            loading: () =>
+                                                const SizedBox.shrink(),
+                                            error: (_, _) =>
+                                                const SizedBox.shrink(),
                                           );
                                         },
                                       ),
@@ -764,8 +751,9 @@ class SliverFoodCards extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final displayItems =
-        displayCount != null ? items.take(displayCount!).toList() : items;
+    final displayItems = displayCount != null
+        ? items.take(displayCount!).toList()
+        : items;
 
     final isWide = context.isWide;
     final cardWidth = isWide ? 200.0 : 160.0;
@@ -821,10 +809,10 @@ class SliverFoodCards extends ConsumerWidget {
               SizedBox(
                 height:
                     containerHeight +
-                    80, // Increased for description and buttons
+                    150, // Increased for description and buttons
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(left: 8, right: 8, bottom: 12),
+                  padding: const EdgeInsets.only(left: 8, right: 8, bottom: 20),
                   itemCount: displayItems.length,
                   itemBuilder: (context, index) {
                     final item = displayItems[index];
@@ -839,24 +827,22 @@ class SliverFoodCards extends ConsumerWidget {
                           width: cardWidth,
                           margin: const EdgeInsets.only(right: 14),
                           decoration: BoxDecoration(
-                            color:
-                                isDark
-                                    ? colorScheme.surfaceContainerHighest
-                                        .withValues(alpha: 0.3)
-                                    : Colors.white,
+                            color: isDark
+                                ? colorScheme.surfaceContainerHighest
+                                      .withValues(alpha: 0.3)
+                                : Colors.white,
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow:
-                                isDark
-                                    ? null
-                                    : [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.05,
-                                        ),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
+                            boxShadow: isDark
+                                ? null
+                                : [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
                                       ),
-                                    ],
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                           ),
                           clipBehavior: Clip.hardEdge,
                           child: Column(
@@ -900,10 +886,9 @@ class SliverFoodCards extends ConsumerWidget {
                                                     ? Icons.favorite
                                                     : Icons.favorite_border,
                                                 size: 16,
-                                                color:
-                                                    isFav
-                                                        ? Colors.red
-                                                        : colorScheme.primary,
+                                                color: isFav
+                                                    ? Colors.red
+                                                    : colorScheme.primary,
                                               ),
                                             ),
                                           );

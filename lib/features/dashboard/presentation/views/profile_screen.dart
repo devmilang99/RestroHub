@@ -140,13 +140,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildSettingsSection(ThemeData theme, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHighest
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Material(
+      color: isDark
+          ? theme.colorScheme.surfaceContainerHighest
+          : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
       child: SwitchListTile(
         secondary: Icon(
           isDark ? Icons.dark_mode : Icons.light_mode,
@@ -168,13 +167,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildActivitySection(ThemeData theme, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHighest
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Material(
+      color: isDark
+          ? theme.colorScheme.surfaceContainerHighest
+          : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildInfoTile(
@@ -189,13 +187,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildAccountSection(ThemeData theme, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHighest
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Material(
+      color: isDark
+          ? theme.colorScheme.surfaceContainerHighest
+          : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildInfoTile(
@@ -261,13 +258,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildSupportSection(ThemeData theme, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHighest
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Material(
+      color: isDark
+          ? theme.colorScheme.surfaceContainerHighest
+          : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildInfoTile(
@@ -289,13 +285,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _buildInfoSection(ThemeData theme, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? theme.colorScheme.surfaceContainerHighest
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
+    return Material(
+      color: isDark
+          ? theme.colorScheme.surfaceContainerHighest
+          : Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
           _buildInfoTile(
