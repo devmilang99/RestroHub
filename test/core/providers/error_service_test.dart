@@ -19,10 +19,13 @@ void main() {
       expect(state, isNull);
     });
 
-    test('showError updates state correctly', () {
+    test('showError updates state correctly', () async {
       final notifier = container.read(errorServiceProvider.notifier);
       // ignore: cascade_invocations
       notifier.showError(message: 'Test error', type: ErrorType.network);
+
+      // Wait for the microtask to complete
+      await Future.microtask(() {});
 
       final state = container.read(errorServiceProvider);
       expect(state, isNotNull);
@@ -30,23 +33,30 @@ void main() {
       expect(state.type, ErrorType.network);
     });
 
-    test('clearError resets state to null', () {
+    test('clearError resets state to null', () async {
       final notifier = container.read(errorServiceProvider.notifier);
       // ignore: cascade_invocations
       notifier.showError(message: 'Error');
+      
+      await Future.microtask(() {});
+      expect(container.read(errorServiceProvider), isNotNull);
+
       // ignore: cascade_invocations
       notifier.clearError();
+      await Future.microtask(() {});
 
       final state = container.read(errorServiceProvider);
       expect(state, isNull);
     });
 
-    test('handleException parses network error correctly', () {
+    test('handleException parses network error correctly', () async {
       final notifier = container.read(errorServiceProvider.notifier);
       // ignore: cascade_invocations
       notifier.handleException(
         Exception('SocketException: Connection failed'),
       );
+
+      await Future.microtask(() {});
 
       final state = container.read(errorServiceProvider);
       expect(state!.type, ErrorType.network);

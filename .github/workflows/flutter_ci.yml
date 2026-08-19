@@ -30,11 +30,11 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'dummy' }}" > .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy' }}" >> .env
-          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy' }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy' }}" >> .env
-          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy' }}" >> .env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'https://example.supabase.co' }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy-anon-key' }}" >> .env
+          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy-client-id' }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy-gemini-key' }}" >> .env
+          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy-gemini-key-backup' }}" >> .env
 
       - name: Install dependencies
         run: flutter pub get
@@ -85,11 +85,11 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'dummy' }}" > .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy' }}" >> .env
-          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy' }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy' }}" >> .env
-          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy' }}" >> .env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'https://example.supabase.co' }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy-anon-key' }}" >> .env
+          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy-client-id' }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy-gemini-key' }}" >> .env
+          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy-gemini-key-backup' }}" >> .env
 
       - name: Install dependencies
         run: flutter pub get
@@ -131,11 +131,11 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'dummy' }}" > .env
-          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy' }}" >> .env
-          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy' }}" >> .env
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy' }}" >> .env
-          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy' }}" >> .env
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'https://example.supabase.co' }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy-anon-key' }}" >> .env
+          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy-client-id' }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy-gemini-key' }}" >> .env
+          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy-gemini-key-backup' }}" >> .env
 
       - name: Install dependencies
         run: flutter pub get
