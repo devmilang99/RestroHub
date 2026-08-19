@@ -108,7 +108,7 @@ jobs:
           retention-days: 7
 
   ios_build:
-    name: Build iOS (No Codesign)
+    name: Build iOS App Bundle
     needs: test
     runs-on: macos-latest
     steps:
@@ -143,5 +143,95 @@ jobs:
       - name: Run build_runner
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Build iOS
-        run: flutter build ios --no-codesign --release
+      - name: Build iOS App Bundle
+        run: flutter build ios --release --no-codesign
+
+      - name: Upload iOS App Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: RestroHub-iOS-Build
+          path: build/ios/iphoneos/Runner.app
+          retention-days: 7
+
+  ios_testflight:
+    name: Build & Deploy iOS to TestFlight
+    needs: test
+    runs-on: macos-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Cache Pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'https://example.supabase.co' }}" > .env
+          echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy-anon-key' }}" >> .env
+          echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy-client-id' }}" >> .env
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy-gemini-key' }}" >> .env
+          echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy-gemini-key-backup' }}" >> .env
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run build_runner
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Decode provisioning profile
+        run: |
+          echo "${{ secrets.IOS_PROVISIONING_PROFILE }}" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+        if: secrets.IOS_PROVISIONING_PROFILE != ''
+
+      - name: Import signing certificate
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.IOS_DISTRIBUTION_CERT }}
+          p12-password: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
+        if: secrets.IOS_DISTRIBUTION_CERT != ''
+
+      - name: Build iOS for distribution
+        run: |
+          flutter build ios --release -v \
+            --build-number=${{ github.run_number }} \
+            --build-name="1.0.${{ github.run_number }}"
+        if: secrets.IOS_DISTRIBUTION_CERT != ''
+
+      - name: Build unsigned iOS IPA (for testing)
+        run: |
+          flutter build ios --release --no-codesign
+          mkdir -p build/ios/ipa
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          mv Runner.app Payload/
+          zip -r ../ipa/RestroHub.ipa Payload
+        if: secrets.IOS_DISTRIBUTION_CERT == ''
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: 'build/ios/iphoneos/Runner.app'
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
+        if: secrets.APP_STORE_CONNECT_ISSUER_ID != ''
+
+      - name: Upload unsigned IPA as artifact (fallback)
+        uses: actions/upload-artifact@v4
+        with:
+          name: RestroHub-iOS-TestFlight-IPA
+          path: build/ios/ipa/RestroHub.ipa
+          retention-days: 30
+        if: secrets.IOS_DISTRIBUTION_CERT == '' && always()
