@@ -16,7 +16,7 @@
 
 Discover local flavors, chat with AI assistants, and track your orders in real-time — all powered by Flutter and Supabase.
 
-[Features](#-features) · [Screenshots](#-screenshots) · [Architecture](#-architecture) · [Getting Started](#-getting-started) · [License](#-license)
+[Features](#-features) · [Screenshots](#-screenshots) · [Architecture](#-architecture) · [Getting Started](#-getting-started) · [APK Download](APK_DOWNLOAD_GUIDE.md) · [License](#-license)
 
 ---
 
@@ -176,6 +176,9 @@ lib/
 - [Google Gemini API Key](https://ai.google.dev/)
 
 ### Installation
+
+> [!TIP]
+> **Looking for a pre-built version?** Check out the [APK Download & Installation Guide](APK_DOWNLOAD_GUIDE.md) for quick setup on your Android device without compiling the source code.
 
 1. **Clone the repository**
    ```bash
