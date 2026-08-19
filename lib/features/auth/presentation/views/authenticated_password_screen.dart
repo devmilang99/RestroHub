@@ -104,7 +104,7 @@ class _AuthenticatedPasswordScreenState
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -113,210 +113,213 @@ class _AuthenticatedPasswordScreenState
           icon: Icon(Icons.arrow_back_ios_new, color: textColor),
         ),
       ),
-      body: Stack(
-        children: [
-          // Dynamic Background Image
-          Opacity(
-            opacity: Theme.of(context).brightness == Brightness.dark
-                ? 0.3
-                : 0.1,
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/food2.webp'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
-          // Gradient Overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  backgroundColor.withValues(alpha: .1),
-                  backgroundColor.withValues(alpha: .5),
-                  backgroundColor,
-                ],
-              ),
-            ),
-          ),
-          SafeArea(
-            bottom: MediaQuery.of(context).viewPadding.bottom > 30,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      Text(
-                        'Change Password',
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 42,
-                          fontWeight: FontWeight.bold,
-                          color: primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Keep your account secure by updating your password regularly.',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          color: textColor.withValues(alpha: .7),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      // Glassmorphic Form
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                          child: Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: glassColor,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: textColor.withValues(alpha: .1),
-                              ),
-                            ),
-                            child: Column(
-                              children: [
-                                _buildTextField(
-                                  context: context,
-                                  controller: currentPasswordController,
-                                  label: 'Current Password',
-                                  icon: Icons.lock_outline,
-                                  isDark:
-                                      Theme.of(context).brightness ==
-                                      Brightness.dark,
-                                  isPassword: true,
-                                  isVisible: _isCurrentPasswordVisible,
-                                  onVisibilityToggle: () {
-                                    setState(() {
-                                      _isCurrentPasswordVisible =
-                                          !_isCurrentPasswordVisible;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                _buildTextField(
-                                  context: context,
-                                  controller: newPasswordController,
-                                  label: 'New Password',
-                                  icon: Icons.vpn_key_outlined,
-                                  isDark:
-                                      Theme.of(context).brightness ==
-                                      Brightness.dark,
-                                  isPassword: true,
-                                  isVisible: _isNewPasswordVisible,
-                                  onVisibilityToggle: () {
-                                    setState(() {
-                                      _isNewPasswordVisible =
-                                          !_isNewPasswordVisible;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                _buildTextField(
-                                  context: context,
-                                  controller: confirmPasswordController,
-                                  label: 'Confirm New Password',
-                                  icon: Icons.check_circle_outline,
-                                  isDark:
-                                      Theme.of(context).brightness ==
-                                      Brightness.dark,
-                                  isPassword: true,
-                                  isVisible: _isConfirmPasswordVisible,
-                                  onVisibilityToggle: () {
-                                    setState(() {
-                                      _isConfirmPasswordVisible =
-                                          !_isConfirmPasswordVisible;
-                                    });
-                                  },
-                                ),
-                                const SizedBox(height: 40),
-                                SizedBox(
-                                  width: double.infinity,
-                                  height: 64,
-                                  child: ElevatedButton(
-                                    onPressed: () async {
-                                      if (currentPasswordController
-                                              .text
-                                              .isEmpty ||
-                                          newPasswordController.text.isEmpty ||
-                                          confirmPasswordController
-                                              .text
-                                              .isEmpty) {
-                                        _showAestheticDialog(
-                                          isSuccess: false,
-                                          title: 'Incomplete',
-                                          message: 'Please fill in all fields.',
-                                        );
-                                      } else if (newPasswordController.text !=
-                                          confirmPasswordController.text) {
-                                        _showAestheticDialog(
-                                          isSuccess: false,
-                                          title: 'Mismatch',
-                                          message:
-                                              'New passwords do not match.',
-                                        );
-                                      } else {
-                                        LoadingDialog.show(
-                                          context,
-                                          message: 'Updating password...',
-                                        );
-                                        await Future<void>.delayed(
-                                          const Duration(seconds: 2),
-                                        );
-                                        if (!context.mounted) return;
-                                        LoadingDialog.hide(context);
-                                        _showAestheticDialog(
-                                          isSuccess: true,
-                                          title: 'Success!',
-                                          message:
-                                              'Your password has been changed successfully.',
-                                        );
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: primaryColor,
-                                      foregroundColor: colorScheme.onPrimary,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(18),
-                                      ),
-                                      elevation: 12,
-                                    ),
-                                    child: Text(
-                                      'CHANGE PASSWORD',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 2,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                    ],
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          children: [
+            // Dynamic Background Image
+            Opacity(
+              opacity: Theme.of(context).brightness == Brightness.dark
+                  ? 0.3
+                  : 0.1,
+              child: Container(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/food2.webp'),
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+            // Gradient Overlay
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    backgroundColor.withValues(alpha: .1),
+                    backgroundColor.withValues(alpha: .5),
+                    backgroundColor,
+                  ],
+                ),
+              ),
+            ),
+            SafeArea(
+              bottom: MediaQuery.of(context).viewPadding.bottom > 30,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        Text(
+                          'Change Password',
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 42,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Keep your account secure by updating your password regularly.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            color: textColor.withValues(alpha: .7),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        // Glassmorphic Form
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: glassColor,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: textColor.withValues(alpha: .1),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  _buildTextField(
+                                    context: context,
+                                    controller: currentPasswordController,
+                                    label: 'Current Password',
+                                    icon: Icons.lock_outline,
+                                    isDark:
+                                        Theme.of(context).brightness ==
+                                        Brightness.dark,
+                                    isPassword: true,
+                                    isVisible: _isCurrentPasswordVisible,
+                                    onVisibilityToggle: () {
+                                      setState(() {
+                                        _isCurrentPasswordVisible =
+                                            !_isCurrentPasswordVisible;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildTextField(
+                                    context: context,
+                                    controller: newPasswordController,
+                                    label: 'New Password',
+                                    icon: Icons.vpn_key_outlined,
+                                    isDark:
+                                        Theme.of(context).brightness ==
+                                        Brightness.dark,
+                                    isPassword: true,
+                                    isVisible: _isNewPasswordVisible,
+                                    onVisibilityToggle: () {
+                                      setState(() {
+                                        _isNewPasswordVisible =
+                                            !_isNewPasswordVisible;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildTextField(
+                                    context: context,
+                                    controller: confirmPasswordController,
+                                    label: 'Confirm New Password',
+                                    icon: Icons.check_circle_outline,
+                                    isDark:
+                                        Theme.of(context).brightness ==
+                                        Brightness.dark,
+                                    isPassword: true,
+                                    isVisible: _isConfirmPasswordVisible,
+                                    onVisibilityToggle: () {
+                                      setState(() {
+                                        _isConfirmPasswordVisible =
+                                            !_isConfirmPasswordVisible;
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(height: 40),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 64,
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        if (currentPasswordController
+                                                .text
+                                                .isEmpty ||
+                                            newPasswordController.text.isEmpty ||
+                                            confirmPasswordController
+                                                .text
+                                                .isEmpty) {
+                                          _showAestheticDialog(
+                                            isSuccess: false,
+                                            title: 'Incomplete',
+                                            message: 'Please fill in all fields.',
+                                          );
+                                        } else if (newPasswordController.text !=
+                                            confirmPasswordController.text) {
+                                          _showAestheticDialog(
+                                            isSuccess: false,
+                                            title: 'Mismatch',
+                                            message:
+                                                'New passwords do not match.',
+                                          );
+                                        } else {
+                                          LoadingDialog.show(
+                                            context,
+                                            message: 'Updating password...',
+                                          );
+                                          await Future<void>.delayed(
+                                            const Duration(seconds: 2),
+                                          );
+                                          if (!context.mounted) return;
+                                          LoadingDialog.hide(context);
+                                          _showAestheticDialog(
+                                            isSuccess: true,
+                                            title: 'Success!',
+                                            message:
+                                                'Your password has been changed successfully.',
+                                          );
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: primaryColor,
+                                        foregroundColor: colorScheme.onPrimary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(18),
+                                        ),
+                                        elevation: 12,
+                                      ),
+                                      child: Text(
+                                        'CHANGE PASSWORD',
+                                        style: GoogleFonts.poppins(
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 2,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

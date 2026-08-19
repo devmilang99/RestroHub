@@ -10,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/providers/error_service.dart';
-import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
 import 'package:restro_hub/core/widgets/responsive_center.dart';
 import 'package:restro_hub/features/auth/data/datasources/google_auth_datasource.dart';
@@ -138,88 +137,91 @@ class _LoginViewState extends ConsumerState<LoginView>
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Premium Background with ShaderMask
-          Positioned.fill(
-            child: ShaderMask(
-              shaderCallback: (rect) {
-                return LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.4),
-                    Colors.black.withOpacity(0.8),
-                    colorScheme.primary.withOpacity(0.2),
-                    Colors.black,
-                  ],
-                  stops: const [0.0, 0.5, 0.8, 1.0],
-                ).createShader(rect);
-              },
-              blendMode: BlendMode.darken,
-              child: Image.asset(
-                'assets/food6.webp',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Container(color: Colors.black),
+      resizeToAvoidBottomInset: true,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Premium Background with ShaderMask
+            Positioned.fill(
+              child: ShaderMask(
+                shaderCallback: (rect) {
+                  return LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.4),
+                      Colors.black.withOpacity(0.8),
+                      colorScheme.primary.withOpacity(0.2),
+                      Colors.black,
+                    ],
+                    stops: const [0.0, 0.5, 0.8, 1.0],
+                  ).createShader(rect);
+                },
+                blendMode: BlendMode.darken,
+                child: Image.asset(
+                  'assets/food6.webp',
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) =>
+                      Container(color: Colors.black),
+                ),
               ),
             ),
-          ),
 
-          // Content
-          SafeArea(
-            bottom: MediaQuery.of(context).viewPadding.bottom > 30,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: ResponsiveCenter(
-                    maxWidth: 450,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 24,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        FadeTransition(
-                          opacity: _headerFade,
-                          child: SlideTransition(
-                            position: _headerSlide,
-                            child: _buildHeader(colorScheme),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        FadeTransition(
-                          opacity: _cardFade,
-                          child: SlideTransition(
-                            position: _cardSlide,
-                            child: _buildLoginCard(
-                              context,
-                              colorScheme,
-                              isDark,
+            // Content
+            SafeArea(
+              bottom: MediaQuery.of(context).viewPadding.bottom > 30,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: ResponsiveCenter(
+                      maxWidth: 450,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 24,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          FadeTransition(
+                            opacity: _headerFade,
+                            child: SlideTransition(
+                              position: _headerSlide,
+                              child: _buildHeader(colorScheme),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        FadeTransition(
-                          opacity: _footerFade,
-                          child: SlideTransition(
-                            position: _footerSlide,
-                            child: _buildFooter(context, colorScheme),
+                          const SizedBox(height: 24),
+                          FadeTransition(
+                            opacity: _cardFade,
+                            child: SlideTransition(
+                              position: _cardSlide,
+                              child: _buildLoginCard(
+                                context,
+                                colorScheme,
+                                isDark,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          FadeTransition(
+                            opacity: _footerFade,
+                            child: SlideTransition(
+                              position: _footerSlide,
+                              child: _buildFooter(context, colorScheme),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

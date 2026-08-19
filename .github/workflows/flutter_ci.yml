@@ -30,6 +30,9 @@ jobs:
 
       - name: Create .env file
         run: |
+          # Use 'fail' if secret is empty to catch configuration issues early
+          [ -z "${{ secrets.GOOGLE_WEB_CLIENT_ID }}" ] && echo "ERROR: GOOGLE_WEB_CLIENT_ID secret is missing!" && exit 1
+          
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL || vars.SUPABASE_URL || 'https://example.supabase.co' }}" > .env
           echo "SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY || 'dummy-anon-key' }}" >> .env
           echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy-client-id' }}" >> .env

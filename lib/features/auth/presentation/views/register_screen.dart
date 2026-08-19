@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:restro_hub/core/extensions/context_extension.dart';
 import 'package:restro_hub/core/providers/error_service.dart';
-import 'package:restro_hub/core/theme/theme_provider.dart';
 import 'package:restro_hub/core/widgets/aesthetic_dialog.dart';
 import 'package:restro_hub/core/widgets/loading_dialog.dart';
 import 'package:restro_hub/features/auth/data/datasources/supabase_auth_datasource.dart';
@@ -24,6 +23,7 @@ class Register extends ConsumerStatefulWidget {
 
 class _RegisterState extends ConsumerState<Register>
     with TickerProviderStateMixin {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController fullNameController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
@@ -96,8 +96,6 @@ class _RegisterState extends ConsumerState<Register>
 
   @override
   Widget build(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
-
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = context.colorScheme;
     final primaryColor = colorScheme.primary;
@@ -110,7 +108,7 @@ class _RegisterState extends ConsumerState<Register>
     return Scaffold(
       backgroundColor: Colors.transparent,
       extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -119,222 +117,225 @@ class _RegisterState extends ConsumerState<Register>
           icon: Icon(Icons.arrow_back_ios_new, color: textColor),
         ),
       ),
-      body: Stack(
-        children: [
-          // Background Image with dynamic opacity
-          Opacity(
-            opacity: isDark ? 0.6 : 0.4,
-            child: Container(
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/food7.webp'),
-                  fit: BoxFit.cover,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Stack(
+          children: [
+            Opacity(
+              opacity: isDark ? 0.6 : 0.4,
+              child: Container(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
+                    image: AssetImage('assets/food7.webp'),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
-          ),
-          // Gradient Overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  backgroundColor.withValues(alpha: .1),
-                  backgroundColor.withValues(alpha: .5),
-                  backgroundColor,
-                ],
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    backgroundColor.withValues(alpha: .1),
+                    backgroundColor.withValues(alpha: .5),
+                    backgroundColor,
+                  ],
+                ),
               ),
             ),
-          ),
-          // Scrollable Content
-          SafeArea(
-            bottom: MediaQuery.of(context).viewPadding.bottom > 30,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: FadeTransition(
-                opacity: _formFadeAnimation,
-                child: SlideTransition(
-                  position: _formSlideAnimation,
-                  child: Form(
-                    key: formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 20),
-                        Text(
-                          'Join Us',
-                          style: GoogleFonts.playfairDisplay(
-                            fontSize: 42,
-                            fontWeight: FontWeight.bold,
-                            color: primaryColor,
+            SafeArea(
+              bottom: MediaQuery.of(context).viewPadding.bottom > 30,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: FadeTransition(
+                  opacity: _formFadeAnimation,
+                  child: SlideTransition(
+                    position: _formSlideAnimation,
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 20),
+                          Text(
+                            'Join Us',
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 42,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'We are delighted to have you join our premium dining community.',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            color: textColor.withValues(alpha: .7),
-                            fontWeight: FontWeight.w400,
+                          const SizedBox(height: 4),
+                          Text(
+                            'We are delighted to have you join our premium dining community.',
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              color: textColor.withValues(alpha: .7),
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 40),
-                        // Form Container with Glassmorphism
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: glassColor,
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: textColor.withValues(alpha: .1),
+                          const SizedBox(height: 40),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  color: glassColor,
+                                  borderRadius: BorderRadius.circular(24),
+                                  border: Border.all(
+                                    color: textColor.withValues(alpha: .1),
+                                  ),
                                 ),
-                              ),
-                              child: Column(
-                                children: [
-                                  _buildTextField(
-                                    context: context,
-                                    controller: fullNameController,
-                                    label: 'Full Name',
-                                    icon: Icons.person_outline,
-                                    isDark: isDark,
-                                    validator:
-                                        RegistrationValidator.validateFullName,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildTextField(
-                                    context: context,
-                                    controller: emailController,
-                                    label: 'Email',
-                                    icon: Icons.email_outlined,
-                                    isDark: isDark,
-                                    keyboardType: TextInputType.emailAddress,
-                                    validator:
-                                        RegistrationValidator.validateEmail,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildTextField(
-                                    context: context,
-                                    controller: addressController,
-                                    label: 'Address',
-                                    icon: Icons.location_on_outlined,
-                                    isDark: isDark,
-                                    validator:
-                                        RegistrationValidator.validateAddress,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildTextField(
-                                    context: context,
-                                    controller: phoneNumberController,
-                                    label: 'Phone Number',
-                                    icon: Icons.phone_outlined,
-                                    isDark: isDark,
-                                    keyboardType: TextInputType.phone,
-                                    prefixText: '+977 ',
-                                    validator:
-                                        RegistrationValidator.validatePhone,
-                                  ),
-                                  const SizedBox(height: 20),
-                                  _buildTextField(
-                                    context: context,
-                                    controller: passwordController,
-                                    label: 'Password',
-                                    isDark: isDark,
-                                    icon: Icons.lock_outline,
-                                    isPassword: true,
-                                    validator:
-                                        RegistrationValidator.validatePassword,
-                                  ),
-                                  const SizedBox(height: 40),
-                                  // Register Button Logic
-                                  SizedBox(
-                                    width: double.infinity,
-                                    height: 60,
-                                    child: ElevatedButton(
-                                      onPressed: () async {
-                                        if (formKey.currentState!.validate()) {
-                                          LoadingDialog.show(
-                                            context,
-                                            message: 'Creating your account...',
-                                          );
-                                          try {
-                                            final user = await _authService
-                                                .signUpWithEmailAndPassword(
-                                                  emailController.text.trim(),
-                                                  passwordController.text,
-                                                );
+                                child: Column(
+                                  children: [
+                                    _buildTextField(
+                                      context: context,
+                                      controller: fullNameController,
+                                      label: 'Full Name',
+                                      icon: Icons.person_outline,
+                                      isDark: isDark,
+                                      validator: RegistrationValidator
+                                          .validateFullName,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildTextField(
+                                      context: context,
+                                      controller: emailController,
+                                      label: 'Email',
+                                      icon: Icons.email_outlined,
+                                      isDark: isDark,
+                                      keyboardType: TextInputType.emailAddress,
+                                      validator:
+                                          RegistrationValidator.validateEmail,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildTextField(
+                                      context: context,
+                                      controller: addressController,
+                                      label: 'Address',
+                                      icon: Icons.location_on_outlined,
+                                      isDark: isDark,
+                                      validator:
+                                          RegistrationValidator.validateAddress,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildTextField(
+                                      context: context,
+                                      controller: phoneNumberController,
+                                      label: 'Phone Number',
+                                      icon: Icons.phone_outlined,
+                                      isDark: isDark,
+                                      keyboardType: TextInputType.phone,
+                                      prefixText: '+977 ',
+                                      validator:
+                                          RegistrationValidator.validatePhone,
+                                    ),
+                                    const SizedBox(height: 20),
+                                    _buildTextField(
+                                      context: context,
+                                      controller: passwordController,
+                                      label: 'Password',
+                                      isDark: isDark,
+                                      icon: Icons.lock_outline,
+                                      isPassword: true,
+                                      validator: RegistrationValidator
+                                          .validatePassword,
+                                    ),
+                                    const SizedBox(height: 40),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 60,
+                                      child: ElevatedButton(
+                                        onPressed: () async {
+                                          if (_formKey.currentState!
+                                              .validate()) {
+                                            LoadingDialog.show(
+                                              context,
+                                              message:
+                                                  'Creating your account...',
+                                            );
+                                            try {
+                                              final user = await _authService
+                                                  .signUpWithEmailAndPassword(
+                                                    emailController.text.trim(),
+                                                    passwordController.text,
+                                                  );
 
-                                            if (!context.mounted) return;
-                                            if (user != null) {
+                                              if (!context.mounted) return;
+                                              if (user != null) {
+                                                LoadingDialog.hide(context);
+                                                _showAestheticDialog(
+                                                  isSuccess: true,
+                                                  title: 'Welcome!',
+                                                  message:
+                                                      "Your culinary journey begins now. We're so happy to have you!",
+                                                );
+                                              }
+                                            } on sb.AuthException catch (e) {
+                                              if (!context.mounted) return;
                                               LoadingDialog.hide(context);
-                                              _showAestheticDialog(
-                                                isSuccess: true,
-                                                title: 'Welcome!',
-                                                message:
-                                                    "Your culinary journey begins now. We're so happy to have you!",
-                                              );
+                                              ref
+                                                  .read(
+                                                    errorServiceProvider
+                                                        .notifier,
+                                                  )
+                                                  .handleException(e);
+                                            } on Exception catch (e) {
+                                              if (!context.mounted) return;
+                                              LoadingDialog.hide(context);
+                                              ref
+                                                  .read(
+                                                    errorServiceProvider
+                                                        .notifier,
+                                                  )
+                                                  .handleException(e);
                                             }
-                                          } on sb.AuthException catch (e) {
-                                            if (!context.mounted) return;
-                                            LoadingDialog.hide(context);
-                                            ref
-                                                .read(
-                                                  errorServiceProvider.notifier,
-                                                )
-                                                .handleException(e);
-                                          } on Exception catch (e) {
-                                            if (!context.mounted) return;
-                                            LoadingDialog.hide(context);
-                                            ref
-                                                .read(
-                                                  errorServiceProvider.notifier,
-                                                )
-                                                .handleException(e);
                                           }
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: primaryColor,
-                                        foregroundColor: colorScheme.onPrimary,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            18,
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: primaryColor,
+                                          foregroundColor:
+                                              colorScheme.onPrimary,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              18,
+                                            ),
+                                          ),
+                                          elevation: 12,
+                                          shadowColor: primaryColor.withValues(
+                                            alpha: .5,
                                           ),
                                         ),
-                                        elevation: 12,
-                                        shadowColor: primaryColor.withValues(
-                                          alpha: .5,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'CREATE ACCOUNT',
-                                        style: GoogleFonts.poppins(
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 2,
-                                          fontSize: 16,
+                                        child: Text(
+                                          'CREATE ACCOUNT',
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 2,
+                                            fontSize: 16,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 48),
-                      ],
+                          const SizedBox(height: 48),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
