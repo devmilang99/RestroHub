@@ -27,6 +27,45 @@ To ensure the CI/CD runs correctly, the following secrets should be configured i
 | `SUPABASE_ANON_KEY` | Your Supabase anonymous API key | Yes |
 | `GEMINI_API_KEY` | Your Google Gemini API key | Yes |
 | `GOOGLE_WEB_CLIENT_ID`| Client ID for Google Sign-In | Yes |
+| `ANDROID_KEYSTORE_BASE64`| Base64 string of your `.jks` file | Yes |
+| `ANDROID_KEY_ALIAS` | Your signing key alias | Yes |
+| `ANDROID_KEY_PASSWORD` | Your signing key password | Yes |
+| `ANDROID_STORE_PASSWORD`| Your keystore password | Yes |
+
+---
+
+## 🔐 Android Signing Setup (Fixes Google Sign-In)
+
+To fix the `ApiException: 10` error in builds downloaded from GitHub, you must sign the APK with the same key registered in your Google Cloud Console.
+
+### 1. Locate your Keystore
+If you are using the debug key created by Android Studio, it is usually located at:
+- **Windows**: `C:\Users\<YourName>\.android\debug.keystore`
+- **macOS/Linux**: `~/.android/debug.keystore`
+
+*Note: For production, use your own generated `.jks` file.*
+
+### 2. Convert Keystore to Base64
+Run the following command in your terminal to get the text string needed for the `ANDROID_KEYSTORE_BASE64` secret:
+
+**Windows (PowerShell):**
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("path\to\your\debug.keystore"))
+```
+
+**macOS / Linux:**
+```bash
+base64 -i path/to/your/debug.keystore
+```
+
+### 3. Add to GitHub Secrets
+1. Copy the long text output from the command above.
+2. Go to your GitHub Repository > **Settings** > **Secrets and variables** > **Actions**.
+3. Create a new secret named `ANDROID_KEYSTORE_BASE64` and paste the text.
+4. Add the other secrets:
+   - `ANDROID_KEY_ALIAS`: `androiddebugkey` (for default debug)
+   - `ANDROID_KEY_PASSWORD`: `android` (for default debug)
+   - `ANDROID_STORE_PASSWORD`: `android` (for default debug)
 
 ---
 

@@ -94,6 +94,23 @@ jobs:
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy-gemini-key' }}" >> .env
           echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy-gemini-key-backup' }}" >> .env
 
+      - name: Decode Keystore
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        run: |
+          if [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          fi
+
+      - name: Create key.properties
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        run: |
+          if [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > android/key.properties
+            echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+            echo "storeFile=upload-keystore.jks" >> android/key.properties
+          fi
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -139,6 +156,23 @@ jobs:
           echo "GOOGLE_WEB_CLIENT_ID=${{ secrets.GOOGLE_WEB_CLIENT_ID || vars.GOOGLE_WEB_CLIENT_ID || 'dummy-client-id' }}" >> .env
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY || vars.GEMINI_API_KEY || 'dummy-gemini-key' }}" >> .env
           echo "GEMINI_API_KEY_BACKUP=${{ secrets.GEMINI_API_KEY_BACKUP || vars.GEMINI_API_KEY_BACKUP || 'dummy-gemini-key-backup' }}" >> .env
+
+      - name: Decode Keystore
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        run: |
+          if [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          fi
+
+      - name: Create key.properties
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+        run: |
+          if [ ! -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}" > android/key.properties
+            echo "keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}" >> android/key.properties
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}" >> android/key.properties
+            echo "storeFile=upload-keystore.jks" >> android/key.properties
+          fi
 
       - name: Install dependencies
         run: flutter pub get
